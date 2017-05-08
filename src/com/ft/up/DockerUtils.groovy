@@ -1,19 +1,15 @@
 package com.ft.up
 
+DH_CREDENTIALS = 'ft.dh.credentials'
 
-class DockerUtils {
-
-  private static final String DH_CREDENTIALS = 'ft.dh.credentials'
-
-  public void pushImageToDH(image) {
-    docker.withRegistry("", DH_CREDENTIALS) {
-      image.push()
-    }
+public void pushImageToDH(image) {
+  docker.withRegistry("", DH_CREDENTIALS) {
+    image.push()
   }
-
-  public def buildImage(String dockerTag, String folder = ".") {
-    def image = docker.build(dockerTag, folder)
-    return image
-  }
-
 }
+
+public def buildImage(String dockerTag, String folder = ".") {
+  def image = docker.build(dockerTag, folder)
+  return image
+}
+
