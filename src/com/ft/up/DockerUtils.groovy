@@ -1,9 +1,7 @@
 package com.ft.up
 
-DH_CREDENTIALS = 'ft.dh.credentials'
-
-public void pushImageToDH(image) {
-  docker.withRegistry("", DH_CREDENTIALS) {
+public void pushImageToDH(image, String credentials = "ft.dh.credentials") {
+  docker.withRegistry("", credentials) {
     image.push()
   }
 }

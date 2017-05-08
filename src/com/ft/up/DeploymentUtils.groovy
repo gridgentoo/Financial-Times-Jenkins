@@ -1,14 +1,19 @@
 package com.ft.up
 
-CREDENTIALS_DIR = "credentials"
-K8S_CLI_IMAGE = "coco/k8s-cli-utils:update-helm"
+import static com.ft.up.DockerUtilsConstants.*
 
-envToApiServerMap = [
-    "xp"  : "https://k8s-delivery-upp-eu-api.ft.com",
-    "test": "https://k8s-delivery-upp-eu-api.ft.com"
-]
+final class DockerUtilsConstants {
 
-HELM_CONFIG_FOLDER = "helm"
+  public static String CREDENTIALS_DIR = "credentials"
+  public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:update-helm"
+
+  public static final Map<String, String> envToApiServerMap = [
+  "xp"  : "https://k8s-delivery-upp-eu-api.ft.com",
+  "test": "https://k8s-delivery-upp-eu-api.ft.com"
+  ]
+
+  public static String HELM_CONFIG_FOLDER = "helm"
+}
 
 public void deployAppWithHelm(String imageVersion, String env) {
   runWithK8SCliTools(env) {
