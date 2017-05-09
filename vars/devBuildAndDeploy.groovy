@@ -23,6 +23,7 @@ def call(DevBuildConfig config) {
       //  todo [sb] handle the case when the environment is not specified in the branch name
 
       stage("deploy to ${env}") {
+        //  todo [sb] handle the case when we have the same chart for many apps
         deployUtil.deployAppWithHelm(imageVersion, env)
       }
     }
