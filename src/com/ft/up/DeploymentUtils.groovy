@@ -5,7 +5,7 @@ import static com.ft.up.DockerUtilsConstants.*
 final class DockerUtilsConstants {
 
   public static String CREDENTIALS_DIR = "credentials"
-  public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:update-helm"
+  public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
 
   public static final Map<String, String> envToApiServerMap = [
   "xp"  : "https://k8s-delivery-upp-eu-api.ft.com",
