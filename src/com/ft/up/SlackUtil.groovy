@@ -3,6 +3,10 @@ package com.ft.up
  * Utils for Slack
  */
 
+void sendTeamSlackNotification(String team, String message) {
+  sendSlackNotification(TeamsRegistry.getApiServerForTeam(team), message)
+}
+
 /**
  * Sends a slack notification using the https://api.slack.com/methods/chat.postMessage method.
  *

@@ -7,10 +7,6 @@ final class DockerUtilsConstants {
   public static String CREDENTIALS_DIR = "credentials"
   public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
 
-  public static final Map<String, String> envToApiServerMap = [
-  "xp"  : "https://k8s-delivery-upp-eu-api.ft.com",
-  "test": "https://k8s-delivery-upp-eu-api.ft.com"
-  ]
 
   public static String HELM_CONFIG_FOLDER = "helm"
 }
@@ -38,7 +34,7 @@ public void runWithK8SCliTools(String env, Closure codeToRun) {
   prepareK8SCliCredentials()
   String currentDir = pwd()
 
-  String apiServer = getApiServerForEnvironment(env)
+  String apiServer = TeamsRegistry.getApiServerForTeam(env)
   GString dockerRunArgs =
       "-v ${currentDir}/${CREDENTIALS_DIR}:/${CREDENTIALS_DIR} " +
       "-e 'K8S_API_SERVER=${apiServer}' " +
@@ -51,14 +47,6 @@ public void runWithK8SCliTools(String env, Closure codeToRun) {
   }
 }
 
-public String getApiServerForEnvironment(String envName) {
-  String apiServer = envToApiServerMap[envName]
-  if (apiServer) {
-    return apiServer
-  }
-  /*  return this for now, as it is our only cluster */
-  return "https://k8s-delivery-upp-eu-api.ft.com"
-}
 
 private void prepareK8SCliCredentials() {
   withCredentials([

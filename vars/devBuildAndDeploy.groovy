@@ -1,10 +1,12 @@
 import com.ft.up.DeploymentUtils
 import com.ft.up.DevBuildConfig
 import com.ft.up.DockerUtils
+import com.ft.up.SlackUtil
 
 def call(DevBuildConfig config) {
 
-  def deployUtil = new DeploymentUtils()
+  DeploymentUtils deployUtil = new DeploymentUtils()
+  SlackUtil slackUtil = new SlackUtil()
 
   node('docker') {
     try {
@@ -25,6 +27,9 @@ def call(DevBuildConfig config) {
       stage("deploy to ${env}") {
         //  todo [sb] handle the case when we have the same chart for many apps
         deployUtil.deployAppWithHelm(imageVersion, env)
+      }
+      stage("notifications") {
+        slackUtil.sendTeamSlackNotification(env, "Deployment succeeded with version: ${config.appDockerImageId}:${imageVersion}")
       }
     }
     finally {
