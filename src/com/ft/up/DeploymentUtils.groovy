@@ -31,7 +31,7 @@ private String getHelmChartFolderName() {
 }
 
 public void runWithK8SCliTools(String env, Closure codeToRun) {
-  prepareK8SCliCredentials()
+  prepareK8SCliCredentials(env)
   String currentDir = pwd()
 
   String apiServer = TeamsRegistry.getApiServerForTeam(env)
@@ -48,11 +48,11 @@ public void runWithK8SCliTools(String env, Closure codeToRun) {
 }
 
 
-private void prepareK8SCliCredentials() {
+private void prepareK8SCliCredentials(String environment) {
   withCredentials([
-      [$class: 'FileBinding', credentialsId: 'ft.k8s.client-certificate', variable: 'CLIENT_CERT'],
-      [$class: 'FileBinding', credentialsId: 'ft.k8s.ca-cert', variable: 'CA_CERT'],
-      [$class: 'FileBinding', credentialsId: 'ft.k8s.client-key', variable: 'CLIENT_KEY']]) {
+      [$class: 'FileBinding', credentialsId: "ft.k8s.${environment}.client-certificate", variable: 'CLIENT_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s.${environment}.ca-cert", variable: 'CA_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s.${environment}.client-key", variable: 'CLIENT_KEY']]) {
     sh """
       mkdir -p ${CREDENTIALS_DIR}
       cp ${env.CLIENT_CERT} ${CREDENTIALS_DIR}/
