@@ -4,7 +4,7 @@ package com.ft.up
  */
 
 void sendTeamSlackNotification(String team, String message) {
-  sendSlackNotification(TeamsRegistry.getApiServerForTeam(team), message)
+  sendSlackNotification(TeamsRegistry.getSlackChannelForTeam(team), message)
 }
 
 /**

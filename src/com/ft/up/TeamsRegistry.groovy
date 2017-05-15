@@ -8,7 +8,7 @@ class TeamsRegistry implements Serializable {
   ]
 
   public static final Map<String, String> teamToSlackChannelMap = [
-      "xp"  : "#k8s_ro"
+      "xp"  : "k8s_ro"
   ]
 
   public static String getApiServerForTeam(String team) {
