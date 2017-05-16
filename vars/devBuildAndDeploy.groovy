@@ -21,19 +21,22 @@ def call(DevBuildConfig config) {
         dockerUtils.pushImageToDH(image)
       }
 
-      String env = deployUtil.getEnvironment(env.BRANCH_NAME)
+      String environment = deployUtil.getEnvironment(env.BRANCH_NAME)
       //  todo [sb] handle the case when the environment is not specified in the branch name
 
-      stage("deploy to ${env}") {
+      List<String> deployedApps
+      stage("deploy to ${environment}") {
         //  todo [sb] handle the case when we have the same chart for many apps
-        deployUtil.deployAppWithHelm(imageVersion, env)
+         deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment)
       }
       stage("notifications") {
-        slackUtil.sendTeamSlackNotification(env, "Deployment succeeded with version: ${config.appDockerImageId}:${imageVersion}")
+        slackUtil.sendEnvSlackNotification(environment, "The applications [${deployedApps.join(",")}] were deployed by helm with version ${imageVersion} in env: ${environment}")
       }
     }
     finally {
-      cleanWs()
+      stage("cleanup") {
+        cleanWs()
+      }
     }
   }
 

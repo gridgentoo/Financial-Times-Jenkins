@@ -3,8 +3,8 @@ package com.ft.up
  * Utils for Slack
  */
 
-void sendTeamSlackNotification(String team, String message) {
-  sendSlackNotification(TeamsRegistry.getSlackChannelForTeam(team), message)
+void sendEnvSlackNotification(String environment, String message) {
+  sendSlackNotification(EnvsRegistry.getSlackChannelForEnv(environment), message)
 }
 
 /**

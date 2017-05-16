@@ -1,23 +1,30 @@
 package com.ft.up
 
-import static com.ft.up.DockerUtilsConstants.*
+import static com.ft.up.DeploymentUtilsConstants.*
 
-final class DockerUtilsConstants {
-
+final class DeploymentUtilsConstants {
   public static String CREDENTIALS_DIR = "credentials"
   public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
-
-
   public static String HELM_CONFIG_FOLDER = "helm"
 }
 
-public void deployAppWithHelm(String imageVersion, String env) {
+/**
+ * Deploys the application(s) in the current workspace using helm. It expects the helm chart to be defined in the {@link DeploymentUtilsConstants#HELM_CONFIG_FOLDER} folder.
+ *
+ * @param imageVersion the version of the docker image to deploy
+ * @param env the environment name where it will be deployed.
+ * @return the list of applications deployed
+ */
+public List<String> deployAppWithHelm(String imageVersion, String env) {
+  List<String> deployedApps = []
   runWithK8SCliTools(env) {
     def chartName = getHelmChartFolderName()
     /*  todo [sb] handle the case when the chart is used by more than 1 app */
     /*  using the chart name also as release name.. we have one release per app */
     sh "helm upgrade ${chartName} ${HELM_CONFIG_FOLDER}/${chartName} -i --set image.version=${imageVersion}"
+    deployedApps.add(chartName)
   }
+  return deployedApps
 }
 
 /**
@@ -34,7 +41,7 @@ public void runWithK8SCliTools(String env, Closure codeToRun) {
   prepareK8SCliCredentials(env)
   String currentDir = pwd()
 
-  String apiServer = TeamsRegistry.getApiServerForTeam(env)
+  String apiServer = EnvsRegistry.getApiServerForEnv(env)
   GString dockerRunArgs =
       "-v ${currentDir}/${CREDENTIALS_DIR}:/${CREDENTIALS_DIR} " +
       "-e 'K8S_API_SERVER=${apiServer}' " +
