@@ -30,7 +30,7 @@ def call(DevBuildConfig config) {
          deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment)
       }
       stage("notifications") {
-        slackUtil.sendEnvSlackNotification(environment, "The applications [${deployedApps.join(",")}] were deployed by helm with version ${imageVersion} in env: ${environment}")
+        slackUtil.sendEnvSlackNotification(environment, "The applications [${deployedApps.join(",")}] were deployed automatically with helm with version '${imageVersion}' in env: ${environment}. Build url: ${env.JOB_URL}")
       }
     }
     finally {
