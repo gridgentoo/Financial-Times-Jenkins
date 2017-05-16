@@ -1,9 +1,11 @@
 package com.ft.up
+
 /**
  * Utils for Slack
  */
 
-void sendEnvSlackNotification(String environment, String message) {
+
+public void sendEnvSlackNotification(String environment, String message) {
   sendSlackNotification(EnvsRegistry.getSlackChannelForEnv(environment), message)
 }
 
@@ -14,7 +16,7 @@ void sendEnvSlackNotification(String environment, String message) {
  * @param message The message to send
  * @param credentialId the id of Jenkins credentials to use. By default it will use 'ft.slack.bot-credentials'
  */
-void sendSlackNotification(String channel, String message, String credentialId = "ft.slack.bot-credentials") {
+public void sendSlackNotification(String channel, String message, String credentialId = "ft.slack.bot-credentials") {
   String encodedChannel = URLEncoder.encode(channel, "UTF-8")
   String encodedMessage = URLEncoder.encode(message, "UTF-8")
   withCredentials([[$class: 'StringBinding', credentialsId: credentialId, variable: 'SLACK_TOKEN']]) {
