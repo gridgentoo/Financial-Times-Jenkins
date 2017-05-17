@@ -21,8 +21,7 @@ def call(DevBuildConfig config) {
 
         imageVersion = deployUtil.getFeatureName(env.BRANCH_NAME)
         stage('build image') {
-          def image = dockerUtils.buildImage("${config.appDockerImageId}:${imageVersion}")
-          dockerUtils.pushImageToDH(image)
+          dockerUtils.buildAndPushImage("${config.appDockerImageId}:${imageVersion}", config.useInternalDockerReg)
         }
 
         environment = deployUtil.getEnvironment(env.BRANCH_NAME)
