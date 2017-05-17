@@ -56,24 +56,20 @@ private void sendNotifications(String environment, List<String> deployedApps, St
 }
 
 private void sendSuccessNotifications(String environment, deployedApps, String imageVersion) {
-
   SlackUtil slackUtil = new SlackUtil()
 
   String message = """ 
-      The applications [${deployedApps.join(",")}] were deployed automatically with helm with version '${
-    imageVersion
-  }' in env: ${environment}. 
-      Build url: ${env.JOB_URL}"""
+      The applications [${deployedApps.join(",")}] were deployed automatically with helm with version '${imageVersion}' in env: ${environment}. 
+      Build url: ${env.BUILD_URL}"""
   slackUtil.sendEnvSlackNotification(environment, message)
 }
 
 private void sendFailureNotifications() {
-  stage("notifications") {
-    /*  send email notification if job fails */
-    emailext(body: "Build URL: ${env.BUILD_URL}".toString(),
-             recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']],
-             subject: 'K8S auto-deploy job failed')
-  }
+  String subject = "${env.JOB_BASE_NAME} - Build # ${env.BUILD_NUMBER} failed !"
+  String body = "Check console output at ${env.BUILD_URL} to view the results."
+  emailext(body: body,
+           recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']],
+           subject: subject, attachLog: true, compressLog: true)
 }
 
 
