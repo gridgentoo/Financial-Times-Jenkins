@@ -1,6 +1,6 @@
 package com.ft.up
 
-class DevBuildConfig implements Serializable {
+class BuildConfig implements Serializable {
   /*  The Docker Image id of the application to deploy  */
   String appDockerImageId
 

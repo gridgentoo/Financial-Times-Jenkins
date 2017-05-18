@@ -1,5 +1,5 @@
-import com.ft.up.DeploymentUtils
 import com.ft.up.BuildConfig
+import com.ft.up.DeploymentUtils
 import com.ft.up.DockerUtils
 import com.ft.up.SlackUtil
 
@@ -24,19 +24,12 @@ def call(BuildConfig config) {
           dockerUtils.buildAndPushImage("${config.appDockerImageId}:${imageVersion}", config.useInternalDockerReg)
         }
 
-        environment = deployUtil.getEnvironment(env.BRANCH_NAME)
-        //  todo [sb] handle the case when the environment is not specified in the branch name
-
-        stage("deploy to ${environment}") {
-          //  todo [sb] handle the case when we have the same chart for many apps
-          deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment)
-        }
       }
     }
 
-    catchError {
-      sendNotifications(environment, deployedApps, imageVersion)
-    }
+//    catchError {
+//      sendNotifications(environment, deployedApps, imageVersion)
+//    }
 
     stage("cleanup") {
       cleanWs()
@@ -70,9 +63,3 @@ private void sendFailureNotifications() {
            recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']],
            subject: subject, attachLog: true, compressLog: true)
 }
-
-
-
-
-
-

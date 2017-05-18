@@ -89,13 +89,13 @@ String getEnvironment(String branchName) {
 }
 
 /**
- * Gets the feature name from a branch name by getting the last item after the last "/".
- * Example: for a branch name as "feature/xp/test", it will return "test".
+ * Gets the docker image version from a branch name by getting the last item after the last "/".
+ * Example: for a branch name as "feature/xp/test", it will return "test" and for "tags/v0.1.4" it will return "v0.1.4"
  *
  * @param branchName the name of the branch
- * @return the feature name
+ * @return the docker image version
  */
-String getFeatureName(String branchName) {
+String getDockerImageVersion(String branchName) {
   String[] values = branchName.split('/')
   return values[values.length - 1]
 }
