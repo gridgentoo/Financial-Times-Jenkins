@@ -1,16 +1,13 @@
 import com.ft.up.BuildConfig
+import com.ft.up.GitUtils
 
 def call(BuildConfig config) {
-  String branchName = env.BRANCH_NAME
+  GitUtils gitUtils = new GitUtils()
 
-  if (isTag(branchName)) {
+  if (gitUtils.isTag(env.BRANCH_NAME)) {
     releaseBuildAndDeploy(config)
   }
   else {
     devBuildAndDeploy(config)
   }
-}
-
-boolean isTag(String checkedOutBranchName) {
-  return checkedOutBranchName.startsWith("tag/")
 }

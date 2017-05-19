@@ -1,12 +1,12 @@
 package com.ft.up
 
+import static com.ft.up.GitUtilsConstants.*
 final class GitUtilsConstants {
-
+  public static final String TAG_BRANCHES_PREFIX = "tags/"
 }
 
-public class TagInfo implements Serializable {
-  String authorEmail
-  String summary
+public boolean isTag(String checkedOutBranchName) {
+  return checkedOutBranchName.startsWith(TAG_BRANCHES_PREFIX)
 }
 
 public String getTagNameFromBranchName(String checkedOutBranchName) {
@@ -14,12 +14,12 @@ public String getTagNameFromBranchName(String checkedOutBranchName) {
   return values[values.length - 1]
 }
 
-public TagInfo getTagInfo(String tagName) {
+public GitTagInfo getTagInfo(String tagName) {
   String gitTempFile = "__tagDescription_${System.currentTimeMillis()}"
   try {
     sh "git show ${tagName}  > ${gitTempFile}"
     String fileText = readFile(gitTempFile)
-    TagInfo info = new TagInfo()
+    GitTagInfo info = new GitTagInfo()
     info.authorEmail = getAuthorEmailAddress(fileText)
     info.summary = getSummaryOfChange(fileText)
     return info
