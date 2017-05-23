@@ -1,11 +1,15 @@
 package com.ft.up
 
-import static com.ft.up.DeploymentUtilsConstants.*
+import static com.ft.up.DeploymentUtilsConstants.APPS_CONFIG_FOLDER
+import static com.ft.up.DeploymentUtilsConstants.CREDENTIALS_DIR
+import static com.ft.up.DeploymentUtilsConstants.HELM_CONFIG_FOLDER
+import static com.ft.up.DeploymentUtilsConstants.K8S_CLI_IMAGE
 
 final class DeploymentUtilsConstants {
   public static String CREDENTIALS_DIR = "credentials"
   public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
   public static String HELM_CONFIG_FOLDER = "helm"
+  public static String APPS_CONFIG_FOLDER = "helm/app-configs"
 }
 
 /**
@@ -16,21 +20,35 @@ final class DeploymentUtilsConstants {
  * @return the list of applications deployed
  */
 public List<String> deployAppWithHelm(String imageVersion, String env) {
-  List<String> deployedApps = []
+  List<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env) {
     def chartName = getHelmChartFolderName()
+
     /*  todo [sb] handle the case when the chart is used by more than 1 app */
     /*  using the chart name also as release name.. we have one release per app */
-    sh "helm upgrade ${chartName} ${HELM_CONFIG_FOLDER}/${chartName} -i --set image.version=${imageVersion}"
-    deployedApps.add(chartName)
+    for (String application : appsToDeploy) {
+      sh "helm upgrade ${chartName} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${APPS_CONFIG_FOLDER}/${application}.yaml --set image.version=${imageVersion}"
+    }
   }
-  return deployedApps
+  return appsToDeploy
+}
+
+
+public List<String> getAppNamesInRepo() {
+  List<String> appNames = []
+  def foundConfigFiles = findFiles(glob: "${APPS_CONFIG_FOLDER}/*.yaml")
+
+  for (def configFile :foundConfigFiles) {
+    appNames.add(configFile.name - ".yaml")
+  }
+
+  return appNames
 }
 
 /**
  * Retrieves the folder name where the Helm chart is defined .
  */
-public String getHelmChartFolderName() {
+private String getHelmChartFolderName() {
   def chartFile = findFiles(glob: "${HELM_CONFIG_FOLDER}/**/Chart.yaml")[0]
   String[] chartFilePathComponents = ((String) chartFile.path).split('/')
   /* return the parent folder of Chart.yaml */
@@ -53,7 +71,6 @@ public void runWithK8SCliTools(String env, Closure codeToRun) {
     codeToRun.call()
   }
 }
-
 
 private void prepareK8SCliCredentials(String environment) {
   withCredentials([

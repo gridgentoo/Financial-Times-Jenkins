@@ -30,12 +30,14 @@ def call(BuildConfig config) {
       }
 
       // todo [SB] handle the case when one chart is used by more apps
-      String appName = deployUtil.getHelmChartFolderName()
+      List<String> apps = deployUtil.getAppNamesInRepo()
 
 
       stage("deploy to Pre-Prod") {
         timeout(30) {
-          String releaseMessage = "Release `${tagName}` of the application `${appName}` is ready to deploy in pre-prod. Do you want to proceed with the deployment?"
+          //  todo [sb] use a template engine for the Strings. See http://docs.groovy-lang.org/next/html/documentation/template-engines.html#_simpletemplateengine
+
+          String releaseMessage = "Release `${tagName}` of the applications [`${apps.join(",")}`] is ready to deploy in pre-prod. Do you want to proceed with the deployment?"
           slackUtil.sendEnvSlackNotification("pre-prod",
                                              releaseMessage + " Manual action: go here to deploy to pre-prod: ${env.BUILD_URL}input")
           String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Deploy to pre-prod")
@@ -47,7 +49,7 @@ def call(BuildConfig config) {
 
       stage("deploy to Prod") {
         timeout(time: 1, unit: 'DAYS') {
-          String releaseMessage = """The release `${tagName}` of the application `${appName}` was deployed in pre-prod.
+          String releaseMessage = """The release `${tagName}` of the application [`${apps.join(",")}`] was deployed in pre-prod.
            Please check the functionality in pre-prod.
            Do you want to proceed with the deployment in PROD ?"""
           slackUtil.sendEnvSlackNotification("prod",
