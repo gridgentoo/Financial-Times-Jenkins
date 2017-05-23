@@ -39,7 +39,9 @@ public List<String> getAppNamesInRepo() {
   def foundConfigFiles = findFiles(glob: "${APPS_CONFIG_FOLDER}/*.yaml")
 
   for (def configFile :foundConfigFiles) {
-    appNames.add(configFile.name - ".yaml")
+    /*  strip the .yaml extension from the files */
+    String fileName = configFile.name
+    appNames.add(fileName.substring(0, fileName.indexOf('.')))
   }
 
   return appNames
