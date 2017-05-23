@@ -57,9 +57,9 @@ public void runWithK8SCliTools(String env, Closure codeToRun) {
 
 private void prepareK8SCliCredentials(String environment) {
   withCredentials([
-      [$class: 'FileBinding', credentialsId: "ft.k8s.${environment}.client-certificate", variable: 'CLIENT_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s.${environment}.ca-cert", variable: 'CA_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s.${environment}.client-key", variable: 'CLIENT_KEY']]) {
+      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-certificate", variable: 'CLIENT_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.ca-cert", variable: 'CA_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-key", variable: 'CLIENT_KEY']]) {
     sh """
       mkdir -p ${CREDENTIALS_DIR}
       cp ${env.CLIENT_CERT} ${CREDENTIALS_DIR}/
