@@ -30,7 +30,7 @@ public List<String> deployAppWithHelm(String imageVersion, String env) {
 /**
  * Retrieves the folder name where the Helm chart is defined .
  */
-private String getHelmChartFolderName() {
+public String getHelmChartFolderName() {
   def chartFile = findFiles(glob: "${HELM_CONFIG_FOLDER}/**/Chart.yaml")[0]
   String[] chartFilePathComponents = ((String) chartFile.path).split('/')
   /* return the parent folder of Chart.yaml */

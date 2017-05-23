@@ -10,7 +10,9 @@ class EnvsRegistry implements Serializable {
 
   public static final Map<String, String> envToSlackChannelMap = [
       "xp"    : "k8s_ro",
-      "pub-xp": "k8s_ro"
+      "pub-xp": "k8s_ro",
+      "pre-prod": "@sorin.buliarca",
+      "prod": "@sorin.buliarca"
   ]
 
   public static String getApiServerForEnv(String env) {

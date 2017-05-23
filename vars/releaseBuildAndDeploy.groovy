@@ -1,16 +1,20 @@
 import com.ft.up.BuildConfig
 import com.ft.up.DeploymentUtils
 import com.ft.up.DockerUtils
+import com.ft.up.GitUtils
 import com.ft.up.SlackUtil
 
 def call(BuildConfig config) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
+  GitUtils gitUtils = new GitUtils()
+  SlackUtil slackUtil = new SlackUtil()
 
-  String imageVersion = null
   String environment
   List<String> deployedApps = null
+  String tagName = gitUtils.getTagNameFromBranchName(env.BRANCH_NAME)
+  String imageVersion = tagName
 
   node('docker') {
     catchError {
@@ -19,47 +23,46 @@ def call(BuildConfig config) {
           checkout scm
         }
 
-        imageVersion = deployUtil.getDockerImageVersion(env.BRANCH_NAME)
         stage('build image') {
           dockerUtils.buildAndPushImage("${config.appDockerImageId}:${imageVersion}", config.useInternalDockerReg)
         }
 
       }
-    }
 
-//    catchError {
-//      sendNotifications(environment, deployedApps, imageVersion)
-//    }
+      // todo [SB] handle the case when one chart is used by more apps
+      String appName = deployUtil.getHelmChartFolderName()
+
+
+      stage("deploy to Pre-Prod") {
+        timeout(30) {
+          String releaseMessage = "Release `${tagName}` of the application `${appName}` is ready to deploy in pre-prod. Do you want to proceed with the deployment?"
+          slackUtil.sendEnvSlackNotification("pre-prod",
+                                             releaseMessage + " Manual action: go here to deploy to pre-prod: ${env.BUILD_URL}input")
+          String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Deploy to pre-prod")
+
+          //  todo [sb] open and close CR
+          deployedApps = deployUtil.deployAppWithHelm(imageVersion, "pre-prod")
+        }
+      }
+
+      stage("deploy to Prod") {
+        timeout(time: 1, unit: 'DAYS') {
+          String releaseMessage = """The release `${tagName}` of the application `${appName}` was deployed in pre-prod.
+           Please check the functionality in pre-prod.
+           Do you want to proceed with the deployment in PROD ?"""
+          slackUtil.sendEnvSlackNotification("prod",
+                                             releaseMessage + " Manual action: go here to deploy to Prod: ${env.BUILD_URL}input")
+          String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Deploy to Prod")
+
+          //  todo [sb] open and close CR
+          deployedApps = deployUtil.deployAppWithHelm(imageVersion, "prod")
+        }
+      }
+
+    }
 
     stage("cleanup") {
       cleanWs()
     }
   }
-}
-
-private void sendNotifications(String environment, List<String> deployedApps, String imageVersion) {
-  stage("notifications") {
-    if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
-      sendSuccessNotifications(environment, deployedApps, imageVersion)
-    } else {
-      sendFailureNotifications()
-    }
-  }
-}
-
-private void sendSuccessNotifications(String environment, deployedApps, String imageVersion) {
-  SlackUtil slackUtil = new SlackUtil()
-
-  String message = """ 
-      The applications [${deployedApps.join(",")}] were deployed automatically with helm with version '${imageVersion}' in env: ${environment}. 
-      Build url: ${env.BUILD_URL}"""
-  slackUtil.sendEnvSlackNotification(environment, message)
-}
-
-private void sendFailureNotifications() {
-  String subject = "${env.JOB_BASE_NAME} - Build # ${env.BUILD_NUMBER} failed !"
-  String body = "Check console output at ${env.BUILD_URL} to view the results."
-  emailext(body: body,
-           recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']],
-           subject: subject, attachLog: true, compressLog: true)
 }
