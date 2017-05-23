@@ -62,6 +62,7 @@ private void prepareK8SCliCredentials(String environment) {
       [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-key", variable: 'CLIENT_KEY']]) {
     sh """
       mkdir -p ${CREDENTIALS_DIR}
+      rm -f ${CREDENTIALS_DIR}/*
       cp ${env.CLIENT_CERT} ${CREDENTIALS_DIR}/
       cp ${env.CLIENT_KEY} ${CREDENTIALS_DIR}/
       cp ${env.CA_CERT} ${CREDENTIALS_DIR}/
