@@ -1,8 +1,8 @@
-package com.ft.up
+package com.ft.up.git
 
 import groovy.json.JsonSlurper
 
-import static com.ft.up.GitUtilsConstants.*
+import static GitUtilsConstants.*
 
 final class GitUtilsConstants {
   public static final String TAG_BRANCHES_PREFIX = "tags/"

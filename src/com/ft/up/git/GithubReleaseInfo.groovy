@@ -1,4 +1,4 @@
-package com.ft.up
+package com.ft.up.git
 
 class GithubReleaseInfo implements Serializable {
   String title
