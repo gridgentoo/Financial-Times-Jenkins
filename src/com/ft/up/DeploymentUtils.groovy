@@ -1,7 +1,10 @@
 package com.ft.up
 
+import java.util.regex.Matcher
+
 import static com.ft.up.DeploymentUtilsConstants.APPS_CONFIG_FOLDER
 import static com.ft.up.DeploymentUtilsConstants.CREDENTIALS_DIR
+import static com.ft.up.DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
 import static com.ft.up.DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static com.ft.up.DeploymentUtilsConstants.K8S_CLI_IMAGE
 
@@ -10,6 +13,7 @@ final class DeploymentUtilsConstants {
   public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
   public static String HELM_CONFIG_FOLDER = "helm"
   public static String APPS_CONFIG_FOLDER = "helm/app-configs"
+  public static final String DEFAULT_HELM_VALUES_FILE = "values.yaml"
 }
 
 /**
@@ -24,15 +28,25 @@ public List<String> deployAppWithHelm(String imageVersion, String env) {
   runWithK8SCliTools(env) {
     def chartName = getHelmChartFolderName()
 
-    /*  todo [sb] handle the case when the chart is used by more than 1 app */
-    /*  using the chart name also as release name.. we have one release per app */
-    for (String application : appsToDeploy) {
-      sh "helm upgrade ${chartName} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${APPS_CONFIG_FOLDER}/${application}.yaml --set image.version=${imageVersion}"
+    for (String app : appsToDeploy) {
+      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${APPS_CONFIG_FOLDER}/${app}.yaml --set image.version=${imageVersion}"
     }
   }
   return appsToDeploy
 }
 
+/**
+ * Retrieves the repository of the Docker image configured in the Helm chart in the current folder.
+ *
+ * @return the Docker image repository. Example: "coco/people-rw-neo4j"
+ */
+public String getDockerImageRepository() {
+  String chartFolderName = getHelmChartFolderName()
+  String valuesContents = readFile("${HELM_CONFIG_FOLDER}/${chartFolderName}/${DEFAULT_HELM_VALUES_FILE}")
+  Matcher matcher = (valuesContents =~ /repository: (.*)\s/)
+  /*  get the value matching the group */
+  return matcher[0][1]
+}
 
 public List<String> getAppNamesInRepo() {
   List<String> appNames = []

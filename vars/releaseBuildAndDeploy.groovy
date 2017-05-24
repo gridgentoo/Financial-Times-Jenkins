@@ -24,15 +24,14 @@ def call(BuildConfig config) {
         }
 
         stage('build image') {
-          dockerUtils.buildAndPushImage("${config.appDockerImageId}:${imageVersion}", config.useInternalDockerReg)
+          String dockerRepository = deployUtil.getDockerImageRepository()
+          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
       }
 
-      // todo [SB] handle the case when one chart is used by more apps
       List<String> apps = deployUtil.getAppNamesInRepo()
-
-
+      //  todo [SB] release node while waiting for input
       stage("deploy to Pre-Prod") {
         timeout(30) {
           //  todo [sb] use a template engine for the Strings. See http://docs.groovy-lang.org/next/html/documentation/template-engines.html#_simpletemplateengine

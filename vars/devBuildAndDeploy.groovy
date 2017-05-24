@@ -19,9 +19,10 @@ def call(BuildConfig config) {
           checkout scm
         }
 
-        imageVersion = deployUtil.getDockerImageVersion(env.BRANCH_NAME)
         stage('build image') {
-          dockerUtils.buildAndPushImage("${config.appDockerImageId}:${imageVersion}", config.useInternalDockerReg)
+          imageVersion = deployUtil.getDockerImageVersion(env.BRANCH_NAME)
+          String dockerRepository = deployUtil.getDockerImageRepository()
+          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
         environment = deployUtil.getEnvironment(env.BRANCH_NAME)
