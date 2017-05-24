@@ -1,10 +1,13 @@
 package com.ft.up
 
 enum Cluster implements Serializable {
-  DELIVERY, PUBLISHING
+  DELIVERY("delivery"),
+  PUBLISHING("publishing")
 
-  @Override
-  String toString() {
-    return name().toLowerCase()
+  /*  The label for the cluster. Used for displaying*/
+  String label
+
+  Cluster(String label) {
+    this.label = label
   }
 }

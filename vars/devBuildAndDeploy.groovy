@@ -33,7 +33,7 @@ def call(BuildConfig config) {
         for (int i = 0; i < deployToClusters.size(); i++) {
           Cluster clusterToDeploy = deployToClusters.get(i)
 
-          stage("deploy to ${environment}-${clusterToDeploy}") {
+          stage("deploy to ${environment}-${clusterToDeploy.label}") {
             deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment, clusterToDeploy)
           }
         }
