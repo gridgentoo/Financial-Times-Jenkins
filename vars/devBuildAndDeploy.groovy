@@ -1,3 +1,4 @@
+import com.ft.up.Cluster
 import com.ft.up.DeploymentUtils
 import com.ft.up.BuildConfig
 import com.ft.up.DockerUtils
@@ -28,10 +29,15 @@ def call(BuildConfig config) {
         environment = deployUtil.getEnvironment(env.BRANCH_NAME)
         //  todo [sb] handle the case when the environment is not specified in the branch name
 
-        stage("deploy to ${environment}") {
-          //  todo [sb] handle the case when we have the same chart for many apps
-          deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment)
+        List<Cluster> deployToClusters = config.getDeployToClusters()
+        for (int i = 0; i < deployToClusters.size(); i++) {
+          Cluster clusterToDeploy = deployToClusters.get(i)
+
+          stage("deploy to ${environment}-${clusterToDeploy}") {
+            deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment, clusterToDeploy)
+          }
         }
+
       }
     }
 

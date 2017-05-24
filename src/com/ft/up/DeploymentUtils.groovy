@@ -23,15 +23,15 @@ final class DeploymentUtilsConstants {
  * @param env the environment name where it will be deployed.
  * @return the list of applications deployed
  */
-public List<String> deployAppWithHelm(String imageVersion, String env) {
+public List<String> deployAppWithHelm(String imageVersion, String env, Cluster cluster) {
   List<String> appsToDeploy = getAppNamesInRepo()
-  runWithK8SCliTools(env) {
+  runWithK8SCliTools(env, cluster, {
     def chartName = getHelmChartFolderName()
 
     for (String app : appsToDeploy) {
       sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${APPS_CONFIG_FOLDER}/${app}.yaml --set image.version=${imageVersion}"
     }
-  }
+  })
   return appsToDeploy
 }
 
@@ -71,11 +71,11 @@ private String getHelmChartFolderName() {
   return chartFilePathComponents[chartFilePathComponents.size() - 2]
 }
 
-public void runWithK8SCliTools(String env, Closure codeToRun) {
+public void runWithK8SCliTools(String env, Cluster cluster, Closure codeToRun) {
   prepareK8SCliCredentials(env)
   String currentDir = pwd()
 
-  String apiServer = EnvsRegistry.getApiServerForEnv(env)
+  String apiServer = EnvsRegistry.getApiServerForEnv(env, cluster)
   GString dockerRunArgs =
       "-v ${currentDir}/${CREDENTIALS_DIR}:/${CREDENTIALS_DIR} " +
       "-e 'K8S_API_SERVER=${apiServer}' " +
