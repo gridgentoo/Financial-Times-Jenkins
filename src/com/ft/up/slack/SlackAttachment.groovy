@@ -16,6 +16,5 @@ class SlackAttachment implements Serializable {
   String authorName = ""
   String authorLink = ""
   String authorIcon = ""
-
-  boolean includeTimestamp = false
+  Long timestamp = null
 }

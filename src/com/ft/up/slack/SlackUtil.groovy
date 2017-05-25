@@ -61,7 +61,7 @@ public void sendEnhancedSlackNotification(String channel, SlackAttachment attach
     "footer_icon": "${attachment.footerIcon}",
     "color": "${attachment.color}",
     "mrkdwn_in": ["text", "pretext"]
-    ${attachment.includeTimestamp ? ', "ts": ' + System.currentTimeMillis() : "" }
+    ${attachment.timestamp ? ', "ts": ' + attachment.timestamp : "" }
   }]"""
 
   String encodedChannel = URLEncoder.encode(channel, "UTF-8")

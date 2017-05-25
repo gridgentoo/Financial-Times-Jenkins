@@ -70,7 +70,6 @@ private void sendSuccessNotifications(String environment, deployedApps, String i
   attachment.titleUrl = env.BUILD_URL
   attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment}'"
   attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in env: `${environment}`."""
-  attachment.includeTimestamp = true
   slackUtil.sendEnvEnhancedSlackNotification(environment, attachment)
 }
 
