@@ -2,6 +2,7 @@ import com.ft.up.Cluster
 import com.ft.up.DeploymentUtils
 import com.ft.up.BuildConfig
 import com.ft.up.DockerUtils
+import com.ft.up.slack.SlackAttachment
 import com.ft.up.slack.SlackUtil
 
 def call(BuildConfig config) {
@@ -64,10 +65,13 @@ private void sendNotifications(String environment, List<String> deployedApps, St
 private void sendSuccessNotifications(String environment, deployedApps, String imageVersion) {
   SlackUtil slackUtil = new SlackUtil()
 
-  String message = """ 
-      The applications [${deployedApps.join(",")}] were deployed automatically with helm with version '${imageVersion}' in env: ${environment}. 
-      Build url: ${env.BUILD_URL}"""
-  slackUtil.sendEnvSlackNotification(environment, message)
+  SlackAttachment attachment = new SlackAttachment()
+  String deployedAppsAsString = deployedApps.join(",")
+  attachment.titleUrl = env.BUILD_URL
+  attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment}'"
+  attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in env: `${environment}`."""
+  attachment.includeTimestamp = true
+  slackUtil.sendEnvEnhancedSlackNotification(environment, attachment)
 }
 
 private void sendFailureNotifications() {

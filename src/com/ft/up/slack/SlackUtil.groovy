@@ -2,8 +2,6 @@ package com.ft.up.slack
 
 import com.ft.up.EnvsRegistry
 
-import groovy.json.JsonBuilder
-
 import static com.ft.up.slack.SlackConstants.BOT_USERNAME
 import static com.ft.up.slack.SlackConstants.DEFAULT_CREDENTIALS
 
@@ -41,9 +39,14 @@ public void sendSlackNotification(String channel, String message, String credent
   }
 }
 
+public void sendEnvEnhancedSlackNotification(String environment, SlackAttachment attachment) {
+  sendEnhancedSlackNotification(EnvsRegistry.getSlackChannelForEnv(environment), attachment)
+}
+
 public void sendEnhancedSlackNotification(String channel, SlackAttachment attachment,
                                           String credentialId = DEFAULT_CREDENTIALS) {
 
+  /*  not using the JsonBuilder as we need NonCPS for that, and seems it doesn't play well with looking up credentials */
   String attachmentJson="""[{
     "pretext": "${attachment.preText}",
     "author_name": "${attachment.authorName}",
