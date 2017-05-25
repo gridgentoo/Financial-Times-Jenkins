@@ -25,8 +25,9 @@ class EnvsRegistry implements Serializable {
   ]
 
 
+  @NonCPS
   public static Environment getEnvironment(String name) {
-    return envs.find {it.name = name }
+    return envs.find {Environment environment -> environment.name = name }
   }
 
 }

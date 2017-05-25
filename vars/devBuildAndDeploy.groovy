@@ -45,7 +45,7 @@ def call(BuildConfig config) {
     }
 
     catchError {
-      sendNotifications(environment, deployedApps, imageVersion)
+      sendNotifications(environment, config, deployedApps, imageVersion)
     }
 
     stage("cleanup") {
@@ -54,24 +54,24 @@ def call(BuildConfig config) {
   }
 }
 
-private void sendNotifications(Environment environment, List<String> deployedApps, String imageVersion) {
+private void sendNotifications(Environment environment, BuildConfig config, List<String> deployedApps, String imageVersion) {
   stage("notifications") {
     if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
-      sendSuccessNotifications(environment, deployedApps, imageVersion)
+      sendSuccessNotifications(environment, config, deployedApps, imageVersion)
     } else {
       sendFailureNotifications()
     }
   }
 }
 
-private void sendSuccessNotifications(Environment environment, deployedApps, String imageVersion) {
+private void sendSuccessNotifications(Environment environment, BuildConfig config, List<String> deployedApps, String imageVersion) {
   SlackUtil slackUtil = new SlackUtil()
 
   SlackAttachment attachment = new SlackAttachment()
   String deployedAppsAsString = deployedApps.join(",")
   attachment.titleUrl = env.BUILD_URL
-  attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment}'"
-  attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in env: `${environment}`."""
+  attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment.name}'"
+  attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in env: `${environment.name}` in clusters: *${Cluster.toLabels(config.deployToClusters).join(',')}*."""
   slackUtil.sendEnhancedSlackNotification(environment.slackChannel, attachment)
 }
 
