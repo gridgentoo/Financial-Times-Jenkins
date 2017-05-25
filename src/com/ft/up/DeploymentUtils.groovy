@@ -23,9 +23,9 @@ final class DeploymentUtilsConstants {
  * @param env the environment name where it will be deployed.
  * @return the list of applications deployed
  */
-public List<String> deployAppWithHelm(String imageVersion, String env, Cluster cluster) {
+public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
   List<String> appsToDeploy = getAppNamesInRepo()
-  runWithK8SCliTools(env, cluster, {
+  runWithK8SCliTools(env, cluster, region, {
     def chartName = getHelmChartFolderName()
 
     for (String app : appsToDeploy) {
@@ -71,11 +71,11 @@ private String getHelmChartFolderName() {
   return chartFilePathComponents[chartFilePathComponents.size() - 2]
 }
 
-public void runWithK8SCliTools(String env, Cluster cluster, Closure codeToRun) {
-  prepareK8SCliCredentials(env)
+public void runWithK8SCliTools(Environment env, Cluster cluster, String region = null, Closure codeToRun) {
+  prepareK8SCliCredentials()
   String currentDir = pwd()
 
-  String apiServer = EnvsRegistry.getApiServerForEnv(env, cluster)
+  String apiServer = env.getApiServerForCluster(cluster, region)
   GString dockerRunArgs =
       "-v ${currentDir}/${CREDENTIALS_DIR}:/${CREDENTIALS_DIR} " +
       "-e 'K8S_API_SERVER=${apiServer}' " +
@@ -88,7 +88,7 @@ public void runWithK8SCliTools(String env, Cluster cluster, Closure codeToRun) {
   }
 }
 
-private void prepareK8SCliCredentials(String environment) {
+private void prepareK8SCliCredentials() {
   withCredentials([
       [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-certificate", variable: 'CLIENT_CERT'],
       [$class: 'FileBinding', credentialsId: "ft.k8s.auth.ca-cert", variable: 'CA_CERT'],
@@ -114,7 +114,7 @@ private void prepareK8SCliCredentials(String environment) {
  * @param branchName the name of the branch
  * @return the environment name where to deploy the branch
  */
-String getEnvironment(String branchName) {
+String getEnvironmentName(String branchName) {
   String[] values = branchName.split('/')
   if (values.length > 2) {
     return values[values.length - 2]

@@ -2,6 +2,8 @@ import com.ft.up.Cluster
 import com.ft.up.DeploymentUtils
 import com.ft.up.BuildConfig
 import com.ft.up.DockerUtils
+import com.ft.up.Environment
+import com.ft.up.EnvsRegistry
 import com.ft.up.slack.SlackAttachment
 import com.ft.up.slack.SlackUtil
 
@@ -11,7 +13,7 @@ def call(BuildConfig config) {
   DockerUtils dockerUtils = new DockerUtils()
 
   String imageVersion = null
-  String environment
+  Environment environment
   List<String> deployedApps = null
 
   node('docker') {
@@ -27,14 +29,14 @@ def call(BuildConfig config) {
           dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
-        environment = deployUtil.getEnvironment(env.BRANCH_NAME)
+        environment = EnvsRegistry.getEnvironment(deployUtil.getEnvironmentName(env.BRANCH_NAME))
         //  todo [sb] handle the case when the environment is not specified in the branch name
 
         List<Cluster> deployToClusters = config.getDeployToClusters()
         for (int i = 0; i < deployToClusters.size(); i++) {
           Cluster clusterToDeploy = deployToClusters.get(i)
 
-          stage("deploy to ${environment}-${clusterToDeploy.label}") {
+          stage("deploy to ${environment.name}-${clusterToDeploy.label}") {
             deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment, clusterToDeploy)
           }
         }
@@ -52,7 +54,7 @@ def call(BuildConfig config) {
   }
 }
 
-private void sendNotifications(String environment, List<String> deployedApps, String imageVersion) {
+private void sendNotifications(Environment environment, List<String> deployedApps, String imageVersion) {
   stage("notifications") {
     if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
       sendSuccessNotifications(environment, deployedApps, imageVersion)
@@ -62,7 +64,7 @@ private void sendNotifications(String environment, List<String> deployedApps, St
   }
 }
 
-private void sendSuccessNotifications(String environment, deployedApps, String imageVersion) {
+private void sendSuccessNotifications(Environment environment, deployedApps, String imageVersion) {
   SlackUtil slackUtil = new SlackUtil()
 
   SlackAttachment attachment = new SlackAttachment()
@@ -70,7 +72,7 @@ private void sendSuccessNotifications(String environment, deployedApps, String i
   attachment.titleUrl = env.BUILD_URL
   attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment}'"
   attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in env: `${environment}`."""
-  slackUtil.sendEnvEnhancedSlackNotification(environment, attachment)
+  slackUtil.sendEnhancedSlackNotification(environment.slackChannel, attachment)
 }
 
 private void sendFailureNotifications() {

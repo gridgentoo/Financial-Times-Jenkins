@@ -39,9 +39,6 @@ public void sendSlackNotification(String channel, String message, String credent
   }
 }
 
-public void sendEnvEnhancedSlackNotification(String environment, SlackAttachment attachment) {
-  sendEnhancedSlackNotification(EnvsRegistry.getSlackChannelForEnv(environment), attachment)
-}
 
 public void sendEnhancedSlackNotification(String channel, SlackAttachment attachment,
                                           String credentialId = DEFAULT_CREDENTIALS) {
