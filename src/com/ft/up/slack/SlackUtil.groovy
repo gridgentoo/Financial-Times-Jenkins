@@ -43,32 +43,34 @@ public void sendSlackNotification(String channel, String message, String credent
 
 public void sendEnhancedSlackNotification(String channel, SlackAttachment attachment,
                                           String credentialId = DEFAULT_CREDENTIALS) {
-  JsonBuilder attachmentBuilder = new JsonBuilder()
-  attachmentBuilder {
-    pretext(attachment.preText)
-    author_name(attachment.authorName)
-    author_link(attachment.authorLink)
-    author_icon(attachment.authorIcon)
-    title(attachment.title)
-    title_link(attachment.titleUrl)
-    text(attachment.text)
-    image_url(attachment.imageUrl)
-    footer(attachment.footer)
-    footer_icon(attachment.footerIcon)
-    color(attachment.color)
-    mrkdwn_in("text", "pretext")
-    if (attachment.includeTimestamp) {
-      ts(System.currentTimeMillis())
-    }
-  }
+
+  String attachmentJson="""[{
+    "pretext": "${attachment.preText}",
+    "author_name": "${attachment.authorName}",
+    "author_link": "${attachment.authorLink}",
+    "author_icon": "${attachment.authorIcon}",
+    "title": "${attachment.authorIcon}",
+    "title_link": "${attachment.titleUrl}",
+    "text": "${attachment.text}",
+    "image_url": "${attachment.imageUrl}",
+    "footer": "${attachment.footer}",
+    "footer_icon": "${attachment.footerIcon}",
+    "color": "${attachment.color}",
+    "mrkdwn_in": ["text", "pretext"]
+    ${attachment.includeTimestamp ? ', "ts": ' + System.currentTimeMillis() : "" }
+  }]"""
+
   String encodedChannel = URLEncoder.encode(channel, "UTF-8")
-  String encodedAttachment = URLEncoder.encode("[${attachmentBuilder.toString()}]", "UTF-8")
+  String encodedAttachment = URLEncoder.encode(attachmentJson, "UTF-8")
+  echo "Sending attachment to slack: ${attachmentJson}"
   withCredentials([[$class: 'StringBinding', credentialsId: credentialId, variable: 'SLACK_TOKEN']]) {
-    String requestBody = "token=${env.SLACK_TOKEN}&attattachments=${encodedAttachment}&channel=${encodedChannel}&username=${BOT_USERNAME}"
-    httpRequest(contentType: 'APPLICATION_FORM',
-                httpMode: 'POST',
-                responseHandle: 'NONE',
+    String requestBody = "token=${env.SLACK_TOKEN}&attachments=${encodedAttachment}&channel=${encodedChannel}&username=${BOT_USERNAME}"
+    echo "Whole request body: ${requestBody}"
+    httpRequest(httpMode: 'POST',
                 url: 'https://slack.com/api/chat.postMessage',
+                customHeaders: [[maskValue: false, name: 'content-type', value: 'application/x-www-form-urlencoded']],
+                timeout: 10,
+                consoleLogResponseBody: true,
                 requestBody: requestBody)
   }
 }

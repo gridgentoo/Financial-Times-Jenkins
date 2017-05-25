@@ -1,11 +1,14 @@
 package com.ft.up.slack
 
+/**
+ * Replicates the structure from here: SlackAttachment attachment = new SlackAttachment()
+ */
 class SlackAttachment implements Serializable {
   String text
   String preText = ""
   String title = ""
   String titleUrl = ""
-  String color = "green"
+  String color = "good"
   String footer = ""
   String footerIcon = ""
   String imageUrl = ""
@@ -13,5 +16,5 @@ class SlackAttachment implements Serializable {
   String authorLink = ""
   String authorIcon = ""
 
-  String includeTimestamp
+  boolean includeTimestamp = false
 }
