@@ -1,9 +1,9 @@
-package com.ft.up.slack
+package com.ft.jenkins.slack
 
-import com.ft.up.EnvsRegistry
+import com.ft.jenkins.EnvsRegistry
 
-import static com.ft.up.slack.SlackConstants.BOT_USERNAME
-import static com.ft.up.slack.SlackConstants.DEFAULT_CREDENTIALS
+import static com.ft.jenkins.slack.SlackConstants.BOT_USERNAME
+import static com.ft.jenkins.slack.SlackConstants.DEFAULT_CREDENTIALS
 
 /**
  * Utils for Slack

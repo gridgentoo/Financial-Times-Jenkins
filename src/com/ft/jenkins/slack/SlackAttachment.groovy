@@ -1,4 +1,4 @@
-package com.ft.up.slack
+package com.ft.jenkins.slack
 
 /**
  * Replicates the structure from here: SlackAttachment attachment = new SlackAttachment()

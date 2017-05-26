@@ -1,4 +1,4 @@
-package com.ft.up
+package com.ft.jenkins
 
 class Environment implements Serializable {
   /*  The name of the environment. Example: prod*/

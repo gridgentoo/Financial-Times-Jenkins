@@ -1,4 +1,4 @@
-package com.ft.up.git
+package com.ft.jenkins.git
 
 import groovy.json.JsonSlurper
 

@@ -1,5 +1,5 @@
-import com.ft.up.BuildConfig
-import com.ft.up.git.GitUtils
+import com.ft.jenkins.BuildConfig
+import com.ft.jenkins.git.GitUtils
 
 def call(BuildConfig config) {
   GitUtils gitUtils = new GitUtils()

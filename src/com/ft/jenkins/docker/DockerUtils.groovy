@@ -1,6 +1,6 @@
-package com.ft.up
+package com.ft.jenkins.docker
 
-import static com.ft.up.DockerUtilsConstants.*
+import static DockerUtilsConstants.*
 
 final class DockerUtilsConstants {
   public static final String DOCKERHUB_CREDENTIALS = "ft.dh.credentials"

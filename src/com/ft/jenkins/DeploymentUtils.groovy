@@ -1,12 +1,12 @@
-package com.ft.up
+package com.ft.jenkins
 
 import java.util.regex.Matcher
 
-import static com.ft.up.DeploymentUtilsConstants.APPS_CONFIG_FOLDER
-import static com.ft.up.DeploymentUtilsConstants.CREDENTIALS_DIR
-import static com.ft.up.DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
-import static com.ft.up.DeploymentUtilsConstants.HELM_CONFIG_FOLDER
-import static com.ft.up.DeploymentUtilsConstants.K8S_CLI_IMAGE
+import static DeploymentUtilsConstants.APPS_CONFIG_FOLDER
+import static DeploymentUtilsConstants.CREDENTIALS_DIR
+import static DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
+import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
+import static DeploymentUtilsConstants.K8S_CLI_IMAGE
 
 final class DeploymentUtilsConstants {
   public static String CREDENTIALS_DIR = "credentials"

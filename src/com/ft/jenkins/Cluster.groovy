@@ -1,4 +1,4 @@
-package com.ft.up
+package com.ft.jenkins
 
 enum Cluster implements Serializable {
   DELIVERY("delivery"),

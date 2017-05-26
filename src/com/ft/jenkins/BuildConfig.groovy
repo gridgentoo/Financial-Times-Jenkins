@@ -1,4 +1,4 @@
-package com.ft.up
+package com.ft.jenkins
 
 class BuildConfig implements Serializable {
 

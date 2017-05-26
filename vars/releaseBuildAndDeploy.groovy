@@ -1,8 +1,8 @@
-import com.ft.up.BuildConfig
-import com.ft.up.DeploymentUtils
-import com.ft.up.DockerUtils
-import com.ft.up.git.GitUtils
-import com.ft.up.slack.SlackUtil
+import com.ft.jenkins.BuildConfig
+import com.ft.jenkins.DeploymentUtils
+import com.ft.jenkins.DockerUtils
+import com.ft.jenkins.git.GitUtils
+import com.ft.jenkins.slack.SlackUtil
 
 def call(BuildConfig config) {
 

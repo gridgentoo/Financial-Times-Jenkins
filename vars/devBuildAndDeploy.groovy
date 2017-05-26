@@ -1,11 +1,11 @@
-import com.ft.up.Cluster
-import com.ft.up.DeploymentUtils
-import com.ft.up.BuildConfig
-import com.ft.up.DockerUtils
-import com.ft.up.Environment
-import com.ft.up.EnvsRegistry
-import com.ft.up.slack.SlackAttachment
-import com.ft.up.slack.SlackUtil
+import com.ft.jenkins.Cluster
+import com.ft.jenkins.DeploymentUtils
+import com.ft.jenkins.BuildConfig
+import com.ft.jenkins.DockerUtils
+import com.ft.jenkins.Environment
+import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.slack.SlackAttachment
+import com.ft.jenkins.slack.SlackUtil
 
 def call(BuildConfig config) {
 
