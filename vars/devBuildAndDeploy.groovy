@@ -1,7 +1,7 @@
 import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.BuildConfig
-import com.ft.jenkins.DockerUtils
+import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.slack.SlackAttachment

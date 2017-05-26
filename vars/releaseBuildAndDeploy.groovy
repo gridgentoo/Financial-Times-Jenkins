@@ -1,6 +1,6 @@
 import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.DeploymentUtils
-import com.ft.jenkins.DockerUtils
+import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.git.GitUtils
 import com.ft.jenkins.slack.SlackUtils
 
