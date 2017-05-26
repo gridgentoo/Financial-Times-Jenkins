@@ -5,7 +5,7 @@ import com.ft.jenkins.DockerUtils
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.slack.SlackAttachment
-import com.ft.jenkins.slack.SlackUtil
+import com.ft.jenkins.slack.SlackUtils
 
 def call(BuildConfig config) {
 
@@ -65,7 +65,7 @@ private void sendNotifications(Environment environment, BuildConfig config, List
 }
 
 private void sendSuccessNotifications(Environment environment, BuildConfig config, List<String> deployedApps, String imageVersion) {
-  SlackUtil slackUtil = new SlackUtil()
+  SlackUtils slackUtil = new SlackUtils()
 
   SlackAttachment attachment = new SlackAttachment()
   String deployedAppsAsString = deployedApps.join(",")

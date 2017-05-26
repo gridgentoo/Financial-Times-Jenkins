@@ -2,14 +2,14 @@ import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.DockerUtils
 import com.ft.jenkins.git.GitUtils
-import com.ft.jenkins.slack.SlackUtil
+import com.ft.jenkins.slack.SlackUtils
 
 def call(BuildConfig config) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
   GitUtils gitUtils = new GitUtils()
-  SlackUtil slackUtil = new SlackUtil()
+  SlackUtils slackUtil = new SlackUtils()
 
   String environment
   List<String> deployedApps = null
