@@ -1,6 +1,10 @@
 package com.ft.jenkins
 
 class Environment implements Serializable {
+  public static final String PRE_PROD_NAME = "pre-prod"
+  public static final String PROD_NAME = "prod"
+
+
   /*  The name of the environment. Example: prod*/
   String name
   /*  The slack channel where the notifications go for this environment */
