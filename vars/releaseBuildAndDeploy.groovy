@@ -18,7 +18,7 @@ def call(BuildConfig config) {
   List<String> appsInRepo = null
   String tagName = gitUtils.getTagNameFromBranchName(env.BRANCH_NAME)
   String imageVersion = tagName
-  String stashId = env.BUILD_URL
+  String stashId = env.BUILD_NUMBER
   GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName)
 
   catchError {
@@ -90,14 +90,15 @@ def call(BuildConfig config) {
 
 public void sendSlackMessageForDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo) {
   String appsJoined = appsInRepo.join(",")
-  String releaseMessage = "The release `<${releaseInfo.url}|${releaseInfo.tagName}>` of apps `[${ appsJoined}]` is ready to deploy in `${targetEnv.name}`."
+  String releaseMessage = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${ appsJoined}]` is ready to deploy in `${targetEnv.name}`."
 
   SlackAttachment attachment = new SlackAttachment()
   attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} ready to deploy in '${targetEnv.name}'"
   attachment.titleUrl = "${env.BUILD_URL}input}"
   attachment.text = releaseMessage
   attachment.authorName = releaseInfo.authorName
-  attachment.authorLink = releaseInfo.getAuthorUrl()
+  attachment.authorLink = releaseInfo.authorUrl
+  attachment.authorIcon = releaseInfo.authorAvatar
 
   SlackUtils slackUtils = new SlackUtils()
   slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
