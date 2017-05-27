@@ -2,7 +2,7 @@ package com.ft.jenkins.git
 
 import groovy.json.JsonSlurper
 
-import static GitUtilsConstants.*
+import static com.ft.jenkins.git.GitUtilsConstants.TAG_BRANCHES_PREFIX
 
 final class GitUtilsConstants {
   public static final String TAG_BRANCHES_PREFIX = "tags/"
@@ -33,20 +33,18 @@ public GitTagInfo getTagInfo(String tagName) {
 
 public GithubReleaseInfo getGithubReleaseInfo(String tagName) {
   /*  fetch the release info*/
-  def releaseResponse = httpRequest( acceptType: 'APPLICATION_JSON',
-                            authentication: 'ft.github.credentials',
-                            url: "https://api.github.com/repos/Financial-Times/people-rw-neo4j/releases/tags/${tagName}")
+  def releaseResponse = httpRequest(acceptType: 'APPLICATION_JSON',
+                                    authentication: 'ft.github.credentials',
+                                    url: "https://api.github.com/repos/Financial-Times/people-rw-neo4j/releases/tags/${tagName}")
 
   def releaseInfoJson = new JsonSlurper().parseText(releaseResponse.content)
-  GithubReleaseInfo releaseInfo = new GithubReleaseInfo(
-      title: releaseInfoJson.name,
-      description: releaseInfoJson.body,
-      url: releaseInfoJson.html_url,
-      authorName: releaseInfoJson.author.login,
-      authorUrl: releaseInfoJson.author.html_url,
-      tagName: tagName
-  )
-
+  GithubReleaseInfo releaseInfo = new GithubReleaseInfo()
+  releaseInfo.title = releaseInfoJson.name
+  releaseInfo.description = releaseInfoJson.body
+  releaseInfo.url = releaseInfoJson.html_url
+  releaseInfo.authorName = releaseInfoJson.author.login
+  releaseInfo.authorUrl = releaseInfoJson.author.html_url
+  releaseInfo.tagName = tagName
   return releaseInfo
 }
 
