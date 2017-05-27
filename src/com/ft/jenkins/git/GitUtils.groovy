@@ -41,6 +41,9 @@ public GithubReleaseInfo getGithubReleaseInfo(String tagName) {
   GithubReleaseInfo releaseInfo = new GithubReleaseInfo(
       title: releaseInfoJson.name,
       description: releaseInfoJson.body,
+      url: releaseInfoJson.html_url,
+      authorName: releaseInfoJson.author.login,
+      authorUrl: releaseInfoJson.author.html_url,
       tagName: tagName
   )
 
