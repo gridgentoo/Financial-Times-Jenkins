@@ -18,7 +18,7 @@ def call(BuildConfig config) {
   List<String> appsInRepo = null
   String tagName = gitUtils.getTagNameFromBranchName(env.BRANCH_NAME)
   String imageVersion = tagName
-  String stashId = env.BUILD_NUMBER
+  String jenkinsStashId = env.BUILD_NUMBER
   GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName)
 
   catchError {
@@ -34,50 +34,14 @@ def call(BuildConfig config) {
         }
       }
       appsInRepo = deployUtil.getAppNamesInRepo()
-      stash(includes: 'helm/**', name: stashId)
+      stash(includes: 'helm/**', name: jenkinsStashId)
     }
 
-    //  todo [SB] release node while waiting for input
-    Environment environment = EnvsRegistry.getEnvironment(Environment.PRE_PROD_NAME)
-    stage("deploy to ${environment.name}") {
-      timeout(time: 1, unit: 'DAYS') {
+    initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, releaseInfo, appsInRepo, jenkinsStashId,
+                                    imageVersion, 1, config)
 
-        //  todo [sb] use a template engine for the Strings. See http://docs.groovy-lang.org/next/html/documentation/template-engines.html#_simpletemplateengine
-
-        GString releaseMessage = sendSlackMessageForDeploy(releaseInfo, environment, appsInRepo)
-        String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Deploy to ${environment.name}")
-
-        //  todo [sb] open and close CR
-        node('docker') {
-          unstash(stashId)
-          /*  todo[sb] allow for choosing where to deploy and how */
-          /*  deploy at the same time in all envs and clusters */
-          for (int i = 0; i < environment.regions.size(); i++) {
-            String region = environment.regions.get(i);
-            for (int j = 0; j < config.deployToClusters.size(); j++) {
-              Cluster cluster = config.deployToClusters.get(j);
-              deployUtil.deployAppWithHelm(imageVersion, environment, cluster, region)
-            }
-          }
-        }
-      }
-    }
-
-//    stage("deploy to Prod") {
-//      timeout(time: 3, unit: 'DAYS') { // wait 3 days for the decision to deploy to prod
-//        String releaseMessage = """The release `${tagName}` of the application [`${apps.join(",")}`] was deployed in pre-prod.
-//           Please check the functionality in pre-prod.
-//           Do you want to proceed with the deployment in PROD ?"""
-//        slackUtil.sendEnvSlackNotification("prod",
-//                                           releaseMessage +
-//                                           " Manual action: go here to deploy to Prod: ${env.BUILD_URL}input")
-//        String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Deploy to Prod")
-//
-//        //  todo [sb] open and close CR
-//        appsInRepo = deployUtil.deployAppWithHelm(imageVersion, "prod")
-//      }
-//    }
-
+    initiateDeploymentToEnvironment(Environment.PROD_NAME, releaseInfo, appsInRepo, jenkinsStashId,
+                                    imageVersion, 7, config)
 
   }
 
@@ -88,18 +52,83 @@ def call(BuildConfig config) {
   }
 }
 
-public void sendSlackMessageForDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo) {
+public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseInfo releaseInfo,
+                                            List<String> appsInRepo,
+                                            String jenkinsStashId, String imageVersion,
+                                            int daysToWaitForDecision, BuildConfig config) {
+  DeploymentUtils deployUtil = new DeploymentUtils()
+  Environment environment = EnvsRegistry.getEnvironment(targetEnvName)
+  stage("deploy to ${environment.name}") {
+    timeout(time: daysToWaitForDecision, unit: 'DAYS') {
+
+      //  todo [sb] use a template engine for the Strings. See http://docs.groovy-lang.org/next/html/documentation/template-engines.html#_simpletemplateengine
+
+      sendSlackMessageForDeployReady(releaseInfo, environment, appsInRepo)
+      String approver = displayJenkinsInputForDeploy(releaseInfo, environment, appsInRepo)
+
+      //  todo [sb] open and close CR
+      node('docker') {
+        unstash(jenkinsStashId) // we need this to bring back to the workspace the helm configuration.
+        /*  todo[sb] allow for choosing where to deploy and how */
+        /*  deploy at the same time in all envs and clusters */
+        for (int i = 0; i < environment.regions.size(); i++) {
+          String region = environment.regions.get(i);
+          for (int j = 0; j < config.deployToClusters.size(); j++) {
+            Cluster cluster = config.deployToClusters.get(j);
+            deployUtil.deployAppWithHelm(imageVersion, environment, cluster, region)
+          }
+        }
+      }
+    }
+  }
+  stage("validate apps in ${environment.name}") {
+    sendSlackMessageForValidation(releaseInfo, environment, appsInRepo, config)
+    displayJenkinsInputForValidation(releaseInfo, environment, appsInRepo)
+  }
+}
+
+
+public void sendSlackMessageForDeployReady(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo) {
   String appsJoined = appsInRepo.join(",")
-  String releaseMessage = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${ appsJoined}]` is ready to deploy in `${targetEnv.name}`."
 
   SlackAttachment attachment = new SlackAttachment()
   attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} ready to deploy in '${targetEnv.name}'"
-  attachment.titleUrl = "${env.BUILD_URL}input}"
-  attachment.text = releaseMessage
+  attachment.titleUrl = "${env.BUILD_URL}input"
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` is ready to deploy in `${targetEnv.name}`."
   attachment.authorName = releaseInfo.authorName
   attachment.authorLink = releaseInfo.authorUrl
   attachment.authorIcon = releaseInfo.authorAvatar
 
   SlackUtils slackUtils = new SlackUtils()
   slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+}
+
+public String displayJenkinsInputForDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv,
+                                           List<String> appsInRepo) {
+  String appsJoined = appsInRepo.join(",")
+  String releaseMessage = "The release ${releaseInfo.tagName} of apps `[${appsJoined}]` is ready to deploy in `${targetEnv.name}`."
+  String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Deploy to ${targetEnv.name}")
+  return approver
+}
+
+public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo, BuildConfig config) {
+  String appsJoined = appsInRepo.join(",")
+  SlackAttachment attachment = new SlackAttachment()
+  attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} is waiting validation in '${targetEnv.name}'"
+  attachment.titleUrl = "${env.BUILD_URL}input"
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was deployed successfully and is waiting validation in `${targetEnv.name}` in clusters: *${Cluster.toLabels(config.deployToClusters).join(',')}*."
+  attachment.authorName = releaseInfo.authorName
+  attachment.authorLink = releaseInfo.authorUrl
+  attachment.authorIcon = releaseInfo.authorAvatar
+
+  SlackUtils slackUtils = new SlackUtils()
+  slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+}
+
+public String displayJenkinsInputForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv,
+                                           List<String> appsInRepo) {
+  String appsJoined = appsInRepo.join(",")
+  String releaseMessage = "The release ${releaseInfo.tagName} of apps `[${appsJoined}]` was deployed in `${targetEnv.name}` and needs validation. Is this release valid?"
+  String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Release is valid in ${targetEnv.name}")
+  return approver
 }
