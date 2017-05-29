@@ -21,10 +21,14 @@ class EnvsRegistry implements Serializable {
                       ]),
   ]
 
-
-  @NonCPS
   public static Environment getEnvironment(String name) {
-    return envs.find {Environment environment -> environment.name = name }
+    for (int i = 0; i < envs.size(); i++) {
+      Environment environment = envs.get(i);
+      if (environment.name == name) {
+        return environment
+      }
+    }
+    return null
   }
 
 }
