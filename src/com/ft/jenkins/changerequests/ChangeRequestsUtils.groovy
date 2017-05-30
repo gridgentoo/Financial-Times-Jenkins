@@ -35,7 +35,7 @@ public String open(ChangeRequestOpenData crData, String credentialId = DEFAULT_C
                            url: 'https://cr-api.in.ft.com/v2/releaselog',
                            customHeaders: [[maskValue: true, name: 'x-api-key', value: env.CR_API_KEY],
                                            [maskValue: false, name: 'content-type', value: 'application/json']],
-                           timeout: 10,
+                           timeout: 60,
                            consoleLogResponseBody: true,
                            requestBody: bodyJson)
   }
@@ -61,7 +61,7 @@ public void close(ChangeRequestCloseData crData, String credentialId = DEFAULT_C
                 url: 'https://cr-api.in.ft.com/v2/close',
                 customHeaders: [[maskValue: true, name: 'x-api-key', value: env.CR_API_KEY],
                                 [maskValue: false, name: 'content-type', value: 'application/json']],
-                timeout: 10,
+                timeout: 60,
                 consoleLogResponseBody: true,
                 requestBody: bodyJson)
   }

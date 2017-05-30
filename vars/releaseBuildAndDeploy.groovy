@@ -3,6 +3,10 @@ import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.changerequests.ChangeRequestCloseData
+import com.ft.jenkins.changerequests.ChangeRequestEnvironment
+import com.ft.jenkins.changerequests.ChangeRequestOpenData
+import com.ft.jenkins.changerequests.ChangeRequestsUtils
 import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.git.GitUtils
 import com.ft.jenkins.git.GithubReleaseInfo
@@ -69,7 +73,7 @@ public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseI
       sendSlackMessageForDeployReady(releaseInfo, environment, appsInRepo)
       String approver = displayJenkinsInputForDeploy(releaseInfo, environment, appsInRepo)
 
-      //  todo [sb] open and close CR
+      String crId = openCr(approver, releaseInfo, environment, appsInRepo)
       node('docker') {
         unstash(jenkinsStashId) // we need this to bring back to the workspace the helm configuration.
         /*  todo[sb] allow for choosing where to deploy and how */
@@ -82,6 +86,7 @@ public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseI
           }
         }
       }
+      closeCr(crId, environment)
     }
   }
   stage("validate apps in ${environment.name}") {
@@ -134,4 +139,37 @@ public String displayJenkinsInputForValidation(GithubReleaseInfo releaseInfo, En
   String releaseMessage = "The release ${releaseInfo.tagName} of apps `[${appsJoined}]` was deployed in `${targetEnv.name}` and needs validation. Is this release valid?"
   String approver = input(message: releaseMessage, submitterParameter: 'approver', ok: "Release is valid in ${targetEnv.name}")
   return approver
+}
+
+private String openCr(String approver, GithubReleaseInfo releaseInfo, Environment environment, List<String> appsInRepo) {
+  try {
+  ChangeRequestOpenData data = new ChangeRequestOpenData()
+  data.ownerEmail = "${approver}@ft.com"
+  data.summary = "Deploying release ${releaseInfo.tagName} of apps [${appsInRepo.join(",")}] in ${environment.name}"
+  data.description = releaseInfo.description
+  data.details = releaseInfo.title
+  data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production : ChangeRequestEnvironment.Test
+  data.notifyChannel = environment.slackChannel
+  data.notify = true
+
+  ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
+  return crUtils.open(data)
+  }
+  catch (e) { //  do not fail if the CR interaction fail
+    echo "Error while opening CR for release ${releaseInfo.getTagName()}: ${e.message} "
+  }
+}
+
+private void closeCr(String crId, Environment environment) {
+  try {
+    ChangeRequestCloseData data = new ChangeRequestCloseData()
+    data.notifyChannel = environment.slackChannel
+    data.id = crId
+
+    ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
+    crUtils.close(data)
+  }
+  catch (e) { //  do not fail if the CR interaction fail
+    echo "Error while closing CR ${crId}: ${e.message} "
+  }
 }
