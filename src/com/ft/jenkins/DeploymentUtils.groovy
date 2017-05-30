@@ -12,7 +12,7 @@ final class DeploymentUtilsConstants {
   public static String CREDENTIALS_DIR = "credentials"
   public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
   public static String HELM_CONFIG_FOLDER = "helm"
-  public static String APPS_CONFIG_FOLDER = "helm/app-configs"
+  public static String APPS_CONFIG_FOLDER = "app-configs"
   public static final String DEFAULT_HELM_VALUES_FILE = "values.yaml"
 }
 
@@ -29,7 +29,7 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
     def chartName = getHelmChartFolderName()
 
     for (String app : appsToDeploy) {
-      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${APPS_CONFIG_FOLDER}/${app}.yaml --set image.version=${imageVersion}"
+      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}/${app}.yaml --set image.version=${imageVersion}"
     }
   })
   return appsToDeploy
@@ -49,8 +49,9 @@ public String getDockerImageRepository() {
 }
 
 public List<String> getAppNamesInRepo() {
+  String chartFolderName = getHelmChartFolderName()
   List<String> appNames = []
-  def foundConfigFiles = findFiles(glob: "${APPS_CONFIG_FOLDER}/*.yaml")
+  def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
 
   for (def configFile :foundConfigFiles) {
     /*  strip the .yaml extension from the files */
