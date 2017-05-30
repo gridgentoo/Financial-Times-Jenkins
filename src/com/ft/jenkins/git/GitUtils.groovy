@@ -2,6 +2,8 @@ package com.ft.jenkins.git
 
 import groovy.json.JsonSlurper
 
+import java.util.regex.Matcher
+
 import static com.ft.jenkins.git.GitUtilsConstants.TAG_BRANCHES_PREFIX
 
 final class GitUtilsConstants {
@@ -31,11 +33,20 @@ public GitTagInfo getTagInfo(String tagName) {
   }
 }
 
-public GithubReleaseInfo getGithubReleaseInfo(String tagName) {
+public String getCurrentRepoName() {
+  String tempFile = "git_url_tmp"
+  sh "git remote get-url origin > ${tempFile}"
+  String gitUrl = readFile(tempFile)
+  Matcher matcher = (gitUrl =~ /.*\/(.*).git/)
+  /*  get the value matching the group */
+  return matcher[0][1]
+}
+
+public GithubReleaseInfo getGithubReleaseInfo(String tagName, String repoName) {
   /*  fetch the release info*/
   def releaseResponse = httpRequest(acceptType: 'APPLICATION_JSON',
                                     authentication: 'ft.github.credentials',
-                                    url: "https://api.github.com/repos/Financial-Times/people-rw-neo4j/releases/tags/${tagName}")
+                                    url: "https://api.github.com/repos/Financial-Times/${repoName}/releases/tags/${tagName}")
 
   def releaseInfoJson = new JsonSlurper().parseText(releaseResponse.content)
   GithubReleaseInfo releaseInfo = new GithubReleaseInfo()

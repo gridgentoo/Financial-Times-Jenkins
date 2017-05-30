@@ -19,7 +19,7 @@ def call(BuildConfig config) {
   String tagName = gitUtils.getTagNameFromBranchName(env.BRANCH_NAME)
   String imageVersion = tagName
   String jenkinsStashId = env.BUILD_NUMBER
-  GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName)
+  String currentRepoName
 
   catchError {
     node('docker') {
@@ -33,9 +33,12 @@ def call(BuildConfig config) {
           dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
       }
+      currentRepoName = gitUtils.getCurrentRepoName()
       appsInRepo = deployUtil.getAppNamesInRepo()
       stash(includes: 'helm/**', name: jenkinsStashId)
     }
+
+    GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName, currentRepoName)
 
     initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, releaseInfo, appsInRepo, jenkinsStashId,
                                     imageVersion, 1, config)

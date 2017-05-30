@@ -2,7 +2,7 @@ import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.git.GitUtils
 
 /**
- * Entry point that decides which pipeline to execute, based on the type of branch is build.
+ * Entry point that decides which pipeline to execute, based on the branch type to build.
  * For regular branches it will trigger the pipeline that automatically deploys to team environments,
  * and for tags, meaning we're dealing with releases, it will trigger the pipeline for continuous delivery in upper environments.
  *
