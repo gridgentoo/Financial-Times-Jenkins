@@ -7,13 +7,13 @@ class EnvsRegistry implements Serializable {
                       [(Cluster.DELIVERY.toString())  : "https://k8s-delivery-upp-eu-api.ft.com",
                        (Cluster.PUBLISHING.toString()): "https://k8s-pub-upp-eu-api.ft.com"
                       ]),
-      new Environment(Environment.PRE_PROD_NAME, "@sorin.buliarca", ["eu", "us"],
+      new Environment(Environment.PRE_PROD_NAME, "#k8s-pipeline-test", ["eu", "us"],
                       [("eu-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("us-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("eu-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com",
                        ("us-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com"
                       ]),
-      new Environment(Environment.PROD_NAME, "@sorin.buliarca", ["eu", "us"],
+      new Environment(Environment.PROD_NAME, "#k8s-pipeline-test", ["eu", "us"],
                       [("eu-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("us-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("eu-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com",
