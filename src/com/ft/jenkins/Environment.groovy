@@ -33,4 +33,20 @@ class Environment implements Serializable {
     return clusterToApiServerMap.get(lookupKey)
   }
 
+  public String getNamesWithRegions(List<String> regions) {
+    List<String> namesWithRegion = []
+    for (int i = 0; i < regions.size(); i++) {
+      String regionName = regions.get(i);
+      namesWithRegion.add("${name}-${regionName}")
+    }
+    return namesWithRegion.join(", ")
+  }
+
+  public List<String> getValidatedRegions(List<String> remainingRegions) {
+    List<String> validatedRegions = []
+    validatedRegions.addAll(this.getRegions())
+    validatedRegions.removeAll(remainingRegions)
+    return validatedRegions
+  }
+
 }
