@@ -201,7 +201,7 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
     data.summary = "Deploying release ${releaseInfo.tagName} of apps [${appsInRepo.join(",")}] in ${environment.name}"
-    data.description = releaseInfo.description
+    data.description = releaseInfo.description ? releaseInfo.description : releaseInfo.title
     data.details = releaseInfo.title
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
