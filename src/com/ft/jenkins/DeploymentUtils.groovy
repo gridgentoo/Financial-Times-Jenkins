@@ -106,33 +106,11 @@ private void prepareK8SCliCredentials() {
   }
 }
 
-/**
- * Gets the environment name where to deploy from the specified branch name by getting the penultimate one path item.
- * <p>
- * Example:
- * <ol>
- *   <li> for a branch named "feature/xp/test", it will return "xp".</li>
- *   <li> for a branch named "test", it will return null.</li>
- * </ol>
- * @param branchName the name of the branch
- * @return the environment name where to deploy the branch
- */
-String getEnvironmentName(String branchName) {
-  String[] values = branchName.split('/')
-  if (values.length > 2) {
-    return values[values.length - 2]
+String getTeamFromReleaseCandidateTag(String rcTag) {
+  String[] tagComponents = rcTag.split("-")
+  if (tagComponents.length > 1) {
+    return tagComponents[1]
   }
-  return null
+  throw new IllegalArgumentException("The tag '${rcTag}' is not a release candidate tag")
 }
 
-/**
- * Gets the docker image version from a branch name by getting the last item after the last "/".
- * Example: for a branch name as "feature/xp/test", it will return "test" and for "tags/v0.1.4" it will return "v0.1.4"
- *
- * @param branchName the name of the branch
- * @return the docker image version
- */
-String getDockerImageVersion(String branchName) {
-  String[] values = branchName.split('/')
-  return values[values.length - 1]
-}

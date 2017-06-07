@@ -4,10 +4,11 @@ import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.git.GithubReleaseInfo
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
-def call(BuildConfig config) {
+def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
@@ -24,13 +25,14 @@ def call(BuildConfig config) {
         }
 
         stage('build image') {
-          imageVersion = deployUtil.getDockerImageVersion(env.BRANCH_NAME)
+          imageVersion = releaseInfo.getTagName()
           String dockerRepository = deployUtil.getDockerImageRepository()
           /*  todo [sb] reenable build of the image*/
-          //dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
-        environment = EnvsRegistry.getEnvironment(deployUtil.getEnvironmentName(env.BRANCH_NAME))
+
+        environment = EnvsRegistry.getEnvironment(deployUtil.getTeamFromReleaseCandidateTag(releaseInfo.getTagName()))
         //  todo [sb] handle the case when the environment is not specified in the branch name
 
         List<Cluster> deployToClusters = config.getDeployToClusters()

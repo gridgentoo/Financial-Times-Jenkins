@@ -1,5 +1,6 @@
 import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.git.GitUtils
+import com.ft.jenkins.git.GithubReleaseInfo
 
 /**
  * Entry point that decides which pipeline to execute, based on the branch type to build.
@@ -13,10 +14,19 @@ import com.ft.jenkins.git.GitUtils
 def call(BuildConfig config) {
   GitUtils gitUtils = new GitUtils()
 
-  if (gitUtils.isTag(env.BRANCH_NAME)) {
-    releaseBuildAndDeploy(config)
+  if (!gitUtils.isTag(env.BRANCH_NAME)) {
+    echo "Skipping branch ${env.BRANCH_NAME} as it is not a tag"
+    return
+  }
+
+  String tagName = gitUtils.getTagNameFromBranchName(env.BRANCH_NAME)
+  String currentRepoName = gitUtils.getCurrentRepoName()
+  GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName, currentRepoName)
+
+  if (releaseInfo.isPreRelease) {
+    devBuildAndDeploy(config, releaseInfo)
   }
   else {
-    devBuildAndDeploy(config)
+    releaseBuildAndDeploy(config, releaseInfo)
   }
 }
