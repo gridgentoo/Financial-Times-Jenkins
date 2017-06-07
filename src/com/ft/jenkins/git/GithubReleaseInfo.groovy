@@ -8,4 +8,5 @@ class GithubReleaseInfo implements Serializable {
   String description
   String tagName
   String url
+  Boolean isPreRelease
 }

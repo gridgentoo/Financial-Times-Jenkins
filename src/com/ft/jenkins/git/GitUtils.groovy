@@ -56,6 +56,7 @@ public GithubReleaseInfo getGithubReleaseInfo(String tagName, String repoName) {
   releaseInfo.authorName = releaseInfoJson.author.login
   releaseInfo.authorUrl = releaseInfoJson.author.html_url
   releaseInfo.authorAvatar = releaseInfoJson.author.avatar_url
+  releaseInfo.isPreRelease = Boolean.valueOf(releaseInfoJson.prerelease)
   releaseInfo.tagName = tagName
   return releaseInfo
 }
