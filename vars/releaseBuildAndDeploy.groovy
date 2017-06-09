@@ -32,7 +32,7 @@ def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
         stage('build image') {
           String dockerRepository = deployUtil.getDockerImageRepository()
           /*  todo [sb] reenable build of the image*/
-          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+//          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
       }
       appsInRepo = deployUtil.getAppNamesInRepo()
