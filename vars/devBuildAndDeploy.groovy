@@ -4,16 +4,14 @@ import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
-import com.ft.jenkins.git.GithubReleaseInfo
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
-def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
+def call(BuildConfig config, String dockerImageVersion, String environmentName) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
 
-  String imageVersion = null
   Environment environment
   List<String> deployedApps = null
 
@@ -25,30 +23,26 @@ def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
         }
 
         stage('build image') {
-          imageVersion = releaseInfo.getTagName()
           String dockerRepository = deployUtil.getDockerImageRepository()
           /*  todo [sb] reenable build of the image*/
-//          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+//          dockerUtils.buildAndPushImage("${dockerRepository}:${dockerImageVersion}")
         }
 
-
-        environment = EnvsRegistry.getEnvironment(deployUtil.getTeamFromReleaseCandidateTag(releaseInfo.getTagName()))
-        //  todo [sb] handle the case when the environment is not specified in the branch name
+        environment = EnvsRegistry.getEnvironment(environmentName)
 
         List<Cluster> deployToClusters = config.getDeployToClusters()
         for (int i = 0; i < deployToClusters.size(); i++) {
           Cluster clusterToDeploy = deployToClusters.get(i)
 
           stage("deploy to ${environment.name}-${clusterToDeploy.label}") {
-            deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment, clusterToDeploy)
+            deployedApps = deployUtil.deployAppWithHelm(dockerImageVersion, environment, clusterToDeploy)
           }
         }
-
       }
     }
 
     catchError {
-      sendNotifications(environment, config, deployedApps, imageVersion)
+      sendNotifications(environment, config, deployedApps, dockerImageVersion)
     }
 
     stage("cleanup") {

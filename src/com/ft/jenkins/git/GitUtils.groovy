@@ -4,14 +4,20 @@ import groovy.json.JsonSlurper
 
 import java.util.regex.Matcher
 
+import static com.ft.jenkins.git.GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX
 import static com.ft.jenkins.git.GitUtilsConstants.TAG_BRANCHES_PREFIX
 
 final class GitUtilsConstants {
   public static final String TAG_BRANCHES_PREFIX = "tags/"
+  public static final String DEPLOY_ON_PUSH_BRANCHES_PREFIX = "deploy-on-push/"
 }
 
 public boolean isTag(String checkedOutBranchName) {
   return checkedOutBranchName.startsWith(TAG_BRANCHES_PREFIX)
+}
+
+public boolean isDeployOnPushForBranch(String branchName) {
+  return branchName.startsWith(DEPLOY_ON_PUSH_BRANCHES_PREFIX)
 }
 
 public String getTagNameFromBranchName(String checkedOutBranchName) {

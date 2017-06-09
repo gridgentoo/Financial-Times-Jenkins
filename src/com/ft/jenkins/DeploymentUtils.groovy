@@ -111,6 +111,36 @@ String getTeamFromReleaseCandidateTag(String rcTag) {
   if (tagComponents.length > 1) {
     return tagComponents[1]
   }
-  throw new IllegalArgumentException("The tag '${rcTag}' is not a release candidate tag")
+  throw new IllegalArgumentException("The tag '${rcTag}' is not a valid release candidate tag. A good example is: 0.2.0-xp-test-release-rc2")
 }
 
+/**
+ * Gets the environment name where to deploy from the specified branch name by getting the penultimate one path item.
+ * <p>
+ * Example:
+ * <ol>
+ *   <li> for a branch named "deploy-on-push/xp/test", it will return "xp".</li>
+ *   <li> for a branch named "test", it will throw an IllegalArgumentException.</li>
+ * </ol>
+ * @param branchName the name of the branch
+ * @return the environment name where to deploy the branch
+ */
+String getEnvironmentName(String branchName) {
+  String[] values = branchName.split('/')
+  if (values.length > 2) {
+    return values[values.length - 2]
+  }
+  throw new IllegalArgumentException("The branch '${branchName}' does not contain the environment where to deploy the application. A valid name is 'deploy-on-push/xp/test'")
+}
+
+/**
+ * Gets the docker image version from a branch name by getting the last item after the last "/".
+ * Example: for a branch name as "deploy-on-push/xp/test", it will return "test" and for "tags/v0.1.4" it will return "v0.1.4"
+ *
+ * @param branchName the name of the branch
+ * @return the docker image version
+ */
+String getDockerImageVersion(String branchName) {
+  String[] values = branchName.split('/')
+  return values[values.length - 1]
+}
