@@ -28,7 +28,7 @@ def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
           imageVersion = releaseInfo.getTagName()
           String dockerRepository = deployUtil.getDockerImageRepository()
           /*  todo [sb] reenable build of the image*/
-//          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
 
