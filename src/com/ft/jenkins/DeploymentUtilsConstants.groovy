@@ -1,5 +1,8 @@
 package com.ft.jenkins
 
+/**
+ * There is currently no way to define these constants directly in the DeploymentUtils script, so putting them in a separate class.
+ */
 final class DeploymentUtilsConstants {
   public static String CREDENTIALS_DIR = "credentials"
   public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
