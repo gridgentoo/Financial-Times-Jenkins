@@ -8,16 +8,6 @@ import static DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
 import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static DeploymentUtilsConstants.K8S_CLI_IMAGE
 
-final class DeploymentUtilsConstants {
-  public static String CREDENTIALS_DIR = "credentials"
-  public static String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
-  public static String HELM_CONFIG_FOLDER = "helm"
-  public static String APPS_CONFIG_FOLDER = "app-configs"
-  public static final String DEFAULT_HELM_VALUES_FILE = "values.yaml"
-  public static final String OPTION_ALL = "All"
-
-}
-
 /**
  * Deploys the application(s) in the current workspace using helm. It expects the helm chart to be defined in the {@link DeploymentUtilsConstants#HELM_CONFIG_FOLDER} folder.
  *
@@ -106,13 +96,21 @@ private void prepareK8SCliCredentials() {
   }
 }
 
+String getTeamFromReleaseCandidateTag(String rcTag) {
+  String[] tagComponents = rcTag.split("-")
+  if (tagComponents.length > 1) {
+    return tagComponents[1]
+  }
+  throw new IllegalArgumentException("The tag '${rcTag}' is not a valid release candidate tag. A good example is: 0.2.0-xp-test-release-rc2")
+}
+
 /**
  * Gets the environment name where to deploy from the specified branch name by getting the penultimate one path item.
  * <p>
  * Example:
  * <ol>
- *   <li> for a branch named "feature/xp/test", it will return "xp".</li>
- *   <li> for a branch named "test", it will return null.</li>
+ *   <li> for a branch named "deploy-on-push/xp/test", it will return "xp".</li>
+ *   <li> for a branch named "test", it will throw an IllegalArgumentException.</li>
  * </ol>
  * @param branchName the name of the branch
  * @return the environment name where to deploy the branch
@@ -122,12 +120,12 @@ String getEnvironmentName(String branchName) {
   if (values.length > 2) {
     return values[values.length - 2]
   }
-  return null
+  throw new IllegalArgumentException("The branch '${branchName}' does not contain the environment where to deploy the application. A valid name is 'deploy-on-push/xp/test'")
 }
 
 /**
  * Gets the docker image version from a branch name by getting the last item after the last "/".
- * Example: for a branch name as "feature/xp/test", it will return "test" and for "tags/v0.1.4" it will return "v0.1.4"
+ * Example: for a branch name as "deploy-on-push/xp/test", it will return "test" and for "tags/v0.1.4" it will return "v0.1.4"
  *
  * @param branchName the name of the branch
  * @return the docker image version

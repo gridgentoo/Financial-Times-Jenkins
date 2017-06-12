@@ -7,21 +7,20 @@ import com.ft.jenkins.changerequests.ChangeRequestCloseData
 import com.ft.jenkins.changerequests.ChangeRequestEnvironment
 import com.ft.jenkins.changerequests.ChangeRequestOpenData
 import com.ft.jenkins.changerequests.ChangeRequestsUtils
-import com.ft.jenkins.git.GitUtils
+import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.git.GithubReleaseInfo
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
-def call(BuildConfig config) {
+def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
-  GitUtils gitUtils = new GitUtils()
 
   List<String> appsInRepo = null
-  String tagName = gitUtils.getTagNameFromBranchName(env.BRANCH_NAME)
+  String tagName = releaseInfo.tagName
   String imageVersion = tagName
   String jenkinsStashId = env.BUILD_NUMBER
-  String currentRepoName
+  DockerUtils dockerUtils = new DockerUtils()
 
   catchError {
     node('docker') {
@@ -32,15 +31,13 @@ def call(BuildConfig config) {
 
         stage('build image') {
           String dockerRepository = deployUtil.getDockerImageRepository()
+          /*  todo [sb] reenable build of the image*/
 //          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
       }
-      currentRepoName = gitUtils.getCurrentRepoName()
       appsInRepo = deployUtil.getAppNamesInRepo()
       stash(includes: 'helm/**', name: jenkinsStashId)
     }
-
-    GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName, currentRepoName)
 
     initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, releaseInfo, appsInRepo, jenkinsStashId,
                                     imageVersion, 1, config)
@@ -205,7 +202,7 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
     data.summary = "Deploying release ${releaseInfo.tagName} of apps [${appsInRepo.join(",")}] in ${environment.name}"
-    data.description = releaseInfo.description
+    data.description = releaseInfo.description ? releaseInfo.description : releaseInfo.title
     data.details = releaseInfo.title
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test

@@ -7,12 +7,11 @@ import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
-def call(BuildConfig config) {
+def call(BuildConfig config, String dockerImageVersion, String environmentName) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
 
-  String imageVersion = null
   Environment environment
   List<String> deployedApps = null
 
@@ -24,29 +23,26 @@ def call(BuildConfig config) {
         }
 
         stage('build image') {
-          imageVersion = deployUtil.getDockerImageVersion(env.BRANCH_NAME)
           String dockerRepository = deployUtil.getDockerImageRepository()
           /*  todo [sb] reenable build of the image*/
-          //dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+//          dockerUtils.buildAndPushImage("${dockerRepository}:${dockerImageVersion}")
         }
 
-        environment = EnvsRegistry.getEnvironment(deployUtil.getEnvironmentName(env.BRANCH_NAME))
-        //  todo [sb] handle the case when the environment is not specified in the branch name
+        environment = EnvsRegistry.getEnvironment(environmentName)
 
         List<Cluster> deployToClusters = config.getDeployToClusters()
         for (int i = 0; i < deployToClusters.size(); i++) {
           Cluster clusterToDeploy = deployToClusters.get(i)
 
           stage("deploy to ${environment.name}-${clusterToDeploy.label}") {
-            deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment, clusterToDeploy)
+            deployedApps = deployUtil.deployAppWithHelm(dockerImageVersion, environment, clusterToDeploy)
           }
         }
-
       }
     }
 
     catchError {
-      sendNotifications(environment, config, deployedApps, imageVersion)
+      sendNotifications(environment, config, deployedApps, dockerImageVersion)
     }
 
     stage("cleanup") {
