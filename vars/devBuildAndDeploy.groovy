@@ -24,8 +24,7 @@ def call(BuildConfig config, String dockerImageVersion, String environmentName) 
 
         stage('build image') {
           String dockerRepository = deployUtil.getDockerImageRepository()
-          /*  todo [sb] reenable build of the image*/
-//          dockerUtils.buildAndPushImage("${dockerRepository}:${dockerImageVersion}")
+          dockerUtils.buildAndPushImage("${dockerRepository}:${dockerImageVersion}")
         }
 
         environment = EnvsRegistry.getEnvironment(environmentName)
