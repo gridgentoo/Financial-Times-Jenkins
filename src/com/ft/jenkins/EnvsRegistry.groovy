@@ -3,17 +3,17 @@ package com.ft.jenkins
 class EnvsRegistry implements Serializable {
 
   public static final List<Environment> envs = [
-      new Environment("k8s", "#k8s-helm-workshop", [],
+      new Environment("k8s", "#k8s-pipeline-notif", [],
                       [(Cluster.DELIVERY.toString())  : "https://k8s-delivery-upp-eu-api.ft.com",
                        (Cluster.PUBLISHING.toString()): "https://k8s-pub-upp-eu-api.ft.com"
                       ]),
-      new Environment(Environment.PRE_PROD_NAME, "#k8s-helm-workshop", ["eu", "us"],
+      new Environment(Environment.PRE_PROD_NAME, "#k8s-pipeline-notif", ["eu", "us"],
                       [("eu-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("us-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("eu-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com",
                        ("us-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com"
                       ]),
-      new Environment(Environment.PROD_NAME, "#k8s-helm-workshop", ["eu", "us"],
+      new Environment(Environment.PROD_NAME, "#k8s-pipeline-notif", ["eu", "us"],
                       [("eu-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("us-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
                        ("eu-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com",
