@@ -13,14 +13,7 @@ class Environment implements Serializable {
   List<String> regions = null
   /*  Mapping between region+cluster and their respective Kubernetes api servers. */
   public Map<String, String> clusterToApiServerMap
-
-  Environment(String name, String slackChannel, List<String> regions,
-              Map<String, String> clusterToApiServerMap) {
-    this.name = name
-    this.slackChannel = slackChannel
-    this.regions = regions
-    this.clusterToApiServerMap = clusterToApiServerMap
-  }
+  
 
   public String getEntryPointUrl(Cluster cluster, String region) {
     return getApiServerForCluster(cluster,region).replace("-api","")
