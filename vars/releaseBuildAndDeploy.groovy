@@ -171,12 +171,12 @@ public JenkinsDeployInput displayJenkinsInputForDeploy(GithubReleaseInfo release
 public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo,
                                           BuildConfig config, List<String> deployedInRegions, String approver) {
   String appsJoined = appsInRepo.join(",")
-  List<String> healthchecks = []
+  List<String> healthURLs = []
   for (Cluster cluster : config.deployToClusters) {
     for (String region : deployedInRegions) {
       String entryPointUrl = targetEnv.getEntryPointUrl(cluster, region)
-      String healthcheck = "<${entryPointUrl}/__health|${cluster.getLabel()}-${targetEnv.name}-${region}>"
-      healthchecks.add(healthcheck)
+      String healthURL = "<${entryPointUrl}/__health|${cluster.getLabel()}-${targetEnv.name}-${region}>"
+      healthURLs.add(healthURL)
     }
   }
 
@@ -184,7 +184,7 @@ public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environ
   String envWithRegions = targetEnv.getNamesWithRegions(deployedInRegions)
   attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} was deployed and waits validation in '${envWithRegions}'"
   attachment.titleUrl = "${env.BUILD_URL}input"
-  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was deployed successfully and is waiting validation in ${healthchecks}."
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was deployed successfully and is waiting validation in ${healthURLs}."
   attachment.authorName = releaseInfo.authorName
   attachment.authorLink = releaseInfo.authorUrl
   attachment.authorIcon = releaseInfo.authorAvatar
