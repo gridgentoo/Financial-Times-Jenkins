@@ -71,7 +71,8 @@ public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseI
       while (!remainingRegionsToDeployTo.isEmpty()) {
 
         if (deployInitiator != null) {
-          sendSlackMessageForIntermediaryDeploy(releaseInfo, environment, appsInRepo, remainingRegionsToDeployTo, deployInitiator)
+          sendSlackMessageForIntermediaryDeploy(releaseInfo, environment, appsInRepo, remainingRegionsToDeployTo,
+                                                deployInitiator)
         }
 
         JenkinsDeployInput deployInput = displayJenkinsInputForDeploy(releaseInfo, environment, appsInRepo,
@@ -108,7 +109,7 @@ public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseI
 }
 
 public void deployAppsToEnvironmentRegions(regionsToDeployTo, String jenkinsStashId, String imageVersion,
-                                             Environment environment, BuildConfig config) {
+                                           Environment environment, BuildConfig config) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
 
@@ -170,11 +171,20 @@ public JenkinsDeployInput displayJenkinsInputForDeploy(GithubReleaseInfo release
 public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo,
                                           BuildConfig config, List<String> deployedInRegions, String approver) {
   String appsJoined = appsInRepo.join(",")
+  List<String> healthURLs = []
+  for (Cluster cluster : config.deployToClusters) {
+    for (String region : deployedInRegions) {
+      String entryPointUrl = targetEnv.getEntryPointUrl(cluster, region)
+      String healthURL = "<${entryPointUrl}/__health|${cluster.getLabel()}-${targetEnv.name}-${region}>"
+      healthURLs.add(healthURL)
+    }
+  }
+
   SlackAttachment attachment = new SlackAttachment()
   String envWithRegions = targetEnv.getNamesWithRegions(deployedInRegions)
   attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} was deployed and waits validation in '${envWithRegions}'"
   attachment.titleUrl = "${env.BUILD_URL}input"
-  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was deployed successfully and is waiting validation in `${envWithRegions}` in clusters: *${Cluster.toLabels(config.deployToClusters).join(',')}*."
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was deployed successfully and is waiting validation in ${healthURLs}."
   attachment.authorName = releaseInfo.authorName
   attachment.authorLink = releaseInfo.authorUrl
   attachment.authorIcon = releaseInfo.authorAvatar
@@ -254,7 +264,7 @@ void sendSlackMessageForIntermediaryDeploy(GithubReleaseInfo releaseInfo, Enviro
   attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} deploy in remaining regions '${envWithRegionNames}'"
   attachment.titleUrl = "${env.BUILD_URL}input"
   String validatedEnvWithRegionNames = targetEnv.getNamesWithRegions(targetEnv.getValidatedRegions(remainingRegions))
-  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was *validated in ${ validatedEnvWithRegionNames}* and is ready to deploy in `${envWithRegionNames}`."
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was *validated in ${validatedEnvWithRegionNames}* and is ready to deploy in `${envWithRegionNames}`."
   attachment.authorName = releaseInfo.authorName
   attachment.authorLink = releaseInfo.authorUrl
   attachment.authorIcon = releaseInfo.authorAvatar

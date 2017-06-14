@@ -22,6 +22,10 @@ class Environment implements Serializable {
     this.clusterToApiServerMap = clusterToApiServerMap
   }
 
+  public String getEntryPointUrl(Cluster cluster, String region) {
+    return getApiServerForCluster(cluster,region).replace("-api","")
+  }
+
   public String getApiServerForCluster(Cluster cluster, String region = null) {
     String lookupKey
     if (region) {
