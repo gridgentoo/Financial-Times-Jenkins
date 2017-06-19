@@ -77,9 +77,17 @@ private void sendSuccessNotifications(Environment environment, BuildConfig confi
 
   SlackAttachment attachment = new SlackAttachment()
   String deployedAppsAsString = deployedApps.join(",")
+  List<String> healthURLs = []
+  for (Cluster cluster : config.deployToClusters) {
+    String entryPointURL = environment.getEntryPointUrl(cluster)
+    String healthURL = "<${entryPointURL}/__health|${cluster.getLabel()}-${environment.name}>"
+    healthURLs.add(healthURL)
+  }
+
+  String healthURLsAsString = healthURLs.join(",")
   attachment.titleUrl = env.BUILD_URL
   attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment.name}'"
-  attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in env: `${environment.name}` in clusters: *${Cluster.toLabels(config.deployToClusters).join(',')}*."""
+  attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in ${healthURLsAsString}"""
   slackUtil.sendEnhancedSlackNotification(environment.slackChannel, attachment)
 }
 
