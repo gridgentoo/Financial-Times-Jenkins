@@ -1,19 +1,21 @@
+import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
-import com.ft.jenkins.BuildConfig
-import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.docker.DockerUtils
+import com.ft.jenkins.git.GitUtils
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
-def call(BuildConfig config, String dockerImageVersion, String environmentName) {
-
+def call(BuildConfig config, String environmentName, String releaseName, boolean branchRelease) {
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
+  GitUtils gitUtils = new GitUtils()
 
   Environment environment
   List<String> deployedApps = null
+  String imageVersion
 
   node('docker') {
     catchError {
@@ -22,9 +24,19 @@ def call(BuildConfig config, String dockerImageVersion, String environmentName) 
           checkout scm
         }
 
+        stage('update-chart-version') {
+          if (branchRelease) {
+            String gitTag = gitUtils.getMostRecentGitTag()
+            imageVersion = "${gitTag}-${releaseName}"
+          } else {
+            imageVersion = releaseName
+          }
+          deployUtil.setChartVersion(imageVersion)
+        }
+
         stage('build image') {
           String dockerRepository = deployUtil.getDockerImageRepository()
-          dockerUtils.buildAndPushImage("${dockerRepository}:${dockerImageVersion}")
+          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
         environment = EnvsRegistry.getEnvironment(environmentName)
@@ -34,14 +46,14 @@ def call(BuildConfig config, String dockerImageVersion, String environmentName) 
           Cluster clusterToDeploy = deployToClusters.get(i)
 
           stage("deploy to ${environment.name}-${clusterToDeploy.label}") {
-            deployedApps = deployUtil.deployAppWithHelm(dockerImageVersion, environment, clusterToDeploy)
+            deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment, clusterToDeploy)
           }
         }
       }
     }
 
     catchError {
-      sendNotifications(environment, config, deployedApps, dockerImageVersion)
+      sendNotifications(environment, config, deployedApps, imageVersion)
     }
 
     stage("cleanup") {

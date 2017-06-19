@@ -1,5 +1,7 @@
 package com.ft.jenkins
 
+import com.ft.jenkins.git.GitUtilsConstants
+
 import java.util.regex.Matcher
 
 import static DeploymentUtilsConstants.APPS_CONFIG_FOLDER
@@ -7,6 +9,7 @@ import static DeploymentUtilsConstants.CREDENTIALS_DIR
 import static DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
 import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static DeploymentUtilsConstants.K8S_CLI_IMAGE
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
 
 /**
  * Deploys the application(s) in the current workspace using helm. It expects the helm chart to be defined in the {@link DeploymentUtilsConstants#HELM_CONFIG_FOLDER} folder.
@@ -58,7 +61,7 @@ public List<String> getAppNamesInRepo() {
  * Retrieves the folder name where the Helm chart is defined .
  */
 private String getHelmChartFolderName() {
-  def chartFile = findFiles(glob: "${HELM_CONFIG_FOLDER}/**/Chart.yaml")[0]
+  def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
   String[] chartFilePathComponents = ((String) chartFile.path).split('/')
   /* return the parent folder of Chart.yaml */
   return chartFilePathComponents[chartFilePathComponents.size() - 2]
@@ -130,7 +133,18 @@ String getEnvironmentName(String branchName) {
  * @param branchName the name of the branch
  * @return the docker image version
  */
-String getDockerImageVersion(String branchName) {
+String getReleaseCandidateName(String branchName) {
   String[] values = branchName.split('/')
   return values[values.length - 1]
+}
+
+void setChartVersion(String chartVersion) {
+  echo "Setting chart version to: ${chartVersion}"
+  def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
+  String chartFileContent  = readFile chartFile.path
+  updatedChartFileContent = chartFileContent.replaceAll("(Version|version): ${GitUtilsConstants.GIT_VERSION_REGEX}", "Version: ${chartVersion}")
+  writeFile file: chartFile.path, text: updatedChartFileContent
+
+  echo "Updated chart yaml:"
+  sh "cat ${chartFile.path}"
 }

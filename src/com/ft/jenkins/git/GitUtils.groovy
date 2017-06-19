@@ -20,7 +20,6 @@ public String getTagNameFromBranchName(String checkedOutBranchName) {
   return values[values.length - 1]
 }
 
-
 public String getCurrentRepoName() {
   String gitUrl = scm.getUserRemoteConfigs()[0].url
   Matcher matcher = (gitUrl =~ /.*\/(.*).git/)
@@ -47,3 +46,12 @@ public GithubReleaseInfo getGithubReleaseInfo(String tagName, String repoName) {
   return releaseInfo
 }
 
+public String getMostRecentGitTag() {
+  sh "git describe --abbrev=0 --tags >> git-version"
+  String mostRecentGitTag = readFile 'git-version'
+
+  /* remove any additional text from git version */
+  String extractedGitVersion = (mostRecentGitTag =~ GitUtilsConstants.GIT_VERSION_REGEX)[0]
+  echo "Retrieved most recent git tag: ${extractedGitVersion}"
+  return extractedGitVersion
+}

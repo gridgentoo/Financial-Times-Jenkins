@@ -22,12 +22,13 @@ def call(BuildConfig config) {
 
     if (releaseInfo.isPreRelease) {
       String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(releaseInfo.getTagName())
-      devBuildAndDeploy(config, releaseInfo.tagName, envToDeploy)
+      devBuildAndDeploy(config, envToDeploy,releaseInfo.tagName,false)
     } else {
       releaseBuildAndDeploy(config, releaseInfo)
     }
   } else if (gitUtils.isDeployOnPushForBranch(currentBranch)) {
-    devBuildAndDeploy(config, deployUtils.getDockerImageVersion(currentBranch), deployUtils.getEnvironmentName(currentBranch))
+    String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
+    devBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch),releaseCandidateName,true)
   }
 
   echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
