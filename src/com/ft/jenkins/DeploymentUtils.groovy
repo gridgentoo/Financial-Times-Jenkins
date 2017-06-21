@@ -24,7 +24,8 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
     def chartName = getHelmChartFolderName()
 
     for (String app : appsToDeploy) {
-      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}/${app}.yaml --set image.version=${imageVersion}"
+      String configurationFile = getConfigurationFile(env, cluster, chartName, app)
+      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFile} --set image.version=${imageVersion}"
     }
   })
   return appsToDeploy
@@ -48,7 +49,7 @@ public List<String> getAppNamesInRepo() {
   List<String> appNames = []
   def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
 
-  for (def configFile :foundConfigFiles) {
+  for (def configFile : foundConfigFiles) {
     /*  strip the .yaml extension from the files */
     String fileName = configFile.name
     appNames.add(fileName.substring(0, fileName.indexOf('.')))
@@ -141,10 +142,42 @@ String getReleaseCandidateName(String branchName) {
 void setChartVersion(String chartVersion) {
   echo "Setting chart version to: ${chartVersion}"
   def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
-  String chartFileContent  = readFile chartFile.path
+  String chartFileContent = readFile chartFile.path
   updatedChartFileContent = chartFileContent.replaceAll("(Version|version): ${GitUtilsConstants.GIT_VERSION_REGEX}", "Version: ${chartVersion}")
   writeFile file: chartFile.path, text: updatedChartFileContent
 
   echo "Updated chart yaml:"
   sh "cat ${chartFile.path}"
+}
+
+public String getConfigurationFile(Environment targetEnv, Cluster targetCluster, String chartName, String app) {
+  String customAppConfigFileLocation = "${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}/${app}"
+  String deployLocation
+
+  if (targetCluster == Cluster.PUBLISHING) {
+    deployLocation = "pub-${targetEnv.name}"
+  } else {
+    deployLocation = targetEnv.name
+  }
+
+  echo "deploy location is ${deployLocation}"
+
+  def foundConfigFiles = findFiles(glob: "${customAppConfigFileLocation}*.yaml")
+
+  for (def configFile : foundConfigFiles) {
+    String envToDeploy = configFile.path.replaceAll(customAppConfigFileLocation, "").replaceAll(".yaml", "")
+    if (envToDeploy.length() > 0) {
+      envToDeploy = envToDeploy.substring(1)
+    }
+
+    echo "Parsing from ${configFile.path}: found ${envToDeploy}"
+
+    if (envToDeploy == deployLocation) {
+      echo "found config file ${configFile.path}"
+      return configFile.path
+    }
+
+    echo "found config file ${configFile.path}"
+    return configFile.path
+  }
 }
