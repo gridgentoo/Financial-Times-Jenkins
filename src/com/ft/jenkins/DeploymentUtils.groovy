@@ -170,37 +170,3 @@ public String getAppConfigurationFile(Environment targetEnv, Cluster targetClust
     return foundConfigFiles[0].path
   }
 }
-
-public String getAppConfigurationFileOld(Environment targetEnv, Cluster targetCluster, String chartName, String app) {
-  //todo: refactor this method as discussed with Sorin
-  String customAppConfigFileLocation = "${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}/${app}"
-  String custom
-  String deployLocation
-
-  if (targetCluster == Cluster.PUBLISHING) {
-    deployLocation = "pub-${targetEnv.name}"
-  } else {
-    deployLocation = targetEnv.name
-  }
-
-  echo "deploy location is ${deployLocation}"
-
-  def foundConfigFiles = findFiles(glob: "${customAppConfigFileLocation}*.yaml")
-
-  for (def configFile : foundConfigFiles) {
-    String envToDeploy = configFile.path.replaceAll(customAppConfigFileLocation, "").replaceAll(".yaml", "")
-    if (envToDeploy.length() > 0) {
-      envToDeploy = envToDeploy.substring(1)
-    }
-
-    echo "Parsing from ${configFile.path}: found ${envToDeploy}"
-
-    if (envToDeploy == deployLocation) {
-      echo "found config file ${configFile.path}"
-      return configFile.path
-    }
-
-    echo "found config file ${configFile.path}"
-    return configFile.path
-  }
-}
