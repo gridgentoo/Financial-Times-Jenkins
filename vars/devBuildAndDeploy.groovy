@@ -24,15 +24,7 @@ def call(BuildConfig config, String environmentName, String releaseName, boolean
           checkout scm
         }
 
-        stage('update-chart-version') {
-          if (branchRelease) {
-            String gitTag = gitUtils.getMostRecentGitTag()
-            imageVersion = "${gitTag}-${releaseName}"
-          } else {
-            imageVersion = releaseName
-          }
-          deployUtil.setChartVersion(imageVersion)
-        }
+        imageVersion = getImageVersion(releaseName, gitUtils.getMostRecentGitTag(), branchRelease)
 
         stage('build image') {
           String dockerRepository = deployUtil.getDockerImageRepository()
@@ -62,7 +54,16 @@ def call(BuildConfig config, String environmentName, String releaseName, boolean
   }
 }
 
-private void sendNotifications(Environment environment, BuildConfig config, List<String> deployedApps, String imageVersion) {
+private String getImageVersion(String releaseName, String gitTag, boolean branchRelease) {
+  if (branchRelease) {
+    return "${gitTag}-${releaseName}"
+  }
+
+  return releaseName
+}
+
+private void sendNotifications(Environment environment, BuildConfig config, List<String> deployedApps,
+                               String imageVersion) {
   stage("notifications") {
     if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
       sendSuccessNotifications(environment, config, deployedApps, imageVersion)
@@ -72,7 +73,8 @@ private void sendNotifications(Environment environment, BuildConfig config, List
   }
 }
 
-private void sendSuccessNotifications(Environment environment, BuildConfig config, List<String> deployedApps, String imageVersion) {
+private void sendSuccessNotifications(Environment environment, BuildConfig config, List<String> deployedApps,
+                                      String imageVersion) {
   SlackUtils slackUtil = new SlackUtils()
 
   SlackAttachment attachment = new SlackAttachment()
@@ -87,7 +89,9 @@ private void sendSuccessNotifications(Environment environment, BuildConfig confi
   String healthURLsAsString = healthURLs.join(",")
   attachment.titleUrl = env.BUILD_URL
   attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment.name}'"
-  attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in ${healthURLsAsString}"""
+  attachment.text = """The applications `[${deployedAppsAsString}]` were deployed automatically with version `${
+    imageVersion
+  }` in ${healthURLsAsString}"""
   slackUtil.sendEnhancedSlackNotification(environment.slackChannel, attachment)
 }
 

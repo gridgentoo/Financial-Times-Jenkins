@@ -21,11 +21,12 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
 public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
   List<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env, cluster, region, {
-    def chartName = getHelmChartFolderName()
+    updateChartVersionFile(imageVersion)
 
+    def chartName = getHelmChartFolderName()
     for (String app : appsToDeploy) {
-      String configurationFile = getConfigurationFile(env, cluster, chartName, app)
-      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFile} --set image.version=${imageVersion}"
+      String configurationFile = getAppConfigurationFile(env, cluster, chartName, app)
+      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFile}"
     }
   })
   return appsToDeploy
@@ -105,7 +106,8 @@ String getTeamFromReleaseCandidateTag(String rcTag) {
   if (tagComponents.length > 1) {
     return tagComponents[1]
   }
-  throw new IllegalArgumentException("The tag '${rcTag}' is not a valid release candidate tag. A good example is: 0.2.0-xp-test-release-rc2")
+  throw new IllegalArgumentException(
+      "The tag '${rcTag}' is not a valid release candidate tag. A good example is: 0.2.0-xp-test-release-rc2")
 }
 
 /**
@@ -124,7 +126,8 @@ String getEnvironmentName(String branchName) {
   if (values.length > 2) {
     return values[values.length - 2]
   }
-  throw new IllegalArgumentException("The branch '${branchName}' does not contain the environment where to deploy the application. A valid name is 'deploy-on-push/xp/test'")
+  throw new IllegalArgumentException(
+      "The branch '${branchName}' does not contain the environment where to deploy the application. A valid name is 'deploy-on-push/xp/test'")
 }
 
 /**
@@ -139,19 +142,39 @@ String getReleaseCandidateName(String branchName) {
   return values[values.length - 1]
 }
 
-void setChartVersion(String chartVersion) {
+void updateChartVersionFile(String chartVersion) {
   echo "Setting chart version to: ${chartVersion}"
   def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
   String chartFileContent = readFile chartFile.path
-  updatedChartFileContent = chartFileContent.replaceAll("(Version|version): ${GitUtilsConstants.GIT_VERSION_REGEX}", "Version: ${chartVersion}")
+  String updatedChartFileContent = chartFileContent.
+      replaceAll("(Version|version): ${GitUtilsConstants.GIT_VERSION_REGEX}", "Version: ${chartVersion}")
   writeFile file: chartFile.path, text: updatedChartFileContent
 
   echo "Updated chart yaml:"
   sh "cat ${chartFile.path}"
 }
 
-public String getConfigurationFile(Environment targetEnv, Cluster targetCluster, String chartName, String app) {
+public String getAppConfigurationFile(Environment targetEnv, Cluster targetCluster, String chartName, String app) {
+  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}"
+  String appConfigFileName = "${app}-${targetCluster}-${targetEnv}"
+  def foundConfigFiles = findFiles(glob: "${appsConfigFolder / appConfigFileName}.yaml")
+  if (foundConfigFiles.length > 0) {
+    echo "found config file: ${foundConfigFiles[0].path}"
+    return foundConfigFiles[0].path
+  }
+
+  appConfigFileName = "${app}-${targetCluster}"
+  foundConfigFiles = findFiles(glob: "${appsConfigFolder / appConfigFileName}.yaml")
+  if (foundConfigFiles.length > 0) {
+    echo "found config file: ${foundConfigFiles[0].path}"
+    return foundConfigFiles[0].path
+  }
+}
+
+public String getAppConfigurationFileOld(Environment targetEnv, Cluster targetCluster, String chartName, String app) {
+  //todo: refactor this method as discussed with Sorin
   String customAppConfigFileLocation = "${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}/${app}"
+  String custom
   String deployLocation
 
   if (targetCluster == Cluster.PUBLISHING) {
