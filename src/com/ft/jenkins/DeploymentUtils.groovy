@@ -1,5 +1,6 @@
 package com.ft.jenkins
 
+import com.ft.jenkins.exceptions.ConfigurationNotFoundException
 import com.ft.jenkins.exceptions.InvalidAppConfigFileNameException
 import com.ft.jenkins.git.GitUtilsConstants
 
@@ -29,8 +30,8 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
       String app = appsToDeploy.get(i)
       String configurationFileName = getAppConfigurationFileName(env, cluster, app)
       if (!configurationFileName) {
-        echo "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions."
-        return
+        throw new ConfigurationNotFoundException(
+            "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions.")
       }
 
       echo "Using app config file ${configurationFileName} to deploy with helm"
@@ -171,15 +172,18 @@ void updateChartVersionFile(String chartVersion) {
 
 private String getAppConfigurationFileName(Environment targetEnv, Cluster targetCluster, String app) {
   String appsConfigFolder = "${HELM_CONFIG_FOLDER}/${app}/${APPS_CONFIG_FOLDER}"
+
+  //looking for configuration file for a specific env, e.g. publishing_pre-prod
   String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"
-  def foundConfigFiles = findFiles(glob: "${appsConfigFolder}/${appConfigFileName}.yaml")
-  if (foundConfigFiles.length > 0) {
-    return foundConfigFiles[0].path
+  String appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
+  if (new File(appConfigPath).exists()) {
+    return appConfigPath
   }
 
+  //looking for configuration file for all envs
   appConfigFileName = "${app}_${targetCluster.getLabel()}"
-  foundConfigFiles = findFiles(glob: "${appsConfigFolder}/${appConfigFileName}.yaml")
-  if (foundConfigFiles.length > 0) {
-    return foundConfigFiles[0].path
+  appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
+  if (new File(appConfigPath).exists()) {
+    return appConfigPath
   }
 }
