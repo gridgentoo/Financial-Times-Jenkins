@@ -1,4 +1,4 @@
-package com.ft.jenkins.exceptions;
+package com.ft.jenkins.exceptions
 
 /**
  * Exception to be thrown if the name of a helm config file under `apps-config` does not meet the naming conventions:
