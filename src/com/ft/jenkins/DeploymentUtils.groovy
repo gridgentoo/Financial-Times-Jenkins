@@ -20,7 +20,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
  * @return the list of applications deployed
  */
 public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
-  List<String> appsToDeploy = getAppNamesInRepo()
+  Set<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env, cluster, region, {
     updateChartVersionFile(imageVersion)
 
@@ -53,9 +53,9 @@ public String getDockerImageRepository() {
   return matcher[0][1]
 }
 
-public List<String> getAppNamesInRepo() {
+public Set<String> getAppNamesInRepo() {
   String chartFolderName = getHelmChartFolderName()
-  List<String> appNames = []
+  Set<String> appNames = []
   def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
 
   for (def configFile : foundConfigFiles) {
