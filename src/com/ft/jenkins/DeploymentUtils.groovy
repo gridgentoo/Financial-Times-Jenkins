@@ -1,5 +1,6 @@
 package com.ft.jenkins
 
+import com.ft.jenkins.exceptions.InvalidAppConfigFileNameException
 import com.ft.jenkins.git.GitUtilsConstants
 
 import java.util.regex.Matcher
@@ -23,10 +24,17 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
   runWithK8SCliTools(env, cluster, region, {
     updateChartVersionFile(imageVersion)
 
-    def chartName = getHelmChartFolderName()
+    String chartName = getHelmChartFolderName()
     for (String app : appsToDeploy) {
-      String configurationFile = getAppConfigurationFile(env, cluster, chartName, app)
-      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFile}"
+      String configurationFileName = getAppConfigurationFileName(env, cluster, app)
+      if (!configurationFileName) {
+        echo "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions."
+        return
+      }
+
+      echo "Using app config file ${configurationFileName} to deploy with helm"
+
+      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFileName}"
     }
   })
   return appsToDeploy
@@ -53,7 +61,11 @@ public List<String> getAppNamesInRepo() {
   for (def configFile : foundConfigFiles) {
     /*  strip the .yaml extension from the files */
     String fileName = configFile.name
-    appNames.add(fileName.substring(0, fileName.indexOf('.')))
+    if (fileName.contains("_")) {
+      appNames.add(fileName.substring(0, fileName.indexOf('_')))
+    } else {
+      throw new InvalidAppConfigFileNameException("found invalid app configuration file name: ${fileName} with path: ${configFile.path}")
+    }
   }
 
   return appNames
@@ -126,6 +138,7 @@ String getEnvironmentName(String branchName) {
   if (values.length > 2) {
     return values[values.length - 2]
   }
+
   throw new IllegalArgumentException(
       "The branch '${branchName}' does not contain the environment where to deploy the application. A valid name is 'deploy-on-push/xp/test'")
 }
@@ -154,19 +167,17 @@ void updateChartVersionFile(String chartVersion) {
   sh "cat ${chartFile.path}"
 }
 
-public String getAppConfigurationFile(Environment targetEnv, Cluster targetCluster, String chartName, String app) {
-  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}"
-  String appConfigFileName = "${app}-${targetCluster}-${targetEnv}"
-  def foundConfigFiles = findFiles(glob: "${appsConfigFolder / appConfigFileName}.yaml")
+private String getAppConfigurationFileName(Environment targetEnv, Cluster targetCluster, String app) {
+  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/${app}/${APPS_CONFIG_FOLDER}"
+  String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"
+  def foundConfigFiles = findFiles(glob: "${appsConfigFolder}/${appConfigFileName}.yaml")
   if (foundConfigFiles.length > 0) {
-    echo "found config file: ${foundConfigFiles[0].path}"
     return foundConfigFiles[0].path
   }
 
-  appConfigFileName = "${app}-${targetCluster}"
-  foundConfigFiles = findFiles(glob: "${appsConfigFolder / appConfigFileName}.yaml")
+  appConfigFileName = "${app}_${targetCluster.getLabel()}"
+  foundConfigFiles = findFiles(glob: "${appsConfigFolder}/${appConfigFileName}.yaml")
   if (foundConfigFiles.length > 0) {
-    echo "found config file: ${foundConfigFiles[0].path}"
     return foundConfigFiles[0].path
   }
 }

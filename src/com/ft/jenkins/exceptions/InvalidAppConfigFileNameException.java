@@ -1,4 +1,10 @@
 package com.ft.jenkins.exceptions;
 
-public class InvalidAppConfigFileName {
+/**
+ * Exception t
+ */
+public class InvalidAppConfigFileNameException extends Exception {
+  public InvalidAppConfigFileNameException(String message) {
+    super(message);
+  }
 }
