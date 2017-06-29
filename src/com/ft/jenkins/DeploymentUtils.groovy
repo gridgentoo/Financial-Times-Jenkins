@@ -19,15 +19,14 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
  * @param env the environment name where it will be deployed.
  * @return the list of applications deployed
  */
+@NonCPS
 public Set<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
   Set<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env, cluster, region, {
     updateChartVersionFile(imageVersion)
 
     String chartName = getHelmChartFolderName()
-    Iterator<String> i = appsToDeploy.iterator()
-    while(i.hasNext()) {
-      String app = i.next()
+    for(String app : appsToDeploy) {
       String configurationFileName = getAppConfigurationFileName(env, cluster, app)
       if (!configurationFileName) {
         echo "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions."
