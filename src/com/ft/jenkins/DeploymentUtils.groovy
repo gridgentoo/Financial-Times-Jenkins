@@ -25,7 +25,8 @@ public Set<String> deployAppWithHelm(String imageVersion, Environment env, Clust
     updateChartVersionFile(imageVersion)
 
     String chartName = getHelmChartFolderName()
-    for (String app : appsToDeploy) {
+    for (int i=0; i<appsToDeploy.size(); i++) {
+      String app = appsToDeploy[i]
       String configurationFileName = getAppConfigurationFileName(env, cluster, app)
       if (!configurationFileName) {
         echo "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions."
