@@ -8,6 +8,6 @@ package com.ft.jenkins.exceptions
  */
 public class InvalidAppConfigFileNameException extends Exception {
   public InvalidAppConfigFileNameException(String message) {
-    super(message);
+    super(message)
   }
 }

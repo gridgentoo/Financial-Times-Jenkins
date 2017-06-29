@@ -19,7 +19,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
  * @param env the environment name where it will be deployed.
  * @return the list of applications deployed
  */
-public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
+public Set<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
   Set<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env, cluster, region, {
     updateChartVersionFile(imageVersion)
