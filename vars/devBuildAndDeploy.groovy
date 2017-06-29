@@ -14,7 +14,7 @@ def call(BuildConfig config, String environmentName, String releaseName, boolean
   GitUtils gitUtils = new GitUtils()
 
   Environment environment
-  Set<String> deployedApps = null
+  List<String> deployedApps = null
   String imageVersion
 
   node('docker') {
@@ -62,7 +62,7 @@ private String getImageVersion(String releaseName, String gitTag, boolean branch
   return releaseName
 }
 
-private void sendNotifications(Environment environment, BuildConfig config, Set<String> deployedApps,
+private void sendNotifications(Environment environment, BuildConfig config, List<String> deployedApps,
                                String imageVersion) {
   stage("notifications") {
     if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
@@ -73,7 +73,7 @@ private void sendNotifications(Environment environment, BuildConfig config, Set<
   }
 }
 
-private void sendSuccessNotifications(Environment environment, BuildConfig config, Set<String> deployedApps,
+private void sendSuccessNotifications(Environment environment, BuildConfig config, List<String> deployedApps,
                                       String imageVersion) {
   SlackUtils slackUtil = new SlackUtils()
 

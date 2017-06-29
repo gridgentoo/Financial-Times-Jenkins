@@ -19,15 +19,14 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
  * @param env the environment name where it will be deployed.
  * @return the list of applications deployed
  */
-public Set<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
-  Set<String> appsToDeploy = getAppNamesInRepo()
-  List<String> appsToDeployList = new ArrayList<>(appsToDeploy)
+public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
+  List<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env, cluster, region, {
     updateChartVersionFile(imageVersion)
 
     String chartName = getHelmChartFolderName()
-    for (int i = 0; i < appsToDeployList.size(); i++) {
-      String app = appsToDeployList.get(i)
+    for (int i = 0; i < appsToDeploy.size(); i++) {
+      String app = appsToDeploy.get(i)
       String configurationFileName = getAppConfigurationFileName(env, cluster, app)
       if (!configurationFileName) {
         echo "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions."
@@ -55,9 +54,9 @@ public String getDockerImageRepository() {
   return matcher[0][1]
 }
 
-public Set<String> getAppNamesInRepo() {
+public List<String> getAppNamesInRepo() {
   String chartFolderName = getHelmChartFolderName()
-  Set<String> appNames = []
+  List<String> appNames = []
   def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
 
   for (def configFile : foundConfigFiles) {
@@ -71,7 +70,7 @@ public Set<String> getAppNamesInRepo() {
     }
   }
 
-  return appNames
+  return new ArrayList<>(appNames)
 }
 
 /**

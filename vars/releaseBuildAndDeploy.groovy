@@ -16,7 +16,7 @@ def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
 
-  Set<String> appsInRepo = null
+  List<String> appsInRepo = null
   String tagName = releaseInfo.tagName
   String imageVersion = tagName
   String jenkinsStashId = env.BUILD_NUMBER
@@ -54,7 +54,7 @@ def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
 }
 
 public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseInfo releaseInfo,
-                                            Set<String> appsInRepo,
+                                            List<String> appsInRepo,
                                             String jenkinsStashId, String imageVersion,
                                             int daysForTheDeployment, BuildConfig config) {
   Environment environment = EnvsRegistry.getEnvironment(targetEnvName)
@@ -128,7 +128,7 @@ public void deployAppsToEnvironmentRegions(regionsToDeployTo, String jenkinsStas
 }
 
 public void sendSlackMessageForDeployReady(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                           Set<String> appsInRepo) {
+                                           List<String> appsInRepo) {
   String appsJoined = appsInRepo.join(",")
 
   SlackAttachment attachment = new SlackAttachment()
@@ -145,7 +145,7 @@ public void sendSlackMessageForDeployReady(GithubReleaseInfo releaseInfo, Enviro
 }
 
 public JenkinsDeployInput displayJenkinsInputForDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                                       Set<String> appsInRepo, List<String> availableRegions) {
+                                                       List<String> appsInRepo, List<String> availableRegions) {
   String appsJoined = appsInRepo.join(",")
   String envWithRegions = targetEnv.getNamesWithRegions(availableRegions)
 
@@ -168,7 +168,7 @@ public JenkinsDeployInput displayJenkinsInputForDeploy(GithubReleaseInfo release
   }
 }
 
-public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv, Set<String> appsInRepo,
+public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo,
                                           BuildConfig config, List<String> deployedInRegions, String approver) {
   String appsJoined = appsInRepo.join(",")
   List<String> healthURLs = []
@@ -195,7 +195,7 @@ public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environ
 }
 
 public String displayJenkinsInputForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                               Set<String> appsInRepo, List<String> deployedInRegions) {
+                                               List<String> appsInRepo, List<String> deployedInRegions) {
   String appsJoined = appsInRepo.join(",")
   String envWithRegions = targetEnv.getNamesWithRegions(deployedInRegions)
 
@@ -206,7 +206,7 @@ public String displayJenkinsInputForValidation(GithubReleaseInfo releaseInfo, En
 }
 
 private String openCr(String approver, GithubReleaseInfo releaseInfo, Environment environment,
-                      Set<String> appsInRepo) {
+                      List<String> appsInRepo) {
   try {
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
@@ -256,7 +256,7 @@ final class JenkinsDeployInput implements Serializable {
 }
 
 void sendSlackMessageForIntermediaryDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                           Set<String> appsInRepo, List<String> remainingRegions, String initiator) {
+                                           List<String> appsInRepo, List<String> remainingRegions, String initiator) {
   String appsJoined = appsInRepo.join(",")
 
   SlackAttachment attachment = new SlackAttachment()
