@@ -57,8 +57,9 @@ public String getDockerImageRepository() {
 
 public List<String> getAppNamesInRepo() {
   String chartFolderName = getHelmChartFolderName()
-  List<String> appNames = []
+  Set<String> appNames = []
   def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
+  echo "test : ${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml"
 
   for (def configFile : foundConfigFiles) {
     /*  strip the .yaml extension from the files */
@@ -176,14 +177,21 @@ private String getAppConfigurationFileName(Environment targetEnv, Cluster target
   //looking for configuration file for a specific env, e.g. publishing_pre-prod
   String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"
   String appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
-  if (new File(appConfigPath).exists()) {
+  echo "searching for: ${appConfigPath}"
+  if (fileExists(appConfigPath)) {
     return appConfigPath
   }
 
   //looking for configuration file for all envs
   appConfigFileName = "${app}_${targetCluster.getLabel()}"
   appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
-  if (new File(appConfigPath).exists()) {
+  echo "searching for: ${appConfigPath}"
+  if (fileExists(appConfigPath)) {
     return appConfigPath
   }
+}
+
+private boolean fileExists(String path) {
+  def foundConfigFiles = findFiles(glob: path)
+  return foundConfigFiles.length > 0
 }
