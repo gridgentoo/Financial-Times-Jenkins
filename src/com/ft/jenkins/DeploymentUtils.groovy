@@ -164,7 +164,7 @@ void updateChartVersionFile(String chartVersion) {
   def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
   String chartFileContent = readFile chartFile.path
   String updatedChartFileContent = chartFileContent.
-      replaceAll("(Version|version): ${GitUtilsConstants.GIT_VERSION_REGEX}", "Version: ${chartVersion}")
+      replaceAll("(Version|version):.*", "Version: ${chartVersion}")
   writeFile file: chartFile.path, text: updatedChartFileContent
 
   echo "Updated chart yaml:"
