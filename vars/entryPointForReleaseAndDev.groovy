@@ -1,5 +1,8 @@
 import com.ft.jenkins.BuildConfig
+import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
+import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.diff.DiffBetweenClusters
 import com.ft.jenkins.git.GitUtils
 import com.ft.jenkins.git.GitUtilsConstants
 import com.ft.jenkins.git.GithubReleaseInfo
@@ -16,19 +19,19 @@ def call(BuildConfig config) {
   GitUtils gitUtils = new GitUtils()
   String currentBranch = (String) env.BRANCH_NAME
   DeploymentUtils deployUtils = new DeploymentUtils()
-
+  DiffBetweenClusters.steps(EnvsRegistry.getEnvironment("k8s"), EnvsRegistry.getEnvironment("k8s"), Cluster.DELIVERY)
   if (gitUtils.isTag(currentBranch)) {
     GithubReleaseInfo releaseInfo = getReleaseInfoForCurrentTag(currentBranch)
 
     if (releaseInfo.isPreRelease) {
       String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(releaseInfo.getTagName())
-      devBuildAndDeploy(config, envToDeploy,releaseInfo.tagName,false)
+      devBuildAndDeploy(config, envToDeploy, releaseInfo.tagName, false)
     } else {
       releaseBuildAndDeploy(config, releaseInfo)
     }
   } else if (gitUtils.isDeployOnPushForBranch(currentBranch)) {
     String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
-    devBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch),releaseCandidateName,true)
+    devBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
   }
 
   echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
