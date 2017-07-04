@@ -1,55 +1,60 @@
 import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
+import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
-import com.ft.jenkins.diff.DiffBetweenClustersConstants
 
-def call() {
-  Environment firstEnv = EnvsRegistry.getEnvironment("k8s")
-  Environment secondEnv = EnvsRegistry.getEnvironment("k8s")
-  Cluster cluster = Cluster.DELIVERY
-  Map<String,String> servicesToBeSyncedMap
+def call(String firstEnvName, String secondEnvName, String clusterName) {
+  Environment envToSyncFrom = EnvsRegistry.getEnvironment(firstEnvName)
+  Environment envToBeSynced = EnvsRegistry.getEnvironment(secondEnvName)
+  Cluster cluster = new Cluster(clusterName)
+
+  Map<String, String> outdatedServices
+  def selectedServicesToBeSynced
+
   node('') {
     catchError {
       timeout(30) { //  timeout after 30 mins to not block jenkins
 
         stage('diff-envs') {
-          //todo: delelte me
-          echo "test1"
-          servicesToBeSyncedMap = doDiff(firstEnv, secondEnv, cluster)
-          //todo: delelte me
-          echo "test2"
+          outdatedServices = doDiff(envToSyncFrom, envToBeSynced, cluster)
         }
 
         stage('select-services-to-be-synced') {
           String syncServicesMessage = "Added services"
           def syncChoices = []
-          Set<String> servicesToBeSynced = servicesToBeSyncedMap.keySet()
+          Set<String> servicesToBeSynced = outdatedServices.keySet()
           for (int i = 0; i < servicesToBeSynced.size(); i++) {
             syncChoices[i] = booleanParam(defaultValue: false,
                                           description: '',
                                           name: servicesToBeSynced.getAt(i))
           }
 
-          String[] servicesToSync = input(message: syncServicesMessage,
-                                        parameters: syncChoices,
-                                        ok: "Sync services")
-          echo "servicesToSync: ${servicesToSync}"
+          selectedServicesToBeSynced = input(message: syncServicesMessage,
+                                             parameters: syncChoices,
+                                             ok: "Sync services")
+          echo "selectedServicesToBeSynced: ${selectedServicesToBeSynced}"
         }
 
         stage('sync-services') {
-
+          for (int i = 0; i < selectedServicesToBeSynced.length; i++) {
+            echo "syncing service ${selectedServicesToBeSynced[i]}"
+          }
         }
 
         catchError {
           echo "An error occurred in the pipeline."
+        }
+
+        stage("cleanup") {
+          cleanWs()
         }
       }
     }
   }
 }
 
-public Map<String,String> doDiff(Environment firstEnv, Environment secondEnv, Cluster cluster) {
+public Map<String, String> doDiff(Environment firstEnv, Environment secondEnv, Cluster cluster) {
   echo "Diff the clusters."
   Map<String, String> firstEnvCharts, secondEnvCharts
   DeploymentUtils deploymentUtils = new DeploymentUtils()
@@ -75,7 +80,7 @@ private Map<String, String> parseChartsIntoMap(String charts) {
   String[] chartsArray = charts.split("\\r?\\n")
   for (int i = 0; i < chartsArray.length; i++) {
     String chart = chartsArray[i]
-    String chartVersion = chart.find(DiffBetweenClustersConstants.CHART_VERSION_REGEX)
+    String chartVersion = chart.find(DeploymentUtilsConstants.CHART_VERSION_REGEX)
     String chartName = chart.replace(chartVersion, "")
     chartName = chartName.substring(0, chartName.length() - 1)
     chartsMap.put(chartName, chartVersion)
@@ -88,12 +93,10 @@ private Map<String, String> getModifiedServices(Map<String, String> firstEnv, Ma
   Set<String> firstEnvCharts = firstEnv.keySet()
   Map<String, String> modifiedCharts = new HashMap<>()
   //todo: delete me
-  secondEnv.put("delivery-varnish","1.2.23")
+  secondEnv.put("delivery-varnish", "1.2.23")
   for (int i = 0; i < firstEnvCharts.size(); i++) {
     String k = firstEnvCharts[i]
     String v = firstEnv.get(k)
-    //todo: delete me
-    echo "test: ${k} :::: ${v}"
     if (!secondEnv.containsKey(k)) {
       modifiedCharts.put(k, "Service added")
       println "${k}: service added"
