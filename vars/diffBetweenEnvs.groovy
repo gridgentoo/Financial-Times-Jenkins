@@ -5,6 +5,7 @@ import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
 
 def call(String firstEnvName, String secondEnvName, String clusterName) {
+  echo "Diff between envs with params: [envToSyncFrom: ${firstEnvName}, envToBeSynced: ${secondEnvName}, cluster: ${clusterName}]"
   Environment envToSyncFrom = EnvsRegistry.getEnvironment(firstEnvName)
   Environment envToBeSynced = EnvsRegistry.getEnvironment(secondEnvName)
   Cluster cluster = new Cluster(clusterName)
