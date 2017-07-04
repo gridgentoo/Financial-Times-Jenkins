@@ -14,14 +14,16 @@ def call() {
       timeout(30) { //  timeout after 30 mins to not block jenkins
 
         stage('diff-envs') {
+          //todo: delelte me
+          echo "test1"
           servicesToBeSyncedMap = doDiff(firstEnv, secondEnv, cluster)
+          //todo: delelte me
+          echo "test2"
         }
 
         stage('select-services-to-be-synced') {
           String syncServicesMessage = "Added services"
           def syncChoices = []
-          //todo: delete me
-          echo "teeest: ${servicesToBeSyncedMap}"
           Set<String> servicesToBeSynced = servicesToBeSyncedMap.keySet()
           for (int i = 0; i < servicesToBeSynced.size(); i++) {
             syncChoices[i] = booleanParam(defaultValue: false,
@@ -85,9 +87,13 @@ private Map<String, String> parseChartsIntoMap(String charts) {
 private Map<String, String> getModifiedServices(Map<String, String> firstEnv, Map<String, String> secondEnv) {
   Set<String> firstEnvCharts = firstEnv.keySet()
   Map<String, String> modifiedCharts = new HashMap<>()
+  //todo: delete me
+  secondEnv.put("delivery-varnish","1.2.23")
   for (int i = 0; i < firstEnvCharts.size(); i++) {
     String k = firstEnvCharts[i]
     String v = firstEnv.get(k)
+    //todo: delete me
+    echo "test: ${k} :::: ${v}"
     if (!secondEnv.containsKey(k)) {
       modifiedCharts.put(k, "Service added")
       println "${k}: service added"
