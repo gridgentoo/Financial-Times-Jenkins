@@ -1,10 +1,13 @@
-package com.ft.jenkins.diff
-
 import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.Environment
+import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.diff.DiffBetweenClustersConstants
 
-public void steps(Environment firstEnv, Environment secondEnv, Cluster cluster) {
+def call() {
+  Environment firstEnv = EnvsRegistry.getEnvironment("k8s")
+  Environment secondEnv = EnvsRegistry.getEnvironment("k8s")
+  Cluster cluster = Cluster.DELIVERY
   node('') {
     catchError {
       timeout(30) { //  timeout after 30 mins to not block jenkins
@@ -38,6 +41,10 @@ public void steps(Environment firstEnv, Environment secondEnv, Cluster cluster) 
       }
     }
   }
+}
+
+private void steps(Environment firstEnv, Environment secondEnv, Cluster cluster) {
+
 }
 
 public void doDiff(Environment firstEnv, Environment secondEnv, Cluster cluster) {
@@ -81,12 +88,12 @@ private Map<String, String> getModifiedServices(Map<String, String> firstEnv, Ma
     String k = firstEnvCharts[i]
     String v = firstEnv.get(k)
     if (!secondEnv.containsKey(k)) {
-      modifiedCharts.put(k,"Service added")
+      modifiedCharts.put(k, "Service added")
       println "${k}: service added"
     }
 
     if (v != secondEnv[k]) {
-      modifiedCharts.put(k,"diff between versions: ${v} -- ${secondEnv[k]}")
+      modifiedCharts.put(k, "diff between versions: ${v} -- ${secondEnv[k]}")
       println "${k}: diff between versions: ${v} -- ${secondEnv[k]}"
     }
   }
