@@ -8,26 +8,30 @@ def call() {
   Environment firstEnv = EnvsRegistry.getEnvironment("k8s")
   Environment secondEnv = EnvsRegistry.getEnvironment("k8s")
   Cluster cluster = Cluster.DELIVERY
+  Map<String,String> servicesToBeSyncedMap
   node('') {
     catchError {
       timeout(30) { //  timeout after 30 mins to not block jenkins
 
         stage('diff-envs') {
-          doDiff(firstEnv, secondEnv, cluster)
+          servicesToBeSyncedMap = doDiff(firstEnv, secondEnv, cluster)
         }
 
         stage('select-services-to-be-synced') {
           String syncServicesMessage = "Added services"
           def syncChoices = []
-          for (int i = 0; i <= 10; i++) {
+          //todo: delete me
+          echo "teeest: ${servicesToBeSyncedMap}"
+          Set<String> servicesToBeSynced = servicesToBeSyncedMap.keySet()
+          for (int i = 0; i < servicesToBeSynced.size(); i++) {
             syncChoices[i] = booleanParam(defaultValue: false,
                                           description: '',
-                                          name: "serviceName")
+                                          name: servicesToBeSynced.getAt(i))
           }
 
-          String servicesToSync = input(message: syncServicesMessage,
+          String[] servicesToSync = input(message: syncServicesMessage,
                                         parameters: syncChoices,
-                                        ok: "Deploy to test")
+                                        ok: "Sync services")
           echo "servicesToSync: ${servicesToSync}"
         }
 
@@ -43,11 +47,7 @@ def call() {
   }
 }
 
-private void steps(Environment firstEnv, Environment secondEnv, Cluster cluster) {
-
-}
-
-public void doDiff(Environment firstEnv, Environment secondEnv, Cluster cluster) {
+public Map<String,String> doDiff(Environment firstEnv, Environment secondEnv, Cluster cluster) {
   echo "Diff the clusters."
   Map<String, String> firstEnvCharts, secondEnvCharts
   DeploymentUtils deploymentUtils = new DeploymentUtils()
@@ -63,8 +63,9 @@ public void doDiff(Environment firstEnv, Environment secondEnv, Cluster cluster)
     secondEnvCharts = parseChartsIntoMap(charts)
   })
 
-  getModifiedServices(firstEnvCharts, secondEnvCharts)
   getRemovedServices(firstEnvCharts, secondEnvCharts)
+  return getModifiedServices(firstEnvCharts, secondEnvCharts)
+
 }
 
 private Map<String, String> parseChartsIntoMap(String charts) {
