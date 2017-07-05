@@ -32,9 +32,9 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
         }
 
         stage('select-charts-to-be-synced') {
-          choosenParamsForAddedCharts = getUserInputs(addedCharts, firstEnvCharts, secondEnvCharts)
-          choosenParamsForModifiedCharts = getUserInputs(modifiedCharts, firstEnvCharts, secondEnvCharts)
-          choosenParamsForRemovedCharts = getUserInputs(removedCharts, firstEnvCharts, secondEnvCharts)
+          choosenParamsForAddedCharts = getUserInputs(addedCharts, firstEnvCharts, secondEnvCharts, "Services to be added")
+          choosenParamsForModifiedCharts = getUserInputs(modifiedCharts, firstEnvCharts, secondEnvCharts, "Services to be modified")
+          choosenParamsForRemovedCharts = getUserInputs(removedCharts, firstEnvCharts, secondEnvCharts, "Services to be removed")
         }
 
         stage('sync-services') {
@@ -74,7 +74,7 @@ private void updateCharts(Map<String, Boolean> choosenParams, HelmAction helmAct
 }
 
 private Map<String, Boolean> getUserInputs(List<String> charts, Map<String, String> firstEnvCharts,
-                                           Map<String, String> secondEnvCharts) {
+                                           Map<String, String> secondEnvCharts, String inputMessage) {
   List<String> checkboxes = []
   for (int i = 0; i < charts.size(); i++) {
     String chartName = charts.get(i)
@@ -89,7 +89,7 @@ private Map<String, Boolean> getUserInputs(List<String> charts, Map<String, Stri
     return new HashMap<>()
   }
 
-  choosenParams = input(message: "Charts to be added",
+  choosenParams = input(message: inputMessage,
                         parameters: checkboxes,
                         submitterParameter: 'approver',
                         ok: "Sync services")
@@ -103,7 +103,7 @@ private String getCheckboxDescription(String oldChartVersion, String newChartVer
   }
 
   if (oldChartVersion == null) {
-    return "New version: ${oldChartVersion}"
+    return "New version: ${newChartVersion}"
   }
 
   return "Old version: ${oldChartVersion}, new version: ${newChartVersion}"
