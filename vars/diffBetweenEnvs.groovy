@@ -26,11 +26,6 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           firstEnvCharts = getChartsFromEnv(envToSyncFrom, cluster)
           secondEnvCharts = getChartsFromEnv(envToBeSynced, cluster)
 
-          //todo: delete me
-          firstEnvCharts.put("annotations-rw-neo4j", "1.2.2")
-          firstEnvCharts.put("annotations-rw-neo4j2", "1.2.3")
-          firstEnvCharts.remove("mongodb")
-
           removedCharts = diffBetweenEnvs(firstEnvCharts, secondEnvCharts)
           addedCharts = diffBetweenEnvs(secondEnvCharts, firstEnvCharts)
           modifiedCharts = getModifiedCharts(firstEnvCharts, secondEnvCharts)
@@ -63,6 +58,10 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
 private void updateCharts(Map<String, Boolean> choosenParams, HelmAction helmAction) {
   echo "Syncing services started by ${choosenParams.get('approver')}"
   choosenParams.remove('approver')
+  if (choosenParams.size() == 0) {
+    echo "There are no charts for helm action ${helmAction}"
+  }
+
   Set<String> chartsToBeSynced = choosenParams.keySet()
   for (int i = 0; i < chartsToBeSynced.size(); i++) {
     String chartToBeSynced = chartsToBeSynced.getAt(i)
@@ -76,22 +75,24 @@ private void updateCharts(Map<String, Boolean> choosenParams, HelmAction helmAct
 
 private Map<String, Boolean> getUserInputs(List<String> charts, Map<String, String> firstEnvCharts,
                                            Map<String, String> secondEnvCharts) {
-  List<String> checkboxesForAddedCharts = []
+  List<String> checkboxes = []
   for (int i = 0; i < charts.size(); i++) {
     String chartName = charts.get(i)
     String checkboxDescription = getCheckboxDescription(secondEnvCharts.get(chartName), firstEnvCharts.get(chartName))
-    checkboxesForAddedCharts.add(booleanParam(defaultValue: false,
-                                              description: checkboxDescription,
-                                              name: chartName))
+    checkboxes.add(booleanParam(defaultValue: false,
+                                description: checkboxDescription,
+                                name: chartName))
   }
 
   Map<String, Boolean> choosenParams
-  if (checkboxesForAddedCharts.isEmpty()) {
-    choosenParams = input(message: "Charts to be added",
-                          parameters: checkboxesForAddedCharts,
-                          submitterParameter: 'approver',
-                          ok: "Sync services")
+  if (checkboxes.isEmpty()) {
+    return new HashMap<>()
   }
+
+  choosenParams = input(message: "Charts to be added",
+                        parameters: checkboxes,
+                        submitterParameter: 'approver',
+                        ok: "Sync services")
 
   return choosenParams
 }
