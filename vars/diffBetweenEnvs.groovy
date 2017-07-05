@@ -25,22 +25,27 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           echo "Diff the clusters."
           firstEnvCharts = getChartsFromEnv(envToSyncFrom, cluster)
           secondEnvCharts = getChartsFromEnv(envToBeSynced, cluster)
-          
-          removedCharts = diffBetweenMaps(firstEnvCharts, secondEnvCharts)
-          addedCharts = diffBetweenMaps(secondEnvCharts, firstEnvCharts)
+
+          //todo: delete me
+          firstEnvCharts.put("annotations-rw-neo4j", "1.2.2")
+          firstEnvCharts.put("annotations-rw-neo4j2", "1.2.3")
+          firstEnvCharts.remove("mongodb")
+
+          removedCharts = diffBetweenEnvs(firstEnvCharts, secondEnvCharts)
+          addedCharts = diffBetweenEnvs(secondEnvCharts, firstEnvCharts)
           modifiedCharts = getModifiedCharts(firstEnvCharts, secondEnvCharts)
         }
 
         stage('select-charts-to-be-synced') {
-          choosenParamsForAddedCharts = getUserInputs(addedCharts)
-          choosenParamsForModifiedCharts = getUserInputs(modifiedCharts)
-          choosenParamsForRemovedCharts = getUserInputs(removedCharts)
+          choosenParamsForAddedCharts = getUserInputs(addedCharts, firstEnvCharts, secondEnvCharts)
+          choosenParamsForModifiedCharts = getUserInputs(modifiedCharts, firstEnvCharts, secondEnvCharts)
+          choosenParamsForRemovedCharts = getUserInputs(removedCharts, firstEnvCharts, secondEnvCharts)
         }
 
         stage('sync-services') {
-          updateCharts(choosenParamsForAddedCharts)
-          updateCharts(choosenParamsForModifiedCharts)
-          updateCharts(choosenParamsForRemovedCharts)
+          updateCharts(choosenParamsForAddedCharts, HelmAction.CREATE)
+          updateCharts(choosenParamsForModifiedCharts, HelmAction.UPDATE)
+          updateCharts(choosenParamsForRemovedCharts, HelmAction.DELETE)
         }
       }
     }
@@ -55,35 +60,52 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
   }
 }
 
-private void updateCharts(Map<String, Boolean> choosenParams) {
+private void updateCharts(Map<String, Boolean> choosenParams, HelmAction helmAction) {
   echo "Syncing services started by ${choosenParams.get('approver')}"
   choosenParams.remove('approver')
   Set<String> chartsToBeSynced = choosenParams.keySet()
   for (int i = 0; i < chartsToBeSynced.size(); i++) {
     String chartToBeSynced = chartsToBeSynced.getAt(i)
     if (choosenParams.get(chartToBeSynced)) {
-      echo "syncing service ${chartToBeSynced}"
+      echo "syncing service ${chartToBeSynced}. Performing helm action: ${helmAction}"
     } else {
       echo "skipping service with name ${chartToBeSynced} from syncing"
     }
   }
 }
 
-private Map<String, Boolean> getUserInputs(List<String> charts) {
+private Map<String, Boolean> getUserInputs(List<String> charts, Map<String, String> firstEnvCharts,
+                                           Map<String, String> secondEnvCharts) {
   List<String> checkboxesForAddedCharts = []
   for (int i = 0; i < charts.size(); i++) {
-    String addedChart = charts.get(i)
+    String chartName = charts.get(i)
+    String checkboxDescription = getCheckboxDescription(secondEnvCharts.get(chartName), firstEnvCharts.get(chartName))
     checkboxesForAddedCharts.add(booleanParam(defaultValue: false,
-                                              description: "Service added",
-                                              name: addedChart))
+                                              description: checkboxDescription,
+                                              name: chartName))
   }
 
-  Map<String, Boolean> choosenParams = input(message: "Charts to be added",
-                                             parameters: checkboxesForAddedCharts,
-                                             submitterParameter: 'approver',
-                                             ok: "Sync services")
+  Map<String, Boolean> choosenParams
+  if (checkboxesForAddedCharts.isEmpty()) {
+    choosenParams = input(message: "Charts to be added",
+                          parameters: checkboxesForAddedCharts,
+                          submitterParameter: 'approver',
+                          ok: "Sync services")
+  }
 
   return choosenParams
+}
+
+private String getCheckboxDescription(String oldChartVersion, String newChartVersion) {
+  if (newChartVersion == null) {
+    return ""
+  }
+
+  if (oldChartVersion == null) {
+    return "New version: ${oldChartVersion}"
+  }
+
+  return "Old version: ${oldChartVersion}, new version: ${newChartVersion}"
 }
 
 private Map<String, String> getChartsFromEnv(Environment env, Cluster cluster) {
@@ -122,14 +144,13 @@ private List<String> getModifiedCharts(Map<String, String> firstEnv, Map<String,
 
     if (secondEnv[chartName] != null && chartVersion != secondEnv[chartName]) {
       modifiedCharts.add(chartName)
-      echo "${chartName}: updated chart: ${chartVersion} -- ${secondEnv[chartName]}"
     }
   }
 
   return modifiedCharts
 }
 
-private List<String> diffBetweenMaps(Map<String, String> firstEnv, Map<String, String> secondEnv) {
+private List<String> diffBetweenEnvs(Map<String, String> firstEnv, Map<String, String> secondEnv) {
   Set<String> secondEnvCharts = secondEnv.keySet()
   List<String> removedCharts = []
   for (int i = 0; i <= secondEnvCharts.size(); i++) {
@@ -140,4 +161,8 @@ private List<String> diffBetweenMaps(Map<String, String> firstEnv, Map<String, S
   }
 
   return removedCharts
+}
+
+enum HelmAction {
+  CREATE, UPDATE, DELETE
 }
