@@ -25,7 +25,7 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           echo "Diff the clusters."
           firstEnvCharts = getChartsFromEnv(envToSyncFrom, cluster)
           secondEnvCharts = getChartsFromEnv(envToBeSynced, cluster)
-
+          
           removedCharts = diffBetweenEnvs(firstEnvCharts, secondEnvCharts)
           addedCharts = diffBetweenEnvs(secondEnvCharts, firstEnvCharts)
           modifiedCharts = getModifiedCharts(firstEnvCharts, secondEnvCharts)
