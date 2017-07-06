@@ -172,7 +172,7 @@ void updateChartVersionFile(String chartVersion) {
 }
 
 private String getAppConfigurationFileName(Environment targetEnv, Cluster targetCluster, String app) {
-  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/${app}/${APPS_CONFIG_FOLDER}"
+  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/**/${APPS_CONFIG_FOLDER}"
 
   //looking for configuration file for a specific env, e.g. publishing_pre-prod
   String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"
