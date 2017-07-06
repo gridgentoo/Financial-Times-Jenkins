@@ -1,19 +1,21 @@
+import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
-import com.ft.jenkins.BuildConfig
-import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.docker.DockerUtils
+import com.ft.jenkins.git.GitUtils
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
-def call(BuildConfig config, String dockerImageVersion, String environmentName) {
-
+def call(BuildConfig config, String environmentName, String releaseName, boolean branchRelease) {
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
+  GitUtils gitUtils = new GitUtils()
 
   Environment environment
   List<String> deployedApps = null
+  String imageVersion
 
   node('docker') {
     catchError {
@@ -22,9 +24,11 @@ def call(BuildConfig config, String dockerImageVersion, String environmentName) 
           checkout scm
         }
 
+        imageVersion = getImageVersion(releaseName, gitUtils.getMostRecentGitTag(), branchRelease)
+
         stage('build image') {
           String dockerRepository = deployUtil.getDockerImageRepository()
-          dockerUtils.buildAndPushImage("${dockerRepository}:${dockerImageVersion}")
+          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
         environment = EnvsRegistry.getEnvironment(environmentName)
@@ -34,14 +38,14 @@ def call(BuildConfig config, String dockerImageVersion, String environmentName) 
           Cluster clusterToDeploy = deployToClusters.get(i)
 
           stage("deploy to ${environment.name}-${clusterToDeploy.label}") {
-            deployedApps = deployUtil.deployAppWithHelm(dockerImageVersion, environment, clusterToDeploy)
+            deployedApps = deployUtil.deployAppWithHelm(imageVersion, environment, clusterToDeploy)
           }
         }
       }
     }
 
     catchError {
-      sendNotifications(environment, config, deployedApps, dockerImageVersion)
+      sendNotifications(environment, config, deployedApps, imageVersion)
     }
 
     stage("cleanup") {
@@ -50,7 +54,16 @@ def call(BuildConfig config, String dockerImageVersion, String environmentName) 
   }
 }
 
-private void sendNotifications(Environment environment, BuildConfig config, List<String> deployedApps, String imageVersion) {
+private String getImageVersion(String releaseName, String gitTag, boolean branchRelease) {
+  if (branchRelease) {
+    return "${gitTag}-${releaseName}"
+  }
+
+  return releaseName
+}
+
+private void sendNotifications(Environment environment, BuildConfig config, List<String> deployedApps,
+                               String imageVersion) {
   stage("notifications") {
     if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
       sendSuccessNotifications(environment, config, deployedApps, imageVersion)
@@ -60,14 +73,25 @@ private void sendNotifications(Environment environment, BuildConfig config, List
   }
 }
 
-private void sendSuccessNotifications(Environment environment, BuildConfig config, List<String> deployedApps, String imageVersion) {
+private void sendSuccessNotifications(Environment environment, BuildConfig config, List<String> deployedApps,
+                                      String imageVersion) {
   SlackUtils slackUtil = new SlackUtils()
 
   SlackAttachment attachment = new SlackAttachment()
   String deployedAppsAsString = deployedApps.join(",")
+  List<String> healthURLs = []
+  for (Cluster cluster : config.deployToClusters) {
+    String entryPointURL = environment.getEntryPointUrl(cluster)
+    String healthURL = "<${entryPointURL}/__health|${cluster.getLabel()}-${environment.name}>"
+    healthURLs.add(healthURL)
+  }
+
+  String healthURLsAsString = healthURLs.join(",")
   attachment.titleUrl = env.BUILD_URL
   attachment.title = "[${deployedAppsAsString}]:${imageVersion} deployed in '${environment.name}'"
-  attachment.text = """The applications `[${ deployedAppsAsString}]` were deployed automatically with version `${imageVersion}` in env: `${environment.name}` in clusters: *${Cluster.toLabels(config.deployToClusters).join(',')}*."""
+  attachment.text = """The applications `[${deployedAppsAsString}]` were deployed automatically with version `${
+    imageVersion
+  }` in ${healthURLsAsString}"""
   slackUtil.sendEnhancedSlackNotification(environment.slackChannel, attachment)
 }
 

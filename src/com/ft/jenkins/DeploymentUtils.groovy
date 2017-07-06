@@ -1,5 +1,9 @@
 package com.ft.jenkins
 
+import com.ft.jenkins.exceptions.ConfigurationNotFoundException
+import com.ft.jenkins.exceptions.InvalidAppConfigFileNameException
+import com.ft.jenkins.git.GitUtilsConstants
+
 import java.util.regex.Matcher
 
 import static DeploymentUtilsConstants.APPS_CONFIG_FOLDER
@@ -7,6 +11,7 @@ import static DeploymentUtilsConstants.CREDENTIALS_DIR
 import static DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
 import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static DeploymentUtilsConstants.K8S_CLI_IMAGE
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
 
 /**
  * Deploys the application(s) in the current workspace using helm. It expects the helm chart to be defined in the {@link DeploymentUtilsConstants#HELM_CONFIG_FOLDER} folder.
@@ -18,10 +23,20 @@ import static DeploymentUtilsConstants.K8S_CLI_IMAGE
 public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
   List<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env, cluster, region, {
-    def chartName = getHelmChartFolderName()
+    updateChartVersionFile(imageVersion)
 
-    for (String app : appsToDeploy) {
-      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${HELM_CONFIG_FOLDER}/${chartName}/${APPS_CONFIG_FOLDER}/${app}.yaml --set image.version=${imageVersion}"
+    String chartName = getHelmChartFolderName()
+    for (int i = 0; i < appsToDeploy.size(); i++) {
+      String app = appsToDeploy.get(i)
+      String configurationFileName = getAppConfigurationFileName(env, cluster, app)
+      if (!configurationFileName) {
+        throw new ConfigurationNotFoundException(
+            "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions.")
+      }
+
+      echo "Using app config file ${configurationFileName} to deploy with helm"
+
+      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFileName}"
     }
   })
   return appsToDeploy
@@ -42,23 +57,29 @@ public String getDockerImageRepository() {
 
 public List<String> getAppNamesInRepo() {
   String chartFolderName = getHelmChartFolderName()
-  List<String> appNames = []
+  Set<String> appNames = []
   def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
+  echo "test : ${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml"
 
-  for (def configFile :foundConfigFiles) {
+  for (def configFile : foundConfigFiles) {
     /*  strip the .yaml extension from the files */
     String fileName = configFile.name
-    appNames.add(fileName.substring(0, fileName.indexOf('.')))
+    if (fileName.contains("_")) {
+      appNames.add(fileName.substring(0, fileName.indexOf('_')))
+    } else {
+      throw new InvalidAppConfigFileNameException(
+          "found invalid app configuration file name: ${fileName} with path: ${configFile.path}")
+    }
   }
 
-  return appNames
+  return new ArrayList<>(appNames)
 }
 
 /**
  * Retrieves the folder name where the Helm chart is defined .
  */
 private String getHelmChartFolderName() {
-  def chartFile = findFiles(glob: "${HELM_CONFIG_FOLDER}/**/Chart.yaml")[0]
+  def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
   String[] chartFilePathComponents = ((String) chartFile.path).split('/')
   /* return the parent folder of Chart.yaml */
   return chartFilePathComponents[chartFilePathComponents.size() - 2]
@@ -101,7 +122,8 @@ String getTeamFromReleaseCandidateTag(String rcTag) {
   if (tagComponents.length > 1) {
     return tagComponents[1]
   }
-  throw new IllegalArgumentException("The tag '${rcTag}' is not a valid release candidate tag. A good example is: 0.2.0-xp-test-release-rc2")
+  throw new IllegalArgumentException(
+      "The tag '${rcTag}' is not a valid release candidate tag. A good example is: 0.2.0-xp-test-release-rc2")
 }
 
 /**
@@ -120,7 +142,9 @@ String getEnvironmentName(String branchName) {
   if (values.length > 2) {
     return values[values.length - 2]
   }
-  throw new IllegalArgumentException("The branch '${branchName}' does not contain the environment where to deploy the application. A valid name is 'deploy-on-push/xp/test'")
+
+  throw new IllegalArgumentException(
+      "The branch '${branchName}' does not contain the environment where to deploy the application. A valid name is 'deploy-on-push/xp/test'")
 }
 
 /**
@@ -130,7 +154,44 @@ String getEnvironmentName(String branchName) {
  * @param branchName the name of the branch
  * @return the docker image version
  */
-String getDockerImageVersion(String branchName) {
+String getReleaseCandidateName(String branchName) {
   String[] values = branchName.split('/')
   return values[values.length - 1]
+}
+
+void updateChartVersionFile(String chartVersion) {
+  echo "Setting chart version to: ${chartVersion}"
+  def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
+  String chartFileContent = readFile chartFile.path
+  String updatedChartFileContent = chartFileContent.
+      replaceAll("(Version|version):.*", "Version: ${chartVersion}")
+  writeFile file: chartFile.path, text: updatedChartFileContent
+
+  echo "Updated chart yaml:"
+  sh "cat ${chartFile.path}"
+}
+
+private String getAppConfigurationFileName(Environment targetEnv, Cluster targetCluster, String app) {
+  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/**/${APPS_CONFIG_FOLDER}"
+
+  //looking for configuration file for a specific env, e.g. publishing_pre-prod
+  String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"
+  String appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
+  echo "searching for: ${appConfigPath}"
+  if (fileExists(appConfigPath)) {
+    return appConfigPath
+  }
+
+  //looking for configuration file for all envs
+  appConfigFileName = "${app}_${targetCluster.getLabel()}"
+  appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
+  echo "searching for: ${appConfigPath}"
+  if (fileExists(appConfigPath)) {
+    return appConfigPath
+  }
+}
+
+private boolean fileExists(String path) {
+  def foundConfigFiles = findFiles(glob: path)
+  return foundConfigFiles.length > 0
 }

@@ -13,9 +13,8 @@ class Environment implements Serializable {
   List<String> regions = null
   /*  Mapping between region+cluster and their respective Kubernetes api servers. */
   public Map<String, String> clusterToApiServerMap
-  
 
-  public String getEntryPointUrl(Cluster cluster, String region) {
+  public String getEntryPointUrl(Cluster cluster, String region = null) {
     return getApiServerForCluster(cluster,region).replace("-api","")
   }
 
