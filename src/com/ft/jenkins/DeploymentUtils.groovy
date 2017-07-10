@@ -1,8 +1,8 @@
 package com.ft.jenkins
 
+import com.ft.jenkins.aws.AwsUtils
 import com.ft.jenkins.exceptions.ConfigurationNotFoundException
 import com.ft.jenkins.exceptions.InvalidAppConfigFileNameException
-import com.ft.jenkins.git.GitUtilsConstants
 
 import java.util.regex.Matcher
 
@@ -11,7 +11,10 @@ import static DeploymentUtilsConstants.CREDENTIALS_DIR
 import static DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
 import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static DeploymentUtilsConstants.K8S_CLI_IMAGE
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_AWS_CREDENTIALS
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_REPO_URL
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
 /**
  * Deploys the application(s) in the current workspace using helm. It expects the helm chart to be defined in the {@link DeploymentUtilsConstants#HELM_CONFIG_FOLDER} folder.
@@ -73,6 +76,26 @@ public List<String> getAppNamesInRepo() {
   }
 
   return new ArrayList<>(appNames)
+}
+
+public void publishHelmChart(String version) {
+  String chartFolderName = getHelmChartFolderName()
+  /*  pack the chart  */
+  docker.image(K8S_CLI_IMAGE).inside("-e 'HELM_HOME=/tmp/.helm'") {
+    String repoName = "upp"
+    sh "helm init -c"
+    sh "helm package --version ${version} ${HELM_CONFIG_FOLDER}/${chartFolderName}"
+
+    /*  todo [sb] here we'd need a solution for blocking any updates from other jobs */
+    /* update the repository index.yaml */
+    sh "helm repo add ${repoName} ${HELM_REPO_URL}"
+    sh "helm repo index --merge \$HELM_HOME/repository/cache/${repoName}-index.yaml --url ${HELM_REPO_URL} ."
+  }
+
+  /*  upload chart and updated index to S3  */
+  AwsUtils awsUtils = new AwsUtils()
+  awsUtils.uploadS3Files(HELM_S3_BUCKET, HELM_AWS_CREDENTIALS,
+                         (String) "${chartFolderName}-${version}.tgz", "index.yaml")
 }
 
 /**
@@ -195,3 +218,4 @@ private boolean fileExists(String path) {
   def foundConfigFiles = findFiles(glob: path)
   return foundConfigFiles.length > 0
 }
+

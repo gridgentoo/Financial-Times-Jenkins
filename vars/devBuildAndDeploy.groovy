@@ -31,6 +31,10 @@ def call(BuildConfig config, String environmentName, String releaseName, boolean
           dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
         }
 
+        stage('publish chart') {
+          deployUtil.publishHelmChart(imageVersion)
+        }
+
         environment = EnvsRegistry.getEnvironment(environmentName)
 
         List<Cluster> deployToClusters = config.getDeployToClusters()

@@ -12,4 +12,7 @@ final class DeploymentUtilsConstants {
   public static final String DEFAULT_HELM_VALUES_FILE = "values.yaml"
   public static final String OPTION_ALL = "All"
 
+  public static final String HELM_S3_BUCKET = "s3://upp-helm-repo/"
+  public static final String HELM_AWS_CREDENTIALS = "ft.helm-repo.aws-credentials"
+  public static final String HELM_REPO_URL = "http://upp-helm-repo.s3-website-eu-west-1.amazonaws.com"
 }
