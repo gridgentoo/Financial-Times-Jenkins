@@ -13,6 +13,7 @@ import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static DeploymentUtilsConstants.K8S_CLI_IMAGE
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_AWS_CREDENTIALS
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_LOCAL_REPO_NAME
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_REPO_URL
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
@@ -23,6 +24,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
  * @param env the environment name where it will be deployed.
  * @return the list of applications deployed
  */
+//  todo [sb] remove this
 public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
   List<String> appsToDeploy = getAppNamesInRepo()
   runWithK8SCliTools(env, cluster, region, {
@@ -31,7 +33,7 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
     String chartName = getHelmChartFolderName()
     for (int i = 0; i < appsToDeploy.size(); i++) {
       String app = appsToDeploy.get(i)
-      String configurationFileName = getAppConfigurationFileName(env, cluster, app)
+      String configurationFileName = getAppConfigurationFileName("${HELM_CONFIG_FOLDER}/${chartName}", env, cluster, app)
       if (!configurationFileName) {
         throw new ConfigurationNotFoundException(
             "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions.")
@@ -43,6 +45,32 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
     }
   })
   return appsToDeploy
+}
+
+public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
+                                                            Cluster deployOnlyInCluster = null, String region = null) {
+  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, deployOnlyInCluster)
+
+  /*  deploy apps in all target clusters */
+  appsPerCluster.each { targetCluster, appsToDeploy ->
+    runWithK8SCliTools(env, targetCluster, region, {
+
+      for (int i = 0; i < appsToDeploy.size(); i++) {
+        String app = appsToDeploy.get(i)
+        String configurationFileName = getAppConfigurationFileName(chartFolderLocation, env, targetCluster, app)
+        if (!configurationFileName) {
+          throw new ConfigurationNotFoundException(
+              "Cannot find app configuration file ${configurationFileName}. Maybe it does not meet the naming conventions.")
+        }
+
+        echo "Using app config file ${configurationFileName} to deploy with helm"
+
+        sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName}"
+      }
+    })
+
+  }
+  return appsPerCluster
 }
 
 /**
@@ -58,6 +86,7 @@ public String getDockerImageRepository() {
   return matcher[0][1]
 }
 
+//  todo [sb] remove this
 public List<String> getAppNamesInRepo() {
   String chartFolderName = getHelmChartFolderName()
   Set<String> appNames = []
@@ -78,18 +107,74 @@ public List<String> getAppNamesInRepo() {
   return new ArrayList<>(appNames)
 }
 
+public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation,
+                                                         Cluster includeOnlyCluster = null) {
+  Map<Cluster, List<String>> result = [:]
+  def foundConfigFiles = findFiles(glob: "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/*.yaml")
+
+  for (def configFile : foundConfigFiles) {
+    /*  compute the app name and the cluster where it will be deployed. The format is ${app-name}_${cluster}[_${env}].yaml */
+    String configFileName = configFile.name
+    /*  strip the yaml extenstion */
+    configFileName = configFileName.replace(".yaml", "")
+    String[] fileNameParts = configFileName.split("_")
+
+    if (fileNameParts.length > 1) {
+      /*  add the app name to the corresponding cluster if it wasn't added yet */
+      Cluster targetCluster = Cluster.valueOfLabel(fileNameParts[1])
+      if (includeOnlyCluster && targetCluster != includeOnlyCluster) {
+        continue
+      }
+      String appName = fileNameParts[0]
+      addAppToCluster(result, targetCluster, appName)
+
+    } else {
+      throw new InvalidAppConfigFileNameException(
+          "found invalid app configuration file name: ${configFileName} with path: ${configFile.path}")
+    }
+  }
+
+  return result
+}
+
+private void addAppToCluster(LinkedHashMap<Cluster, List<String>> result, Cluster targetCluster, String appName) {
+  if (result[targetCluster] == null) {
+    result.put(targetCluster, [])
+  }
+
+  if (!result[targetCluster].contains(appName)) {
+    result[targetCluster].add(appName)
+    echo "App ${appName} will be deployed in cluster ${targetCluster.label}"
+  }
+}
+
+public Map<Cluster, List<String>> deployAppFromHelmRepo(String chartName, String chartVersion, Environment targetEnv,
+                                  Cluster onlyToCluster = null, String region = null) {
+  /*  fetch the chart locally */
+  runHelmOperations {
+    sh "helm fetch --untar ${HELM_LOCAL_REPO_NAME}/${chartName} --version ${chartVersion}"
+  }
+
+  return deployAppsInChartWithHelm(chartName, targetEnv, onlyToCluster, region)
+}
+
+public void runHelmOperations(Closure codeToRun) {
+  docker.image(K8S_CLI_IMAGE).inside("-e 'HELM_HOME=/tmp/.helm'") {
+    sh "helm init -c"
+    sh "helm repo add ${HELM_LOCAL_REPO_NAME} ${HELM_REPO_URL}"
+    codeToRun.call()
+  }
+}
+
 public void publishHelmChart(String version) {
   String chartFolderName = getHelmChartFolderName()
-  /*  pack the chart  */
-  docker.image(K8S_CLI_IMAGE).inside("-e 'HELM_HOME=/tmp/.helm'") {
-    String repoName = "upp"
-    sh "helm init -c"
+  runHelmOperations {
+    /*  pack the chart  */
     sh "helm package --version ${version} ${HELM_CONFIG_FOLDER}/${chartFolderName}"
 
-    /*  todo [sb] here we'd need a solution for blocking any updates from other jobs */
+    /*  todo [sb] here we'd need a solution for blocking any updates from other jobs until this update finishes */
     /* update the repository index.yaml */
-    sh "helm repo add ${repoName} ${HELM_REPO_URL}"
-    sh "helm repo index --merge \$HELM_HOME/repository/cache/${repoName}-index.yaml --url ${HELM_REPO_URL} ."
+    sh "helm repo index --merge \$HELM_HOME/repository/cache/${HELM_LOCAL_REPO_NAME}-index.yaml --url ${HELM_REPO_URL} ."
   }
 
   /*  upload chart and updated index to S3  */
@@ -194,8 +279,8 @@ void updateChartVersionFile(String chartVersion) {
   sh "cat ${chartFile.path}"
 }
 
-private String getAppConfigurationFileName(Environment targetEnv, Cluster targetCluster, String app) {
-  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/**/${APPS_CONFIG_FOLDER}"
+private String getAppConfigurationFileName(String chartFolderLocation, Environment targetEnv, Cluster targetCluster, String app) {
+  String appsConfigFolder = "${chartFolderLocation}/${APPS_CONFIG_FOLDER}"
 
   //looking for configuration file for a specific env, e.g. publishing_pre-prod
   String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"

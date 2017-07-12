@@ -11,6 +11,15 @@ enum Cluster implements Serializable {
     this.label = label
   }
 
+  public static final Cluster valueOfLabel(String label) {
+    for (Cluster cluster : Cluster.values()) {
+      if (cluster.label == label) {
+        return cluster
+      }
+    }
+    return null
+  }
+
   public static final List<String> toLabels(List<Cluster> clusters) {
     List<String> labels = []
     for (int i = 0; i < clusters.size(); i++) {

@@ -38,6 +38,25 @@ class Environment implements Serializable {
     return namesWithRegion.join(", ")
   }
 
+  public String getFullClusterName(Cluster cluster, String region = null) {
+    String fullName = "${cluster.getLabel()}-${environment.name}"
+    if (region) {
+      fullName = fullName + "-${region}"
+    }
+    return fullName
+  }
+
+  public List<String> getRegionsToDeployTo(String deployOnlyToRegion) {
+    List<String> deployToRegions = []
+    if (deployOnlyToRegion == null) {
+      if (this.regions != null) {
+        deployToRegions.addAll(this.regions)
+      }
+    } else if (this.regions && this.regions.contains(deployOnlyToRegion)) {
+      deployToRegions.add(deployOnlyToRegion)
+    }
+    return deployToRegions
+  }
   public List<String> getValidatedRegions(List<String> remainingRegions) {
     List<String> validatedRegions = []
     validatedRegions.addAll(this.getRegions())

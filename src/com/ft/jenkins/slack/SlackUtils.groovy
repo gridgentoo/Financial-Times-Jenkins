@@ -1,5 +1,7 @@
 package com.ft.jenkins.slack
 
+import com.ft.jenkins.Cluster
+import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
 
 import static com.ft.jenkins.slack.SlackConstants.BOT_USERNAME
@@ -17,6 +19,13 @@ final class SlackConstants {
 public void sendEnvSlackNotification(String environment, String message) {
   sendSlackNotification(EnvsRegistry.getSlackChannelForEnv(environment), message)
 }
+
+public String getHealthUrl(Environment environment, Cluster cluster, String region = null) {
+  String entryPointURL = environment.getEntryPointUrl(cluster)
+  String fullClusterName = environment.getFullClusterName(cluster, region)
+  return "<${entryPointURL}/__health|${fullClusterName}>"
+}
+
 
 /**
  * Sends a slack notification using the https://api.slack.com/methods/chat.postMessage method.
