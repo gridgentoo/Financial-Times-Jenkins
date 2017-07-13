@@ -19,7 +19,7 @@ def call() {
 
   DeploymentUtils deploymentUtils = new DeploymentUtils()
   node('docker') {
-    currentBuild.description = "${chart}:${version} -> ${targetEnv}"
+    currentBuild.description = "${chart}:${version} -> ${targetEnv.name}"
     Map<Cluster, List<String>> deployedAppsPerCluster
 
     catchError {
@@ -119,7 +119,7 @@ public String getDeploymentMessageForApps(List<String> apps, Environment environ
   List<String> deployedHealthUrls =
       getHealthUrlsForDeployeClusters(environment, clusters, deployOnlyRegion)
 
-  return "The applications `${apps}:${version}` were deployed automatically in ${deployedHealthUrls}"
+  return "The applications `${apps}` were deployed automatically with version `${version}` in ${deployedHealthUrls}"
 }
 
 public List<String> getAppsInFirstCluster(Map<Cluster, List<String>> appsPerCluster) {

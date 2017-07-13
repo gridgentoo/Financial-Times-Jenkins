@@ -21,7 +21,7 @@ public void sendEnvSlackNotification(String environment, String message) {
 }
 
 public String getHealthUrl(Environment environment, Cluster cluster, String region = null) {
-  String entryPointURL = environment.getEntryPointUrl(cluster)
+  String entryPointURL = environment.getEntryPointUrl(cluster, region)
   String fullClusterName = environment.getFullClusterName(cluster, region)
   return "<${entryPointURL}/__health|${fullClusterName}>"
 }

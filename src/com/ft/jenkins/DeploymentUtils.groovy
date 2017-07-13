@@ -33,7 +33,8 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
     String chartName = getHelmChartFolderName()
     for (int i = 0; i < appsToDeploy.size(); i++) {
       String app = appsToDeploy.get(i)
-      String configurationFileName = getAppConfigurationFileName("${HELM_CONFIG_FOLDER}/${chartName}", env, cluster, app)
+      String configurationFileName =
+          getAppConfigurationFileName("${HELM_CONFIG_FOLDER}/${chartName}", env, cluster, app)
       if (!configurationFileName) {
         throw new ConfigurationNotFoundException(
             "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions.")
@@ -50,27 +51,37 @@ public List<String> deployAppWithHelm(String imageVersion, Environment env, Clus
 public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
                                                             Cluster deployOnlyInCluster = null, String region = null) {
   Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, deployOnlyInCluster)
+  List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
 
   /*  deploy apps in all target clusters */
-  appsPerCluster.each { targetCluster, appsToDeploy ->
-    runWithK8SCliTools(env, targetCluster, region, {
-
-      for (int i = 0; i < appsToDeploy.size(); i++) {
-        String app = appsToDeploy.get(i)
-        String configurationFileName = getAppConfigurationFileName(chartFolderLocation, env, targetCluster, app)
-        if (!configurationFileName) {
-          throw new ConfigurationNotFoundException(
-              "Cannot find app configuration file ${configurationFileName}. Maybe it does not meet the naming conventions.")
-        }
-
-        echo "Using app config file ${configurationFileName} to deploy with helm"
-
-        sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName}"
+  appsPerCluster.each { Cluster targetCluster, List<String> appsToDeploy ->
+    if (regionsToDeployTo) {
+      for (String regionToDeployTo : regionsToDeployTo) {
+        executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env, regionToDeployTo)
       }
-    })
+    } else { // the environment has no region
+      executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env)
+    }
 
   }
   return appsPerCluster
+}
+
+public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, String chartFolderLocation,
+                             Environment env, String region = null) {
+  runWithK8SCliTools(env, targetCluster, region, {
+    for (String app : appsToDeploy) {
+      String configurationFileName = getAppConfigurationFileName(chartFolderLocation, env, targetCluster, app)
+      if (!configurationFileName) {
+        throw new ConfigurationNotFoundException(
+            "Cannot find app configuration file ${configurationFileName}. Maybe it does not meet the naming conventions.")
+      }
+
+      echo "Using app config file ${configurationFileName} to deploy with helm"
+
+      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName}"
+    }
+  })
 }
 
 /**
@@ -149,7 +160,7 @@ private void addAppToCluster(LinkedHashMap<Cluster, List<String>> result, Cluste
 }
 
 public Map<Cluster, List<String>> deployAppFromHelmRepo(String chartName, String chartVersion, Environment targetEnv,
-                                  Cluster onlyToCluster = null, String region = null) {
+                                                        Cluster onlyToCluster = null, String region = null) {
   /*  fetch the chart locally */
   runHelmOperations {
     sh "helm fetch --untar ${HELM_LOCAL_REPO_NAME}/${chartName} --version ${chartVersion}"
@@ -279,7 +290,8 @@ void updateChartVersionFile(String chartVersion) {
   sh "cat ${chartFile.path}"
 }
 
-private String getAppConfigurationFileName(String chartFolderLocation, Environment targetEnv, Cluster targetCluster, String app) {
+private String getAppConfigurationFileName(String chartFolderLocation, Environment targetEnv, Cluster targetCluster,
+                                           String app) {
   String appsConfigFolder = "${chartFolderLocation}/${APPS_CONFIG_FOLDER}"
 
   //looking for configuration file for a specific env, e.g. publishing_pre-prod

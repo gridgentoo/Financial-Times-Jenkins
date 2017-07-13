@@ -39,7 +39,7 @@ class Environment implements Serializable {
   }
 
   public String getFullClusterName(Cluster cluster, String region = null) {
-    String fullName = "${cluster.getLabel()}-${environment.name}"
+    String fullName = "${cluster.getLabel()}-${this.name}"
     if (region) {
       fullName = fullName + "-${region}"
     }
