@@ -13,6 +13,7 @@ import com.ft.jenkins.git.GithubReleaseInfo
  * This multibranch pipeline is designed to be triggered only for tags coming from Github releases and for branches named "deploy-on-push/..".
  */
 
+//  keeping this method so that OLD style Jenkinsfiles
 def call(BuildConfig config) {
   call()
 }
@@ -27,14 +28,13 @@ def call() {
 
     if (releaseInfo.isPreRelease) {
       String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(releaseInfo.getTagName())
-      devBuildAndDeploy(envToDeploy,releaseInfo.tagName,false)
+      devBuildAndDeploy(envToDeploy, releaseInfo.tagName, false)
     } else {
-      /*  todo [SB] remove config from call*/
-      releaseBuildAndDeploy(config, releaseInfo)
+      releaseBuildAndDeploy(releaseInfo)
     }
   } else if (gitUtils.isDeployOnPushForBranch(currentBranch)) {
     String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
-    devBuildAndDeploy(deployUtils.getEnvironmentName(currentBranch),releaseCandidateName,true)
+    devBuildAndDeploy(deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
   }
 
   echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"

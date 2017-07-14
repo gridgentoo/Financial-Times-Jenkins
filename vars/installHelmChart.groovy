@@ -39,7 +39,7 @@ def call() {
   }
 }
 
-public String computeDeployOnlyInRegion() {
+String computeDeployOnlyInRegion() {
   String regionInput = params.Region
   String deployOnlyInRegion = regionInput
   if (regionInput == "all") {
@@ -48,13 +48,13 @@ public String computeDeployOnlyInRegion() {
   return deployOnlyInRegion
 }
 
-public Cluster computeDeployOnlyInCluster() {
+Cluster computeDeployOnlyInCluster() {
   String clusterInput = params.Cluster
   Cluster deployOnlyInCluster = Cluster.valueOfLabel(clusterInput)
   return deployOnlyInCluster
 }
 
-public Environment computeTargetEnvironment() {
+Environment computeTargetEnvironment() {
   String environmentInput = params.Environment
   Environment targetEnv = EnvsRegistry.getEnvironment(environmentInput)
   if (targetEnv == null) {
@@ -88,17 +88,17 @@ private void sendFailureNotifications() {
 void sendSuccessNotification(Environment environment, String chart, String version,
                              Map<Cluster, List<String>> appsPerCluster, String deployOnlyRegion) {
   SlackUtils slackUtil = new SlackUtils()
-
+  DeploymentUtils deploymentUtils = new DeploymentUtils()
 
   SlackAttachment attachment = new SlackAttachment()
   attachment.titleUrl = env.BUILD_URL
   attachment.title = "[${chart}]:${version} deployed in '${environment.name}'"
 
-  boolean sameAppsInAllClusters = areSameAppsInAllClusters(appsPerCluster)
+  boolean sameAppsInAllClusters = deploymentUtils.areSameAppsInAllClusters(appsPerCluster)
 
   if (sameAppsInAllClusters) {
     //  we need a single message, as the same apps were deployed.
-    List<String> appsInFirstCluster = getAppsInFirstCluster(appsPerCluster)
+    List<String> appsInFirstCluster = deploymentUtils.getAppsInFirstCluster(appsPerCluster)
     Set<Cluster> allClusters = appsPerCluster.keySet()
 
     String text = getDeploymentMessageForApps(appsInFirstCluster, environment, allClusters, deployOnlyRegion, version)
@@ -114,21 +114,18 @@ void sendSuccessNotification(Environment environment, String chart, String versi
   slackUtil.sendEnhancedSlackNotification(environment.slackChannel, attachment)
 }
 
-public String getDeploymentMessageForApps(List<String> apps, Environment environment, Collection<Cluster> clusters,
+String getDeploymentMessageForApps(List<String> apps, Environment environment, Collection<Cluster> clusters,
                                           String deployOnlyRegion, String version) {
   List<String> deployedHealthUrls =
-      getHealthUrlsForDeployeClusters(environment, clusters, deployOnlyRegion)
+      getHealthUrlsForDeployClusters(environment, clusters, deployOnlyRegion)
 
   return "The applications `${apps}` were deployed automatically with version `${version}` in ${deployedHealthUrls}"
 }
 
-public List<String> getAppsInFirstCluster(Map<Cluster, List<String>> appsPerCluster) {
-  Cluster firstCluster = appsPerCluster.keySet().iterator().next()
-  return appsPerCluster.get(firstCluster)
-}
 
-public List<String> getHealthUrlsForDeployeClusters(Environment environment, Collection<Cluster> clusters,
-                                                    String deployOnlyRegion) {
+
+public List<String> getHealthUrlsForDeployClusters(Environment environment, Collection<Cluster> clusters,
+                                                   String deployOnlyRegion) {
   SlackUtils slackUtil = new SlackUtils()
   /*  compute the regions where it was deployed */
   List<String> regionsDeployed = environment.getRegionsToDeployTo(deployOnlyRegion)
@@ -145,15 +142,4 @@ public List<String> getHealthUrlsForDeployeClusters(Environment environment, Col
     }
   }
   return deployedHealthUrls
-}
-
-public boolean areSameAppsInAllClusters(Map<Cluster, List<String>> appsPerCluster) {
-  List<String> appsInFirstCluster = getAppsInFirstCluster(appsPerCluster)
-  Boolean sameAppsInAllClusters = true
-  appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
-    if (appsInFirstCluster != appsInCluster) {
-      sameAppsInAllClusters = false
-    }
-  }
-  return sameAppsInAllClusters
 }

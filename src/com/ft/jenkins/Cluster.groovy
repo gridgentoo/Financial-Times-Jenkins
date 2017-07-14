@@ -20,7 +20,7 @@ enum Cluster implements Serializable {
     return null
   }
 
-  public static final List<String> toLabels(List<Cluster> clusters) {
+  public static final List<String> toLabels(Collection<Cluster> clusters) {
     List<String> labels = []
     for (int i = 0; i < clusters.size(); i++) {
       Cluster cluster = clusters.get(i);

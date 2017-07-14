@@ -17,37 +17,6 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_LOCAL_REPO_NAME
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_REPO_URL
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
-/**
- * Deploys the application(s) in the current workspace using helm. It expects the helm chart to be defined in the {@link DeploymentUtilsConstants#HELM_CONFIG_FOLDER} folder.
- *
- * @param imageVersion the version of the docker image to deploy
- * @param env the environment name where it will be deployed.
- * @return the list of applications deployed
- */
-//  todo [sb] remove this
-public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
-  List<String> appsToDeploy = getAppNamesInRepo()
-  runWithK8SCliTools(env, cluster, region, {
-    updateChartVersionFile(imageVersion)
-
-    String chartName = getHelmChartFolderName()
-    for (int i = 0; i < appsToDeploy.size(); i++) {
-      String app = appsToDeploy.get(i)
-      String configurationFileName =
-          getAppConfigurationFileName("${HELM_CONFIG_FOLDER}/${chartName}", env, cluster, app)
-      if (!configurationFileName) {
-        throw new ConfigurationNotFoundException(
-            "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions.")
-      }
-
-      echo "Using app config file ${configurationFileName} to deploy with helm"
-
-      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFileName}"
-    }
-  })
-  return appsToDeploy
-}
-
 public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
                                                             Cluster deployOnlyInCluster = null, String region = null) {
   Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, deployOnlyInCluster)
@@ -97,26 +66,6 @@ public String getDockerImageRepository() {
   return matcher[0][1]
 }
 
-//  todo [sb] remove this
-public List<String> getAppNamesInRepo() {
-  String chartFolderName = getHelmChartFolderName()
-  Set<String> appNames = []
-  def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
-  echo "test : ${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml"
-
-  for (def configFile : foundConfigFiles) {
-    /*  strip the .yaml extension from the files */
-    String fileName = configFile.name
-    if (fileName.contains("_")) {
-      appNames.add(fileName.substring(0, fileName.indexOf('_')))
-    } else {
-      throw new InvalidAppConfigFileNameException(
-          "found invalid app configuration file name: ${fileName} with path: ${configFile.path}")
-    }
-  }
-
-  return new ArrayList<>(appNames)
-}
 
 public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation,
                                                          Cluster includeOnlyCluster = null) {
@@ -315,5 +264,21 @@ private String getAppConfigurationFileName(String chartFolderLocation, Environme
 private boolean fileExists(String path) {
   def foundConfigFiles = findFiles(glob: path)
   return foundConfigFiles.length > 0
+}
+
+public List<String> getAppsInFirstCluster(Map<Cluster, List<String>> appsPerCluster) {
+  Cluster firstCluster = appsPerCluster.keySet().iterator().next()
+  return appsPerCluster.get(firstCluster)
+}
+
+public boolean areSameAppsInAllClusters(Map<Cluster, List<String>> appsPerCluster) {
+  List<String> appsInFirstCluster = getAppsInFirstCluster(appsPerCluster)
+  Boolean sameAppsInAllClusters = true
+  appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
+    if (appsInFirstCluster != appsInCluster) {
+      sameAppsInAllClusters = false
+    }
+  }
+  return sameAppsInAllClusters
 }
 
