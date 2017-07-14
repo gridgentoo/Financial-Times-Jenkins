@@ -12,7 +12,12 @@ import com.ft.jenkins.git.GithubReleaseInfo
  *
  * This multibranch pipeline is designed to be triggered only for tags coming from Github releases and for branches named "deploy-on-push/..".
  */
+
 def call(BuildConfig config) {
+  call()
+}
+
+def call() {
   GitUtils gitUtils = new GitUtils()
   String currentBranch = (String) env.BRANCH_NAME
   DeploymentUtils deployUtils = new DeploymentUtils()
@@ -24,6 +29,7 @@ def call(BuildConfig config) {
       String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(releaseInfo.getTagName())
       devBuildAndDeploy(envToDeploy,releaseInfo.tagName,false)
     } else {
+      /*  todo [SB] remove config from call*/
       releaseBuildAndDeploy(config, releaseInfo)
     }
   } else if (gitUtils.isDeployOnPushForBranch(currentBranch)) {
