@@ -18,4 +18,7 @@ public class DeploymentUtilsConstants {
   public static final String HELM_AWS_CREDENTIALS = "ft.helm-repo.aws-credentials"
   public static final String HELM_REPO_URL = "http://upp-helm-repo.s3-website-eu-west-1.amazonaws.com"
   public static final String HELM_LOCAL_REPO_NAME = "upp"
+
+  public static final String GENERIC_DEPLOY_JOB = 'k8s-deployment/utils/deploy-upp-helm-chart'
+
 }

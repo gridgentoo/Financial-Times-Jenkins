@@ -177,7 +177,7 @@ public void runHelmOperations(Closure codeToRun) {
   }
 }
 
-public void publishHelmChart(String version) {
+public String publishHelmChart(String version) {
   String chartFolderName = getHelmChartFolderName()
   runHelmOperations {
     /*  pack the chart  */
@@ -192,6 +192,7 @@ public void publishHelmChart(String version) {
   AwsUtils awsUtils = new AwsUtils()
   awsUtils.uploadS3Files(HELM_S3_BUCKET, HELM_AWS_CREDENTIALS,
                          (String) "${chartFolderName}-${version}.tgz", "index.yaml")
+  return chartFolderName
 }
 
 /**
