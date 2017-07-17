@@ -31,8 +31,7 @@ class Environment implements Serializable {
 
   public String getNamesWithRegions(List<String> regions) {
     List<String> namesWithRegion = []
-    for (int i = 0; i < regions.size(); i++) {
-      String regionName = regions.get(i);
+    for (String regionName : regions) {
       namesWithRegion.add("${name}-${regionName}")
     }
     return namesWithRegion.join(", ")

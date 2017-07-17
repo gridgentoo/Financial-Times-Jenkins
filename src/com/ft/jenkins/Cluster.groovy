@@ -22,8 +22,7 @@ enum Cluster implements Serializable {
 
   public static final List<String> toLabels(Collection<Cluster> clusters) {
     List<String> labels = []
-    for (int i = 0; i < clusters.size(); i++) {
-      Cluster cluster = clusters.get(i);
+    for (Cluster cluster : clusters) {
       labels.add(cluster.label)
     }
     return labels
