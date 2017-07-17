@@ -19,7 +19,8 @@ def call() {
 
   DeploymentUtils deploymentUtils = new DeploymentUtils()
   node('docker') {
-    currentBuild.description = "${chart}:${version} -> ${targetEnv.name}"
+    setBuildDisplayName(chart, version, deployOnlyInRegion, targetEnv)
+
     Map<Cluster, List<String>> deployedAppsPerCluster
 
     catchError {
@@ -27,7 +28,10 @@ def call() {
         deployedAppsPerCluster = deploymentUtils.
             deployAppFromHelmRepo(chart, version, targetEnv, deployOnlyInCluster, deployOnlyInRegion)
       }
+
+      setBuildDescription(deployedAppsPerCluster, version, deployOnlyInRegion, targetEnv)
     }
+
 
     catchError {
       sendNotifications(targetEnv, chart, version, deployedAppsPerCluster, sendSuccessNotifications, deployOnlyInRegion)
@@ -37,6 +41,46 @@ def call() {
       cleanWs()
     }
   }
+}
+
+public void setBuildDescription(Map<Cluster, List<String>> appsPerCluster, String version, String deployOnlyInRegion,
+                                Environment targetEnv) {
+  String appsText
+  DeploymentUtils deployUtils = new DeploymentUtils()
+  List<String> deployRegions = targetEnv.getRegionsToDeployTo(deployOnlyInRegion)
+
+  if (deployUtils.areSameAppsInAllClusters(appsPerCluster)) {
+    List<String> apps = deployUtils.getAppsInFirstCluster(appsPerCluster)
+    List<String> fullClusterNames = targetEnv.getFullClusterNames(appsPerCluster.keySet(), deployRegions)
+
+    appsText = "${apps}:${version} in ${fullClusterNames}"
+  } else { // for different apps in different clusters we need separate messages for each cluster..
+    List<String> messages
+    appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
+      List<String> fullClusterNames = targetEnv.getFullClusterNames([cluster], deployRegions)
+
+      messages.add("${appsInCluster}:${version} in ${fullClusterNames}")
+    }
+    appsText = messages.join("\n")
+  }
+
+  currentBuild.description = appsText
+}
+
+public void setBuildDisplayName(String chart, String version, String deployOnlyInRegion, Environment targetEnv) {
+  Cluster deployOnlyInCluster
+  StringBuilder displayName = new StringBuilder("${currentBuild.number} - ${chart}:${version} -> ${targetEnv.name}")
+  if (deployOnlyInRegion) {
+    displayName.append("- only ${deployOnlyInRegion}")
+  } else {
+    displayName.append("- all regions")
+  }
+  if (deployOnlyInCluster) {
+    displayName.append(" - only ${deployOnlyInCluster.label}")
+  } else {
+    displayName.append(" - all clusters")
+  }
+  currentBuild.displayName = displayName.toString()
 }
 
 String computeDeployOnlyInRegion() {
@@ -105,7 +149,7 @@ void sendSuccessNotification(Environment environment, String chart, String versi
     attachment.text = text
   } else { /* we need a message per cluster, as different apps were deployed in different clusters */
     List<String> messages = []
-    appsPerCluster.each {Cluster cluster, List<String> appsInCluster ->
+    appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
       messages.add(getDeploymentMessageForApps(appsInCluster, environment, [cluster], deployOnlyRegion, version))
     }
     attachment.text = messages.join(".\n")
@@ -115,14 +159,12 @@ void sendSuccessNotification(Environment environment, String chart, String versi
 }
 
 String getDeploymentMessageForApps(List<String> apps, Environment environment, Collection<Cluster> clusters,
-                                          String deployOnlyRegion, String version) {
+                                   String deployOnlyRegion, String version) {
   List<String> deployedHealthUrls =
       getHealthUrlsForDeployClusters(environment, clusters, deployOnlyRegion)
 
   return "The applications `${apps}` were deployed automatically with version `${version}` in ${deployedHealthUrls}"
 }
-
-
 
 public List<String> getHealthUrlsForDeployClusters(Environment environment, Collection<Cluster> clusters,
                                                    String deployOnlyRegion) {

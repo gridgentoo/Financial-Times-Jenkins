@@ -45,6 +45,21 @@ class Environment implements Serializable {
     return fullName
   }
 
+  public List<String> getFullClusterNames(Collection<Cluster> clusters, List<String> regions) {
+    List<String> fullClusterNames = []
+    for (Cluster cluster : clusters) {
+      if (regions) {
+        for (String region : regions) {
+          fullClusterNames.add(getFullClusterName(cluster, region))
+        }
+      } else {
+        fullClusterNames.add(getFullClusterName(cluster))
+      }
+    }
+
+    return fullClusterNames
+  }
+
   public List<String> getRegionsToDeployTo(String deployOnlyToRegion) {
     List<String> deployToRegions = []
     if (deployOnlyToRegion == null) {
