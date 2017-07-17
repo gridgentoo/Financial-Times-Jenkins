@@ -55,7 +55,7 @@ public void setBuildDescription(Map<Cluster, List<String>> appsPerCluster, Strin
 
     appsText = "${apps}:${version} in ${fullClusterNames}"
   } else { // for different apps in different clusters we need separate messages for each cluster..
-    List<String> messages
+    List<String> messages = []
     appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
       List<String> fullClusterNames = targetEnv.getFullClusterNames([cluster], deployRegions)
 

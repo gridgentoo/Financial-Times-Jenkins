@@ -157,7 +157,7 @@ String computeSlackTextForAppsToDeploy(Map<Cluster, List<String>> appsPerCluster
     List<String> apps = deployUtils.getAppsInFirstCluster(appsPerCluster)
     appsText = "`${apps}` in clusters `${Cluster.toLabels(appsPerCluster.keySet())}`"
   } else {
-    List<String> messages
+    List<String> messages = []
     appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
       messages.add("`${appsInCluster}` in cluster `${cluster.label}`")
     }
@@ -173,7 +173,7 @@ String computeSimpleTextForAppsToDeploy(Map<Cluster, List<String>> appsPerCluste
     List<String> apps = deployUtils.getAppsInFirstCluster(appsPerCluster)
     appsText = "${apps} in clusters ${Cluster.toLabels(appsPerCluster.keySet())}"
   } else {
-    List<String> messages
+    List<String> messages = []
     appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
       messages.add("${appsInCluster} in cluster ${cluster.label}")
     }
