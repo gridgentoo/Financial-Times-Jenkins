@@ -61,9 +61,10 @@ public void setBuildDescription(Map<Cluster, List<String>> appsPerCluster, Strin
 
       messages.add("${appsInCluster}:${version} in ${fullClusterNames}")
     }
-    appsText = messages.join("\n")
+    appsText = messages.join(" and ")
   }
 
+  echo "Deployed apps: ${appsText}"
   currentBuild.description = appsText
 }
 
@@ -71,9 +72,9 @@ public void setBuildDisplayName(String chart, String version, String deployOnlyI
   Cluster deployOnlyInCluster
   StringBuilder displayName = new StringBuilder("${currentBuild.number} - ${chart}:${version} -> ${targetEnv.name}")
   if (deployOnlyInRegion) {
-    displayName.append("- only ${deployOnlyInRegion}")
+    displayName.append(" - only ${deployOnlyInRegion}")
   } else {
-    displayName.append("- all regions")
+    displayName.append(" - all regions")
   }
   if (deployOnlyInCluster) {
     displayName.append(" - only ${deployOnlyInCluster.label}")
