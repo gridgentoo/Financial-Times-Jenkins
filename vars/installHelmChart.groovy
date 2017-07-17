@@ -6,6 +6,10 @@ import com.ft.jenkins.ParamUtils
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
+/*
+* Implementation of a generic pipeline that installs a helm chart in an environment.
+**/
+
 def call() {
   /*  determine parameter values */
   ParamUtils paramUtils = new ParamUtils()
