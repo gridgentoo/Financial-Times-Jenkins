@@ -128,20 +128,23 @@ public void runHelmOperations(Closure codeToRun) {
 
 public String publishHelmChart(String version) {
   String chartFolderName = getHelmChartFolderName()
-  runHelmOperations {
-    /*  pack the chart  */
-    sh "helm package --version ${version} ${HELM_CONFIG_FOLDER}/${chartFolderName}"
+  //  lock the helm repo, so other jobs will wait on this, as we need to upload the new index before any other
+  // job starts download it for merging. If we don't do this we might end up with an incomplete index.
+  lock("helm-repo") {
+    runHelmOperations {
+      /*  pack the chart  */
+      sh "helm package --version ${version} ${HELM_CONFIG_FOLDER}/${chartFolderName}"
 
-    /*  todo [sb] here we'd need a solution for blocking any updates from other jobs until this update finishes */
-    /* update the repository index.yaml */
-    sh "helm repo index --merge \$HELM_HOME/repository/cache/${HELM_LOCAL_REPO_NAME}-index.yaml --url ${HELM_REPO_URL} ."
+      /* update the repository index.yaml */
+      sh "helm repo index --merge \$HELM_HOME/repository/cache/${HELM_LOCAL_REPO_NAME}-index.yaml --url ${HELM_REPO_URL} ."
+    }
+
+    /*  upload chart and updated index to S3  */
+    AwsUtils awsUtils = new AwsUtils()
+    awsUtils.uploadS3Files(HELM_S3_BUCKET, HELM_AWS_CREDENTIALS,
+                           (String) "${chartFolderName}-${version}.tgz", "index.yaml")
+    return chartFolderName
   }
-
-  /*  upload chart and updated index to S3  */
-  AwsUtils awsUtils = new AwsUtils()
-  awsUtils.uploadS3Files(HELM_S3_BUCKET, HELM_AWS_CREDENTIALS,
-                         (String) "${chartFolderName}-${version}.tgz", "index.yaml")
-  return chartFolderName
 }
 
 /**
