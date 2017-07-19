@@ -20,7 +20,7 @@ def call(GithubReleaseInfo releaseInfo) {
 
   Map<Cluster, List<String>> appsInRepo = null
   String tagName = releaseInfo.tagName
-  String imageVersion = tagName
+  String appVersion = tagName
   DockerUtils dockerUtils = new DockerUtils()
   String chartName
 
@@ -31,22 +31,24 @@ def call(GithubReleaseInfo releaseInfo) {
           checkout scm
         }
 
-        stage('build image') {
-          String dockerRepository = deployUtil.getDockerImageRepository()
-          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+        if (fileExists("Dockerfile")) { //  build Docker image only if we have a Dockerfile
+          stage('build image') {
+            String dockerRepository = deployUtil.getDockerImageRepository()
+            dockerUtils.buildAndPushImage("${dockerRepository}:${appVersion}")
+          }
         }
 
         stage('publish chart') {
-          chartName = deployUtil.publishHelmChart(imageVersion)
+          chartName = deployUtil.publishHelmChart(appVersion)
         }
       }
       appsInRepo = deployUtil.getAppsToDeployInChart("${HELM_CONFIG_FOLDER}/${chartName}")
     }
 
-    initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, chartName, imageVersion, releaseInfo, appsInRepo
+    initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, chartName, appVersion, releaseInfo, appsInRepo
                                     , 1)
 
-    initiateDeploymentToEnvironment(Environment.PROD_NAME, chartName, imageVersion, releaseInfo, appsInRepo
+    initiateDeploymentToEnvironment(Environment.PROD_NAME, chartName, appVersion, releaseInfo, appsInRepo
                                     , 7)
 
   }

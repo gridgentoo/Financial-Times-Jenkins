@@ -8,7 +8,7 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
   DockerUtils dockerUtils = new DockerUtils()
   GitUtils gitUtils = new GitUtils()
 
-  String imageVersion
+  String appVersion
 
   node('docker') {
     catchError {
@@ -17,16 +17,18 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
           checkout scm
         }
 
-        imageVersion = getImageVersion(releaseName, gitUtils.getMostRecentGitTag(), branchRelease)
+        appVersion = getImageVersion(releaseName, gitUtils.getMostRecentGitTag(), branchRelease)
 
-        stage('build image') {
-          String dockerRepository = deployUtil.getDockerImageRepository()
-          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+        if (fileExists("Dockerfile")) { //  build Docker image only if we have a Dockerfile
+          stage('build image') {
+            String dockerRepository = deployUtil.getDockerImageRepository()
+            dockerUtils.buildAndPushImage("${dockerRepository}:${appVersion}")
+          }
         }
 
         String chartName
         stage('publish chart') {
-          chartName = deployUtil.publishHelmChart(imageVersion)
+          chartName = deployUtil.publishHelmChart(appVersion)
         }
 
         stage("deploy chart") {
@@ -34,7 +36,7 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
           build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
                 parameters: [
                     string(name: 'Chart', value: chartName),
-                    string(name: 'Version', value: imageVersion),
+                    string(name: 'Version', value: appVersion),
                     string(name: 'Environment', value: environmentName),
                     string(name: 'Cluster', value: 'all-in-chart'),
                     string(name: 'Region', value: 'all'),
