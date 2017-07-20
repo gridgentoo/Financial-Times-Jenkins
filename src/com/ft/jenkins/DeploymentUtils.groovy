@@ -1,8 +1,8 @@
 package com.ft.jenkins
 
+import com.ft.jenkins.aws.AwsUtils
 import com.ft.jenkins.exceptions.ConfigurationNotFoundException
 import com.ft.jenkins.exceptions.InvalidAppConfigFileNameException
-import com.ft.jenkins.git.GitUtilsConstants
 
 import java.util.regex.Matcher
 
@@ -11,35 +11,46 @@ import static DeploymentUtilsConstants.CREDENTIALS_DIR
 import static DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
 import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static DeploymentUtilsConstants.K8S_CLI_IMAGE
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_AWS_CREDENTIALS
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_LOCAL_REPO_NAME
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_REPO_URL
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
-/**
- * Deploys the application(s) in the current workspace using helm. It expects the helm chart to be defined in the {@link DeploymentUtilsConstants#HELM_CONFIG_FOLDER} folder.
- *
- * @param imageVersion the version of the docker image to deploy
- * @param env the environment name where it will be deployed.
- * @return the list of applications deployed
- */
-public List<String> deployAppWithHelm(String imageVersion, Environment env, Cluster cluster, String region = null) {
-  List<String> appsToDeploy = getAppNamesInRepo()
-  runWithK8SCliTools(env, cluster, region, {
-    updateChartVersionFile(imageVersion)
+public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
+                                                            Cluster deployOnlyInCluster = null, String region = null) {
+  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, deployOnlyInCluster)
+  List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
 
-    String chartName = getHelmChartFolderName()
-    for (int i = 0; i < appsToDeploy.size(); i++) {
-      String app = appsToDeploy.get(i)
-      String configurationFileName = getAppConfigurationFileName(env, cluster, app)
+  /*  deploy apps in all target clusters */
+  appsPerCluster.each { Cluster targetCluster, List<String> appsToDeploy ->
+    if (regionsToDeployTo) {
+      for (String regionToDeployTo : regionsToDeployTo) {
+        executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env, regionToDeployTo)
+      }
+    } else { // the environment has no region
+      executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env)
+    }
+
+  }
+  return appsPerCluster
+}
+
+public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, String chartFolderLocation,
+                             Environment env, String region = null) {
+  runWithK8SCliTools(env, targetCluster, region, {
+    for (String app : appsToDeploy) {
+      String configurationFileName = getAppConfigurationFileName(chartFolderLocation, env, targetCluster, app)
       if (!configurationFileName) {
         throw new ConfigurationNotFoundException(
-            "Cannot find app configuration file under ${HELM_CONFIG_FOLDER}. Maybe it does not meet the naming conventions.")
+            "Cannot find app configuration file ${configurationFileName}. Maybe it does not meet the naming conventions.")
       }
 
       echo "Using app config file ${configurationFileName} to deploy with helm"
 
-      sh "helm upgrade ${app} ${HELM_CONFIG_FOLDER}/${chartName} -i -f ${configurationFileName}"
+      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName}"
     }
   })
-  return appsToDeploy
 }
 
 /**
@@ -55,24 +66,85 @@ public String getDockerImageRepository() {
   return matcher[0][1]
 }
 
-public List<String> getAppNamesInRepo() {
-  String chartFolderName = getHelmChartFolderName()
-  Set<String> appNames = []
-  def foundConfigFiles = findFiles(glob: "${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml")
-  echo "test : ${HELM_CONFIG_FOLDER}/${chartFolderName}/${APPS_CONFIG_FOLDER}/*.yaml"
+
+public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation,
+                                                         Cluster includeOnlyCluster = null) {
+  Map<Cluster, List<String>> result = [:]
+  def foundConfigFiles = findFiles(glob: "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/*.yaml")
 
   for (def configFile : foundConfigFiles) {
-    /*  strip the .yaml extension from the files */
-    String fileName = configFile.name
-    if (fileName.contains("_")) {
-      appNames.add(fileName.substring(0, fileName.indexOf('_')))
+    /*  compute the app name and the cluster where it will be deployed. The format is ${app-name}_${cluster}[_${env}].yaml */
+    String configFileName = configFile.name
+    /*  strip the yaml extenstion */
+    configFileName = configFileName.replace(".yaml", "")
+    String[] fileNameParts = configFileName.split("_")
+
+    if (fileNameParts.length > 1) {
+      /*  add the app name to the corresponding cluster if it wasn't added yet */
+      Cluster targetCluster = Cluster.valueOfLabel(fileNameParts[1])
+      if (includeOnlyCluster && targetCluster != includeOnlyCluster) {
+        continue
+      }
+      String appName = fileNameParts[0]
+      addAppToCluster(result, targetCluster, appName)
+
     } else {
       throw new InvalidAppConfigFileNameException(
-          "found invalid app configuration file name: ${fileName} with path: ${configFile.path}")
+          "found invalid app configuration file name: ${configFileName} with path: ${configFile.path}")
     }
   }
 
-  return new ArrayList<>(appNames)
+  return result
+}
+
+private void addAppToCluster(LinkedHashMap<Cluster, List<String>> result, Cluster targetCluster, String appName) {
+  if (result[targetCluster] == null) {
+    result.put(targetCluster, [])
+  }
+
+  if (!result[targetCluster].contains(appName)) {
+    result[targetCluster].add(appName)
+    echo "App ${appName} will be deployed in cluster ${targetCluster.label}"
+  }
+}
+
+public Map<Cluster, List<String>> deployAppFromHelmRepo(String chartName, String chartVersion, Environment targetEnv,
+                                                        Cluster onlyToCluster = null, String region = null) {
+  /*  fetch the chart locally */
+  runHelmOperations {
+    sh "helm fetch --untar ${HELM_LOCAL_REPO_NAME}/${chartName} --version ${chartVersion}"
+  }
+
+  return deployAppsInChartWithHelm(chartName, targetEnv, onlyToCluster, region)
+}
+
+public void runHelmOperations(Closure codeToRun) {
+  docker.image(K8S_CLI_IMAGE).inside("-e 'HELM_HOME=/tmp/.helm'") {
+    sh "helm init -c"
+    sh "helm repo add ${HELM_LOCAL_REPO_NAME} ${HELM_REPO_URL}"
+    codeToRun.call()
+  }
+}
+
+public String publishHelmChart(String version) {
+  String chartFolderName = getHelmChartFolderName()
+  //  lock the helm repo, so other jobs will wait on this, as we need to upload the new index before any other
+  // job starts download it for merging. If we don't do this we might end up with an incomplete index.
+  lock("helm-repo") {
+    runHelmOperations {
+      /*  pack the chart  */
+      sh "helm package --version ${version} ${HELM_CONFIG_FOLDER}/${chartFolderName}"
+
+      /* update the repository index.yaml */
+      sh "helm repo index --merge \$HELM_HOME/repository/cache/${HELM_LOCAL_REPO_NAME}-index.yaml --url ${HELM_REPO_URL} ."
+    }
+
+    /*  upload chart and updated index to S3  */
+    AwsUtils awsUtils = new AwsUtils()
+    awsUtils.uploadS3Files(HELM_S3_BUCKET, HELM_AWS_CREDENTIALS,
+                           (String) "${chartFolderName}-${version}.tgz", "index.yaml")
+    return chartFolderName
+  }
 }
 
 /**
@@ -171,8 +243,9 @@ void updateChartVersionFile(String chartVersion) {
   sh "cat ${chartFile.path}"
 }
 
-private String getAppConfigurationFileName(Environment targetEnv, Cluster targetCluster, String app) {
-  String appsConfigFolder = "${HELM_CONFIG_FOLDER}/**/${APPS_CONFIG_FOLDER}"
+private String getAppConfigurationFileName(String chartFolderLocation, Environment targetEnv, Cluster targetCluster,
+                                           String app) {
+  String appsConfigFolder = "${chartFolderLocation}/${APPS_CONFIG_FOLDER}"
 
   //looking for configuration file for a specific env, e.g. publishing_pre-prod
   String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"
@@ -195,3 +268,20 @@ private boolean fileExists(String path) {
   def foundConfigFiles = findFiles(glob: path)
   return foundConfigFiles.length > 0
 }
+
+public List<String> getAppsInFirstCluster(Map<Cluster, List<String>> appsPerCluster) {
+  Cluster firstCluster = appsPerCluster.keySet().iterator().next()
+  return appsPerCluster.get(firstCluster)
+}
+
+public boolean areSameAppsInAllClusters(Map<Cluster, List<String>> appsPerCluster) {
+  List<String> appsInFirstCluster = getAppsInFirstCluster(appsPerCluster)
+  Boolean sameAppsInAllClusters = true
+  appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
+    if (appsInFirstCluster != appsInCluster) {
+      sameAppsInAllClusters = false
+    }
+  }
+  return sameAppsInAllClusters
+}
+
