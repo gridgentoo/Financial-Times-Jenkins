@@ -4,43 +4,67 @@ import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
 
+import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
+
 def call(String firstEnvName, String secondEnvName, String clusterName) {
   echo "Diff between envs with params: [envToSyncFrom: ${firstEnvName}, envToBeSynced: ${secondEnvName}, cluster: ${clusterName}]"
-  Environment envToSyncFrom = EnvsRegistry.getEnvironment(firstEnvName)
-  Environment envToBeSynced = EnvsRegistry.getEnvironment(secondEnvName)
+  Environment sourceEnv = EnvsRegistry.getEnvironment(firstEnvName)
+  Environment targetEnv = EnvsRegistry.getEnvironment(secondEnvName)
   Cluster cluster = clusterName.toUpperCase()
 
-  Map<String, String> firstEnvCharts
-  Map<String, String> secondEnvCharts
+  Map<String, String> sourceChartsVersions
+  Map<String, String> targetChartsVersions
   List<String> addedCharts
   List<String> modifiedCharts
   List<String> removedCharts
-  Map<String, Boolean> choosenParamsForAddedCharts, choosenParamsForModifiedCharts, choosenParamsForRemovedCharts
+  Map<String, Object> inputsForAdding, inputsForUpdating, inputsForRemoving
+  String addApprover
+  String updateApprover
+  String removalAppvover
 
-  node('') {
+  node('docker') {
     catchError {
       timeout(30) { //  timeout after 30 mins to not block jenkins
 
-        stage('diff-envs') {
-          echo "Diff the clusters."
-          firstEnvCharts = getChartsFromEnv(envToSyncFrom, cluster)
-          secondEnvCharts = getChartsFromEnv(envToBeSynced, cluster)
-          
-          removedCharts = diffBetweenEnvs(firstEnvCharts, secondEnvCharts)
-          addedCharts = diffBetweenEnvs(secondEnvCharts, firstEnvCharts)
-          modifiedCharts = getModifiedCharts(firstEnvCharts, secondEnvCharts)
+        stage('Compute diff between envs') {
+          echo "Diff the clusters"
+          sourceChartsVersions = getChartsFromEnv(sourceEnv, cluster)
+          targetChartsVersions = getChartsFromEnv(targetEnv, cluster)
+
+          removedCharts = getRemovedCharts(sourceChartsVersions, targetChartsVersions)
+          addedCharts = getAddedCharts(targetChartsVersions, sourceChartsVersions)
+          modifiedCharts = getModifiedCharts(sourceChartsVersions, targetChartsVersions)
         }
 
-        stage('select-charts-to-be-synced') {
-          choosenParamsForAddedCharts = getUserInputs(addedCharts, firstEnvCharts, secondEnvCharts, "Services to be added")
-          choosenParamsForModifiedCharts = getUserInputs(modifiedCharts, firstEnvCharts, secondEnvCharts, "Services to be modified")
-          choosenParamsForRemovedCharts = getUserInputs(removedCharts, firstEnvCharts, secondEnvCharts, "Services to be removed")
+        stage('Select charts to be added') {
+          inputsForAdding =
+              getUserInputs(addedCharts, sourceChartsVersions, targetChartsVersions,
+                            "Services to be added in ${targetEnv.name}",
+                            "Add services to ${targetEnv.name}")
+          addApprover = extractApprover(inputsForAdding)
+
         }
 
-        stage('sync-services') {
-          updateCharts(choosenParamsForAddedCharts, HelmAction.CREATE)
-          updateCharts(choosenParamsForModifiedCharts, HelmAction.UPDATE)
-          updateCharts(choosenParamsForRemovedCharts, HelmAction.DELETE)
+        stage('Select charts to be updated') {
+          inputsForUpdating =
+              getUserInputs(modifiedCharts, sourceChartsVersions, targetChartsVersions,
+                            "Services to be updated in ${targetEnv.name}",
+                            "Update services in ${targetEnv.name}")
+          updateApprover = extractApprover(inputsForUpdating)
+        }
+
+        stage('Select charts to be deleted') {
+          inputsForRemoving =
+              getUserInputs(removedCharts, sourceChartsVersions, targetChartsVersions,
+                            "Services to be removed from ${targetEnv.name}",
+                            "Remove the services from ${targetEnv.name}")
+          removalAppvover = extractApprover(inputsForRemoving)
+        }
+
+        stage('Sync apps') {
+          updateCharts(inputsForAdding, HelmAction.CREATE)
+          updateCharts(inputsForUpdating, HelmAction.UPDATE)
+          updateCharts(inputsForRemoving, HelmAction.DELETE)
         }
       }
     }
@@ -73,28 +97,25 @@ private void updateCharts(Map<String, Boolean> choosenParams, HelmAction helmAct
   }
 }
 
-private Map<String, Boolean> getUserInputs(List<String> charts, Map<String, String> firstEnvCharts,
-                                           Map<String, String> secondEnvCharts, String inputMessage) {
-  List<String> checkboxes = []
+private Map<String, Object> getUserInputs(List<String> charts, Map<String, String> sourceVersions,
+                                           Map<String, String> targetVersions, String inputMessage, String okButton) {
+  List checkboxes = []
   for (int i = 0; i < charts.size(); i++) {
     String chartName = charts.get(i)
-    String checkboxDescription = getCheckboxDescription(secondEnvCharts.get(chartName), firstEnvCharts.get(chartName))
+    String checkboxDescription = getCheckboxDescription(targetVersions.get(chartName), sourceVersions.get(chartName))
     checkboxes.add(booleanParam(defaultValue: false,
                                 description: checkboxDescription,
                                 name: chartName))
   }
 
-  Map<String, Boolean> choosenParams
   if (checkboxes.isEmpty()) {
     return new HashMap<>()
   }
 
-  choosenParams = input(message: inputMessage,
-                        parameters: checkboxes,
-                        submitterParameter: 'approver',
-                        ok: "Sync services")
-
-  return choosenParams
+  return input(message: inputMessage,
+               parameters: checkboxes,
+               submitterParameter: APPROVER_INPUT,
+               ok: okButton) as Map<String, Object>
 }
 
 private String getCheckboxDescription(String oldChartVersion, String newChartVersion) {
@@ -110,40 +131,43 @@ private String getCheckboxDescription(String oldChartVersion, String newChartVer
 }
 
 private Map<String, String> getChartsFromEnv(Environment env, Cluster cluster) {
-  Map<String, String> envCharts
   DeploymentUtils deploymentUtils = new DeploymentUtils()
+  String tempFile = "tmpCharts_${System.currentTimeMillis()}"
+
   deploymentUtils.runWithK8SCliTools(env, cluster, {
-    sh "helm list --deployed | awk 'NR>1 {print \$9}' > tmpCharts"
-    String charts = readFile 'tmpCharts'
-    envCharts = parseChartsIntoMap(charts)
+    /*  get the chart versions from the cluster */
+    sh "helm list --deployed | awk 'NR>1 {print \$9}' > ${tempFile}"
   })
 
-  return envCharts
+  String charts = readFile(tempFile)
+  return parseHelmChartOutputIntoMap(charts)
 }
 
-private Map<String, String> parseChartsIntoMap(String charts) {
+/**
+ * Parses the helm output of charts into a mapping between chart name and version.
+ *
+ * The output of helm is composed of lines like 'annotations-rw-neo4j-2.0.0-k8s-helm-migration-rc1', so the format is chartName-chartVersion
+ *
+ * @param chartsOutputText aggregated lines produced by 'helm list'
+ * @return
+ */
+private Map<String, String> parseHelmChartOutputIntoMap(String chartsOutputText) {
   Map<String, String> chartsMap = new HashMap<>()
-  String[] chartsArray = charts.split("\\r?\\n")
-  for (int i = 0; i < chartsArray.length; i++) {
-    String chart = chartsArray[i]
-    String chartVersion = chart.find(DeploymentUtilsConstants.CHART_VERSION_REGEX)
-    String chartName = chart.replace(chartVersion, "")
-    chartName = chartName.substring(0, chartName.length() - 1)
+  String[] chartOutputLines = chartsOutputText.split("\\r?\\n")
+  for (String chartOutput : chartOutputLines) {
+    String chartVersion = chartOutput.find(DeploymentUtilsConstants.CHART_VERSION_REGEX)
+    String chartName = chartOutput.substring(0, chartOutput.length() - chartVersion.length())
     chartsMap.put(chartName, chartVersion)
   }
 
   return chartsMap
 }
 
-private List<String> getModifiedCharts(Map<String, String> firstEnv, Map<String, String> secondEnv) {
-  Set<String> firstEnvCharts = firstEnv.keySet()
+private List<String> getModifiedCharts(Map<String, String> sourceEnvCharts, Map<String, String> targetEnvCharts) {
   List<String> modifiedCharts = new ArrayList<>()
 
-  for (int i = 0; i < firstEnvCharts.size(); i++) {
-    String chartName = firstEnvCharts[i]
-    String chartVersion = firstEnv.get(chartName)
-
-    if (secondEnv[chartName] != null && chartVersion != secondEnv[chartName]) {
+  sourceEnvCharts.each { String chartName, String chartVersion ->
+    if (targetEnvCharts.containsKey(chartName) && chartVersion != targetEnvCharts[chartName]) {
       modifiedCharts.add(chartName)
     }
   }
@@ -151,12 +175,10 @@ private List<String> getModifiedCharts(Map<String, String> firstEnv, Map<String,
   return modifiedCharts
 }
 
-private List<String> diffBetweenEnvs(Map<String, String> firstEnv, Map<String, String> secondEnv) {
-  Set<String> secondEnvCharts = secondEnv.keySet()
+private List<String> getAddedCharts(Map<String, String> sourceEnvCharts, Map<String, String> targetEnvCharts) {
   List<String> removedCharts = []
-  for (int i = 0; i <= secondEnvCharts.size(); i++) {
-    String chartName = secondEnvCharts[i]
-    if (chartName != null && !firstEnv.containsKey(chartName)) {
+  sourceEnvCharts.keySet().each { String chartName ->
+    if (chartName != null && !targetEnvCharts.containsKey(chartName)) {
       removedCharts.add(chartName)
     }
   }
@@ -164,6 +186,16 @@ private List<String> diffBetweenEnvs(Map<String, String> firstEnv, Map<String, S
   return removedCharts
 }
 
+private List<String> getRemovedCharts(Map<String, String> sourceEnvCharts, Map<String, String> targetEnvCharts) {
+  return getAddedCharts(targetEnvCharts, sourceEnvCharts)
+}
+
 enum HelmAction {
   CREATE, UPDATE, DELETE
+}
+
+String extractApprover(Map<String, Object> userInputs) {
+  String approver = userInputs.get(APPROVER_INPUT)
+  userInputs.remove(APPROVER_INPUT)
+  return approver
 }

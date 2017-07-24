@@ -22,4 +22,6 @@ public class DeploymentUtilsConstants {
 
   public static final String GENERIC_DEPLOY_JOB = 'k8s-deployment/utils/deploy-upp-helm-chart'
 
+  public static final String APPROVER_INPUT = "approver"
+
 }
