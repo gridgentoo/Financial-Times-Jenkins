@@ -19,7 +19,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
 public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
                                                             Cluster deployOnlyInCluster = null, String region = null) {
-  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, deployOnlyInCluster)
+  Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartFolderLocation, deployOnlyInCluster)
   List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
 
   /*  deploy apps in all target clusters */
@@ -35,6 +35,31 @@ public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLo
   }
   return appsPerCluster
 }
+
+public void removeAppsInChartWithHelm(String chartName, String chartVersion, Environment targetEnv,
+                                  Cluster onlyFromCluster = null, String region = null) {
+  /*  fetch the chart locally */
+  runHelmOperations {
+    sh "helm fetch --untar ${HELM_LOCAL_REPO_NAME}/${chartName} --version ${chartVersion}"
+  }
+
+  Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartName, onlyFromCluster)
+  List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
+
+  /*  deploy apps in all target clusters */
+  appsPerCluster.each { Cluster targetCluster, List<String> appsToDeploy ->
+    if (regionsToDeployTo) {
+      for (String regionToDeployTo : regionsToDeployTo) {
+        executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env, regionToDeployTo)
+      }
+    } else { // the environment has no region
+      executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env)
+    }
+
+  }
+
+}
+
 
 public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, String chartFolderLocation,
                              Environment env, String region = null) {
@@ -67,8 +92,8 @@ public String getDockerImageRepository() {
 }
 
 
-public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation,
-                                                         Cluster includeOnlyCluster = null) {
+public Map<Cluster, List<String>> getAppsInChart(String chartFolderLocation,
+                                                 Cluster includeOnlyCluster = null) {
   Map<Cluster, List<String>> result = [:]
   def foundConfigFiles = findFiles(glob: "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/*.yaml")
 

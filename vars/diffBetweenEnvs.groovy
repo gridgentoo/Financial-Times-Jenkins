@@ -20,7 +20,7 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
   Map<String, Object> inputsForAdding, inputsForUpdating, inputsForRemoving
   String addApprover
   String updateApprover
-  String removalAppvover
+  String removalApprover
 
   node('docker') {
     catchError {
@@ -58,14 +58,24 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
               getUserInputs(removedCharts, sourceChartsVersions, targetChartsVersions,
                             "Services to be removed from ${targetEnv.name}",
                             "Remove the services from ${targetEnv.name}")
-          removalAppvover = extractApprover(inputsForRemoving)
+          removalApprover = extractApprover(inputsForRemoving)
         }
 
-        stage('Sync apps') {
-          updateCharts(inputsForAdding, HelmAction.CREATE)
-          updateCharts(inputsForUpdating, HelmAction.UPDATE)
-          updateCharts(inputsForRemoving, HelmAction.DELETE)
+        stage('Install added charts') {
+          installSelectedCharts(getSelectedValues(inputsForAdding), sourceChartsVersions, targetEnv, cluster)
         }
+
+        stage('Install updated charts') {
+          installSelectedCharts(getSelectedValues(inputsForUpdating), sourceChartsVersions, targetEnv, cluster)
+        }
+
+        stage('Uninstall removed charts') {
+          removeSelectedCharts(getSelectedValues(inputsForRemoving))
+        }
+
+
+
+
       }
     }
 
@@ -75,24 +85,6 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
 
     stage("cleanup") {
       cleanWs()
-    }
-  }
-}
-
-private void updateCharts(Map<String, Boolean> choosenParams, HelmAction helmAction) {
-  echo "Syncing services started by ${choosenParams.get('approver')}"
-  choosenParams.remove('approver')
-  if (choosenParams.size() == 0) {
-    echo "There are no charts for helm action ${helmAction}"
-  }
-
-  Set<String> chartsToBeSynced = choosenParams.keySet()
-  for (int i = 0; i < chartsToBeSynced.size(); i++) {
-    String chartToBeSynced = chartsToBeSynced.getAt(i)
-    if (choosenParams.get(chartToBeSynced)) {
-      echo "syncing service ${chartToBeSynced}. Performing helm action: ${helmAction}"
-    } else {
-      echo "skipping service with name ${chartToBeSynced} from syncing"
     }
   }
 }
@@ -116,6 +108,16 @@ private Map<String, Object> getUserInputs(List<String> charts, Map<String, Strin
                parameters: checkboxes,
                submitterParameter: APPROVER_INPUT,
                ok: okButton) as Map<String, Object>
+}
+
+private List<String> getSelectedValues(Map<String, Object> userInputs) {
+  List<String> selectedValues = []
+  userInputs.each { String value, Boolean isSelected ->
+    if (isSelected) {
+      selectedValues.add(value)
+    }
+  }
+  return selectedValues
 }
 
 private String getCheckboxDescription(String oldChartVersion, String newChartVersion) {
@@ -190,12 +192,33 @@ private List<String> getRemovedCharts(Map<String, String> sourceEnvCharts, Map<S
   return getAddedCharts(targetEnvCharts, sourceEnvCharts)
 }
 
-enum HelmAction {
-  CREATE, UPDATE, DELETE
-}
-
 String extractApprover(Map<String, Object> userInputs) {
   String approver = userInputs.get(APPROVER_INPUT)
   userInputs.remove(APPROVER_INPUT)
   return approver
+}
+
+void installSelectedCharts(List<String> selectedCharts, Map<String, String> sourceChatsVersions,
+                           Environment targetEnv, Cluster cluster) {
+  for (String selectedChart : selectedCharts) {
+    /*  trigger the generic job for deployment */
+    String version = sourceChatsVersions.get(selectedChart)
+    echo "Installing chart ${selectedChart}:${version} in ${targetEnv.name}"
+
+    build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
+          parameters: [
+              string(name: 'Chart', value: selectedChart),
+              string(name: 'Version', value: version),
+              string(name: 'Environment', value: targetEnv.name),
+              string(name: 'Cluster', value: cluster.label),
+              string(name: 'Region', value: 'all'),
+              booleanParam(name: 'Send success notifications', value: false)]
+  }
+
+}
+
+void removeSelectedCharts(List<String> selectedCharts, Environment targetEnv, Cluster cluster) {
+  for (String selectedChart : selectedCharts) {
+
+  }
 }
