@@ -3,6 +3,8 @@ import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.slack.SlackAttachment
+import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
 
@@ -10,7 +12,7 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
   echo "Diff between envs with params: [envToSyncFrom: ${firstEnvName}, envToBeSynced: ${secondEnvName}, cluster: ${clusterName}]"
   Environment sourceEnv = EnvsRegistry.getEnvironment(firstEnvName)
   Environment targetEnv = EnvsRegistry.getEnvironment(secondEnvName)
-  Cluster cluster = clusterName.toUpperCase()
+  Cluster cluster = Cluster.valueOfLabel(clusterName)
 
   Map<String, String> sourceChartsVersions, targetChartsVersions
   List<String> addedCharts, modifiedCharts, removedCharts
@@ -30,7 +32,11 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           addedCharts = getAddedCharts(targetChartsVersions, sourceChartsVersions)
           modifiedCharts = getModifiedCharts(sourceChartsVersions, targetChartsVersions)
 
-          logDiffSummary(sourceEnv, targetEnv, addedCharts, modifiedCharts, removedCharts)
+          logDiffSummary(sourceEnv, targetEnv, sourceChartsVersions, targetChartsVersions, addedCharts, modifiedCharts,
+                         removedCharts)
+
+          sendSlackMessageForSyncSummary(sourceEnv, targetEnv, sourceChartsVersions, targetChartsVersions, addedCharts,
+                                         modifiedCharts, removedCharts)
         }
 
         stage('Select charts to be added') {
@@ -80,22 +86,20 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
       }
     }
 
+    catchError {
+      sendNotifications(sourceEnv, targetEnv, sourceChartsVersions, targetChartsVersions, selectedChartsForAdding,
+                        selectedChartsForUpdating, selectedChartsForRemoving)
+    }
+
     stage("cleanup") {
       cleanWs()
     }
   }
 }
 
-public void logDiffSummary(Environment sourceEnv, Environment targetEnv, List<String> addedCharts, List<String> modifiedCharts, List<String> removedCharts) {
-   echo(""" Diff summary between source: ${sourceEnv.name} and target ${targetEnv.name}. Modifications will be applied on target ${targetEnv.name}
-            Added charts (${addedCharts.size()}): ${addedCharts}
-            Updated charts (${modifiedCharts.size()}): ${modifiedCharts}
-            Removed charts (${removedCharts.size()}): ${removedCharts} 
-          """)
-}
 
 private Map<String, Object> getUserInputs(List<String> charts, Map<String, String> sourceVersions,
-                                           Map<String, String> targetVersions, String inputMessage, String okButton) {
+                                          Map<String, String> targetVersions, String inputMessage, String okButton) {
   List checkboxes = []
   for (int i = 0; i < charts.size(); i++) {
     String chartName = charts.get(i)
@@ -222,10 +226,104 @@ void installSelectedCharts(List<String> selectedCharts, Map<String, String> sour
 
 }
 
-void removeSelectedCharts(List<String> selectedCharts, Map<String, String> targetChartsVersions, Environment targetEnv, Cluster cluster) {
+void removeSelectedCharts(List<String> selectedCharts, Map<String, String> targetChartsVersions, Environment targetEnv,
+                          Cluster cluster) {
   DeploymentUtils deploymentUtils = new DeploymentUtils()
   for (String selectedChart : selectedCharts) {
     String chartVersion = targetChartsVersions.get(selectedChart)
     deploymentUtils.removeAppsInChartWithHelm(selectedChart, chartVersion, targetEnv, cluster)
   }
 }
+
+private void logDiffSummary(Environment sourceEnv, Environment targetEnv, Map<String, String> sourceChartsVersions,
+                            Map<String, String> targetChartsVersions, List<String> addedCharts,
+                            List<String> modifiedCharts, List<String> removedCharts) {
+  echo(""" Diff summary between source: ${sourceEnv.name} and target ${targetEnv.name}. 
+            Modifications will be applied on target ${targetEnv.name}
+            Added charts (${addedCharts.size()}): ${getChartsWithVersion(addedCharts, sourceChartsVersions)}
+            Updated charts (${modifiedCharts.size()}): ${getChartsDiffVersion(modifiedCharts, targetChartsVersions, sourceChartsVersions)}
+            Removed charts (${removedCharts.size()}): ${getChartsWithVersion(removedCharts, targetChartsVersions)} 
+          """)
+}
+
+void sendNotifications(Environment sourceEnv, Environment targetEnv,
+                                    Map<String, String> sourceChartsVersions, Map<String, String> targetChartsVersions,
+                                    List<String> addedCharts, List<String> modifiedCharts, List<String> removedCharts) {
+  stage("notifications") {
+    if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
+      sendSyncSuccessNotification(sourceEnv, targetEnv, sourceChartsVersions, targetChartsVersions, addedCharts,
+                                  modifiedCharts, removedCharts)
+
+    } else {
+      sendSyncFailureNotification(sourceEnv, targetEnv)
+    }
+  }
+}
+
+void sendSyncSuccessNotification(Environment sourceEnv, Environment targetEnv,
+                       Map<String, String> sourceChartsVersions, Map<String, String> targetChartsVersions,
+                       List<String> addedCharts, List<String> modifiedCharts, List<String> removedCharts) {
+  SlackAttachment attachment = new SlackAttachment()
+  attachment.title = "Sync in ${targetEnv.name} from ${sourceEnv.name} done"
+  attachment.titleUrl = "${env.BUILD_URL}"
+
+  attachment.text =
+      """ Sync summary between source: `${sourceEnv.name}` and target `${targetEnv.name}`. 
+            Modifications were applied on target `${targetEnv.name}`
+            Selected added charts (${addedCharts.size()}): ${getChartsWithVersion(addedCharts, sourceChartsVersions)}
+            Selected updated charts (${modifiedCharts.size()}): ${getChartsDiffVersion(modifiedCharts, targetChartsVersions, sourceChartsVersions)}
+            Selected removed charts (${removedCharts.size()}): ${getChartsWithVersion(removedCharts, targetChartsVersions)} 
+          """
+  attachment.color = "good"
+
+  SlackUtils slackUtils = new SlackUtils()
+  slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+}
+
+void sendSyncFailureNotification(Environment sourceEnv, Environment targetEnv) {
+  SlackAttachment attachment = new SlackAttachment()
+  attachment.title = "Sync in ${targetEnv.name} from ${sourceEnv.name} failed !!!. Click for logs"
+  attachment.titleUrl = "${env.BUILD_URL}/console"
+
+  attachment.color = "danger"
+
+  SlackUtils slackUtils = new SlackUtils()
+  slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+}
+
+void sendSlackMessageForSyncSummary(Environment sourceEnv, Environment targetEnv,
+                                    Map<String, String> sourceChartsVersions, Map<String, String> targetChartsVersions,
+                                    List<String> addedCharts, List<String> modifiedCharts, List<String> removedCharts) {
+  SlackAttachment attachment = new SlackAttachment()
+  attachment.title = "Click for manual decision: select charts for syncing in ${targetEnv.name} from ${sourceEnv.name}"
+  attachment.titleUrl = "${env.BUILD_URL}input"
+
+  attachment.text =
+      """ Diff summary between source: `${sourceEnv.name}` and target `${targetEnv.name}`. 
+            Modifications will be applied on target `${targetEnv.name}`
+            Added charts (${addedCharts.size()}): ${getChartsWithVersion(addedCharts, sourceChartsVersions)}
+            Updated charts (${modifiedCharts.size()}): ${getChartsDiffVersion(modifiedCharts, targetChartsVersions, sourceChartsVersions)}
+            Removed charts (${removedCharts.size()}): ${getChartsWithVersion(removedCharts, targetChartsVersions)} 
+          """
+  attachment.color = "warning"
+
+  SlackUtils slackUtils = new SlackUtils()
+  slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+}
+
+public List<String> getChartsWithVersion(List<String> charts, Map<String, String> chartVersions) {
+  List<String> result = []
+  for (String chart : charts) {
+    result.add("${chart}:${chartVersions.get(chart)}")
+  }
+  return result
+}
+
+public List<String> getChartsDiffVersion(List<String> charts, Map<String, String> initialVersions, Map<String, String> updatedVersions) {
+  List<String> result = []
+  for (String chart : charts) {
+    result.add("${chart}:${initialVersions.get(chart)}->${updatedVersions.get(chart)}")
+  }
+  return result
+}
+
