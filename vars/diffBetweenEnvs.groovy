@@ -12,15 +12,10 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
   Environment targetEnv = EnvsRegistry.getEnvironment(secondEnvName)
   Cluster cluster = clusterName.toUpperCase()
 
-  Map<String, String> sourceChartsVersions
-  Map<String, String> targetChartsVersions
-  List<String> addedCharts
-  List<String> modifiedCharts
-  List<String> removedCharts
-  Map<String, Object> inputsForAdding, inputsForUpdating, inputsForRemoving
-  String addApprover
-  String updateApprover
-  String removalApprover
+  Map<String, String> sourceChartsVersions, targetChartsVersions
+  List<String> addedCharts, modifiedCharts, removedCharts
+  List<String> selectedChartsForAdding, selectedChartsForUpdating, selectedChartsForRemoving
+  String addApprover, updateApprover, removalApprover
 
   node('docker') {
     catchError {
@@ -34,59 +29,69 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           removedCharts = getRemovedCharts(sourceChartsVersions, targetChartsVersions)
           addedCharts = getAddedCharts(targetChartsVersions, sourceChartsVersions)
           modifiedCharts = getModifiedCharts(sourceChartsVersions, targetChartsVersions)
+
+          logDiffSummary(sourceEnv, targetEnv, addedCharts, modifiedCharts, removedCharts)
         }
 
         stage('Select charts to be added') {
-          inputsForAdding =
+          Map<String, Object> inputsForAdding =
               getUserInputs(addedCharts, sourceChartsVersions, targetChartsVersions,
                             "Services to be added in ${targetEnv.name}",
                             "Add services to ${targetEnv.name}")
           addApprover = extractApprover(inputsForAdding)
-
+          selectedChartsForAdding = getSelectedValues(inputsForAdding)
+          echo "The following charts were selected for adding: ${selectedChartsForAdding}"
         }
 
         stage('Select charts to be updated') {
-          inputsForUpdating =
+          Map<String, Object> inputsForUpdating =
               getUserInputs(modifiedCharts, sourceChartsVersions, targetChartsVersions,
                             "Services to be updated in ${targetEnv.name}",
                             "Update services in ${targetEnv.name}")
           updateApprover = extractApprover(inputsForUpdating)
+          selectedChartsForUpdating = getSelectedValues(inputsForUpdating)
+          echo "The following charts were selected for updating: ${selectedChartsForUpdating}"
         }
 
         stage('Select charts to be deleted') {
-          inputsForRemoving =
+          Map<String, Object> inputsForRemoving =
               getUserInputs(removedCharts, sourceChartsVersions, targetChartsVersions,
                             "Services to be removed from ${targetEnv.name}",
                             "Remove the services from ${targetEnv.name}")
           removalApprover = extractApprover(inputsForRemoving)
+          selectedChartsForRemoving = getSelectedValues(inputsForRemoving)
+          echo "The following charts were selected for removing: ${selectedChartsForRemoving}"
         }
 
+        echo "Starting sync between envs ...."
+
+        //  todo [SB] do things in parallel
         stage('Install added charts') {
-          installSelectedCharts(getSelectedValues(inputsForAdding), sourceChartsVersions, targetEnv, cluster)
+          installSelectedCharts(selectedChartsForAdding, sourceChartsVersions, targetEnv, cluster)
         }
 
         stage('Install updated charts') {
-          installSelectedCharts(getSelectedValues(inputsForUpdating), sourceChartsVersions, targetEnv, cluster)
+          installSelectedCharts(selectedChartsForUpdating, sourceChartsVersions, targetEnv, cluster)
         }
 
         stage('Uninstall removed charts') {
-          removeSelectedCharts(getSelectedValues(inputsForRemoving))
+          removeSelectedCharts(selectedChartsForRemoving, targetChartsVersions, targetEnv, cluster)
         }
-
-
-
-
       }
-    }
-
-    catchError {
-      echo "An error occurred in the pipeline."
     }
 
     stage("cleanup") {
       cleanWs()
     }
   }
+}
+
+public void logDiffSummary(Environment sourceEnv, Environment targetEnv, List<String> addedCharts, List<String> modifiedCharts, List<String> removedCharts) {
+   echo(""" Diff summary between source: ${sourceEnv.name} and target ${targetEnv.name}. Modifications will be applied on target ${targetEnv.name}
+            Added charts (${addedCharts.size()}): ${addedCharts}
+            Updated charts (${modifiedCharts.size()}): ${modifiedCharts}
+            Removed charts (${removedCharts.size()}): ${removedCharts} 
+          """)
 }
 
 private Map<String, Object> getUserInputs(List<String> charts, Map<String, String> sourceVersions,
@@ -203,7 +208,7 @@ void installSelectedCharts(List<String> selectedCharts, Map<String, String> sour
   for (String selectedChart : selectedCharts) {
     /*  trigger the generic job for deployment */
     String version = sourceChatsVersions.get(selectedChart)
-    echo "Installing chart ${selectedChart}:${version} in ${targetEnv.name}"
+    echo "Installing chart ${selectedChart}:${version} in ${targetEnv.getFullClusterName(cluster)} "
 
     build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
           parameters: [
@@ -217,8 +222,10 @@ void installSelectedCharts(List<String> selectedCharts, Map<String, String> sour
 
 }
 
-void removeSelectedCharts(List<String> selectedCharts, Environment targetEnv, Cluster cluster) {
+void removeSelectedCharts(List<String> selectedCharts, Map<String, String> targetChartsVersions, Environment targetEnv, Cluster cluster) {
+  DeploymentUtils deploymentUtils = new DeploymentUtils()
   for (String selectedChart : selectedCharts) {
-
+    String chartVersion = targetChartsVersions.get(selectedChart)
+    deploymentUtils.removeAppsInChartWithHelm(selectedChart, chartVersion, targetEnv, cluster)
   }
 }

@@ -44,20 +44,28 @@ public void removeAppsInChartWithHelm(String chartName, String chartVersion, Env
   }
 
   Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartName, onlyFromCluster)
-  List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
+  List<String> regionsToRemoveFrom = targetEnv.getRegionsToDeployTo(region)
 
-  /*  deploy apps in all target clusters */
-  appsPerCluster.each { Cluster targetCluster, List<String> appsToDeploy ->
-    if (regionsToDeployTo) {
-      for (String regionToDeployTo : regionsToDeployTo) {
-        executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env, regionToDeployTo)
+  /*  delete the apps */
+  appsPerCluster.each { Cluster targetCluster, List<String> appsToRemove ->
+    if (regionsToRemoveFrom) {
+      for (String regionToRemoveFrom : regionsToRemoveFrom) {
+        executeAppsRemoval(targetCluster, appsToRemove, targetEnv, regionToRemoveFrom)
       }
     } else { // the environment has no region
-      executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env)
+      executeAppsRemoval(targetCluster, appsToRemove, targetEnv)
     }
-
   }
+}
 
+public executeAppsRemoval(Cluster targetCluster, List<String> appsToRemove, Environment env,
+                          String region = null) {
+  runWithK8SCliTools(env, targetCluster, region, {
+    for (String app : appsToRemove) {
+      echo "Removing app ${app} from ${env.getFullClusterName(targetCluster, region)}"
+      sh "helm remove ${app}"
+    }
+  })
 }
 
 
