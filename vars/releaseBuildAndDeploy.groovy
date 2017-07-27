@@ -88,7 +88,7 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
         deployInitiator = deployInput.approver
 
         if (crId == null) {
-          crId = openCr(deployInput.approver, releaseInfo, environment, appsPerCluster, chartName)
+          crId = openCr(deployInitiator, releaseInfo, environment, appsPerCluster, chartName)
         }
 
         List<String> regionsToDeployTo = []
@@ -104,7 +104,7 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
 
         stage("validate apps in ${environment.getNamesWithRegions(regionsToDeployTo)}") {
           sendSlackMessageForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo,
-                                        deployInput.approver, chartName)
+                                        deployInitiator, chartName)
           displayJenkinsInputForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo)
         }
       }

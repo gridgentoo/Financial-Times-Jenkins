@@ -13,7 +13,8 @@ import com.ft.jenkins.git.GithubReleaseInfo
  * This multibranch pipeline is designed to be triggered only for tags coming from Github releases and for branches named "deploy-on-push/..".
  */
 
-//  keeping this method so that OLD style Jenkinsfiles
+//  keeping this method so that OLD style Jenkinsfiles still work.
+//  This support should be removed after doing https://jira.ft.com/browse/UPP2-230 task
 def call(BuildConfig config) {
   call()
 }
@@ -35,9 +36,10 @@ def call() {
   } else if (gitUtils.isDeployOnPushForBranch(currentBranch)) {
     String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
     devBuildAndDeploy(deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
+  } else {
+    echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
   }
 
-  echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
 }
 
 public GithubReleaseInfo getReleaseInfoForCurrentTag(String currentBranch) {
