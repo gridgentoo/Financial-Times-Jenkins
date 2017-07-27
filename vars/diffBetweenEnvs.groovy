@@ -255,7 +255,8 @@ void sendNotifications(Environment sourceEnv, Environment targetEnv,
                                   modifiedCharts, removedCharts)
 
     } else {
-      sendSyncFailureNotification(sourceEnv, targetEnv)
+      //  todo [sb] enable notifications
+//      sendSyncFailureNotification(sourceEnv, targetEnv)
     }
   }
 }
