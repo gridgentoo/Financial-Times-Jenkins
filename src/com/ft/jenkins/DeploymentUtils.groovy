@@ -75,7 +75,7 @@ public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocat
   for (def configFile : foundConfigFiles) {
     /*  compute the app name and the cluster where it will be deployed. The format is ${app-name}_${cluster}[_${env}].yaml */
     String configFileName = configFile.name
-    /*  strip the yaml extenstion */
+    /*  strip the yaml extension */
     configFileName = configFileName.replace(".yaml", "")
     String[] fileNameParts = configFileName.split("_")
 
@@ -152,6 +152,9 @@ public String publishHelmChart(String version) {
  */
 private String getHelmChartFolderName() {
   def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
+  if (chartFile == null) {
+    throw new IllegalStateException("There is no Helm Chart.yaml defined in the children of the Helm folder")
+  }
   String[] chartFilePathComponents = ((String) chartFile.path).split('/')
   /* return the parent folder of Chart.yaml */
   return chartFilePathComponents[chartFilePathComponents.size() - 2]
@@ -229,18 +232,6 @@ String getEnvironmentName(String branchName) {
 String getReleaseCandidateName(String branchName) {
   String[] values = branchName.split('/')
   return values[values.length - 1]
-}
-
-void updateChartVersionFile(String chartVersion) {
-  echo "Setting chart version to: ${chartVersion}"
-  def chartFile = findFiles(glob: HELM_CHART_LOCATION_REGEX)[0]
-  String chartFileContent = readFile chartFile.path
-  String updatedChartFileContent = chartFileContent.
-      replaceAll("(Version|version):.*", "Version: ${chartVersion}")
-  writeFile file: chartFile.path, text: updatedChartFileContent
-
-  echo "Updated chart yaml:"
-  sh "cat ${chartFile.path}"
 }
 
 private String getAppConfigurationFileName(String chartFolderLocation, Environment targetEnv, Cluster targetCluster,
