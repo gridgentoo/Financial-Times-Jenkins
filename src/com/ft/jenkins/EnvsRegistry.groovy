@@ -40,8 +40,7 @@ class EnvsRegistry implements Serializable {
 
 
   public static Environment getEnvironment(String name) {
-    for (int i = 0; i < envs.size(); i++) {
-      Environment environment = envs.get(i);
+    for (Environment environment: envs) {
       if (environment.name == name) {
         return environment
       }

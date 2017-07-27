@@ -1,6 +1,7 @@
 package com.ft.jenkins.slack
 
-import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.Cluster
+import com.ft.jenkins.Environment
 
 import static com.ft.jenkins.slack.SlackConstants.BOT_USERNAME
 import static com.ft.jenkins.slack.SlackConstants.DEFAULT_CREDENTIALS
@@ -14,29 +15,10 @@ final class SlackConstants {
   public static final String BOT_USERNAME = "jenkins-bot"
 }
 
-public void sendEnvSlackNotification(String environment, String message) {
-  sendSlackNotification(EnvsRegistry.getSlackChannelForEnv(environment), message)
-}
-
-/**
- * Sends a slack notification using the https://api.slack.com/methods/chat.postMessage method.
- *
- * @param channel the channel where to send the notification. Example: @username, #upp-tech
- * @param message The message to send
- * @param credentialId the id of Jenkins credentials to use. By default it will use 'ft.slack.bot-credentials'
- */
-public void sendSlackNotification(String channel, String message, String credentialId = DEFAULT_CREDENTIALS) {
-  String encodedChannel = URLEncoder.encode(channel, "UTF-8")
-  String encodedMessage = URLEncoder.encode(message, "UTF-8")
-  withCredentials([[$class: 'StringBinding', credentialsId: credentialId, variable: 'SLACK_TOKEN']]) {
-    sh """
-    curl -X POST -s \\
-  https://slack.com/api/chat.postMessage \\
-  -H 'cache-control: no-cache' \\
-  -H 'content-type: application/x-www-form-urlencoded' \\
-  -d 'text=${encodedMessage}&token=${env.SLACK_TOKEN}&channel=${encodedChannel}&username=${BOT_USERNAME}'
-  """
-  }
+public String getHealthUrl(Environment environment, Cluster cluster, String region = null) {
+  String entryPointURL = environment.getEntryPointUrl(cluster, region)
+  String fullClusterName = environment.getFullClusterName(cluster, region)
+  return "<${entryPointURL}/__health|${fullClusterName}>"
 }
 
 

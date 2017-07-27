@@ -1,6 +1,6 @@
-import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
+import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.changerequests.ChangeRequestCloseData
@@ -12,15 +12,17 @@ import com.ft.jenkins.git.GithubReleaseInfo
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
 
-def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
+import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CONFIG_FOLDER
+
+def call(GithubReleaseInfo releaseInfo) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
 
-  List<String> appsInRepo = null
+  Map<Cluster, List<String>> appsInRepo = null
   String tagName = releaseInfo.tagName
-  String imageVersion = tagName
-  String jenkinsStashId = env.BUILD_NUMBER
+  String appVersion = tagName
   DockerUtils dockerUtils = new DockerUtils()
+  String chartName
 
   catchError {
     node('docker') {
@@ -29,20 +31,25 @@ def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
           checkout scm
         }
 
-        stage('build image') {
-          String dockerRepository = deployUtil.getDockerImageRepository()
-          dockerUtils.buildAndPushImage("${dockerRepository}:${imageVersion}")
+        if (fileExists("Dockerfile")) { //  build Docker image only if we have a Dockerfile
+          stage('build image') {
+            String dockerRepository = deployUtil.getDockerImageRepository()
+            dockerUtils.buildAndPushImage("${dockerRepository}:${appVersion}")
+          }
+        }
+
+        stage('publish chart') {
+          chartName = deployUtil.publishHelmChart(appVersion)
         }
       }
-      appsInRepo = deployUtil.getAppNamesInRepo()
-      stash(includes: 'helm/**', name: jenkinsStashId)
+      appsInRepo = deployUtil.getAppsToDeployInChart("${HELM_CONFIG_FOLDER}/${chartName}")
     }
 
-    initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, releaseInfo, appsInRepo, jenkinsStashId,
-                                    imageVersion, 1, config)
+    initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, chartName, appVersion, releaseInfo, appsInRepo
+                                    , 1)
 
-    initiateDeploymentToEnvironment(Environment.PROD_NAME, releaseInfo, appsInRepo, jenkinsStashId,
-                                    imageVersion, 7, config)
+    initiateDeploymentToEnvironment(Environment.PROD_NAME, chartName, appVersion, releaseInfo, appsInRepo
+                                    , 7)
 
   }
 
@@ -53,17 +60,17 @@ def call(BuildConfig config, GithubReleaseInfo releaseInfo) {
   }
 }
 
-public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseInfo releaseInfo,
-                                            List<String> appsInRepo,
-                                            String jenkinsStashId, String imageVersion,
-                                            int daysForTheDeployment, BuildConfig config) {
+public void initiateDeploymentToEnvironment(String targetEnvName, String chartName,
+                                            String version,
+                                            GithubReleaseInfo releaseInfo, Map<Cluster, List<String>> appsPerCluster,
+                                            int daysForTheDeployment) {
   Environment environment = EnvsRegistry.getEnvironment(targetEnvName)
   stage("deploy to ${environment.name}") {
     timeout(time: daysForTheDeployment, unit: 'DAYS') {
 
       //  todo [sb] use a template engine for the Strings. See http://docs.groovy-lang.org/next/html/documentation/template-engines.html#_simpletemplateengine
 
-      sendSlackMessageForDeployReady(releaseInfo, environment, appsInRepo)
+      sendSlackMessageForDeployReady(releaseInfo, chartName, environment, appsPerCluster)
 
       List<String> remainingRegionsToDeployTo = environment.getRegions()
       String crId = null
@@ -71,17 +78,17 @@ public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseI
       while (!remainingRegionsToDeployTo.isEmpty()) {
 
         if (deployInitiator != null) {
-          sendSlackMessageForIntermediaryDeploy(releaseInfo, environment, appsInRepo, remainingRegionsToDeployTo,
-                                                deployInitiator)
+          sendSlackMessageForIntermediaryDeploy(releaseInfo, environment, appsPerCluster, remainingRegionsToDeployTo,
+                                                deployInitiator, chartName)
         }
 
-        JenkinsDeployInput deployInput = displayJenkinsInputForDeploy(releaseInfo, environment, appsInRepo,
+        JenkinsDeployInput deployInput = displayJenkinsInputForDeploy(releaseInfo, environment, appsPerCluster,
                                                                       remainingRegionsToDeployTo)
 
         deployInitiator = deployInput.approver
 
         if (crId == null) {
-          crId = openCr(deployInput.approver, releaseInfo, environment, appsInRepo)
+          crId = openCr(deployInitiator, releaseInfo, environment, appsPerCluster, chartName)
         }
 
         List<String> regionsToDeployTo = []
@@ -91,14 +98,14 @@ public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseI
           regionsToDeployTo.add(deployInput.getSelectedRegion())
         }
 
-        deployAppsToEnvironmentRegions(regionsToDeployTo, jenkinsStashId, imageVersion, environment, config)
+        deployAppsToEnvironmentRegions(regionsToDeployTo, chartName, version, environment)
 
         remainingRegionsToDeployTo.removeAll(regionsToDeployTo)
 
         stage("validate apps in ${environment.getNamesWithRegions(regionsToDeployTo)}") {
-          sendSlackMessageForValidation(releaseInfo, environment, appsInRepo, config, regionsToDeployTo,
-                                        deployInput.approver)
-          displayJenkinsInputForValidation(releaseInfo, environment, appsInRepo, regionsToDeployTo)
+          sendSlackMessageForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo,
+                                        deployInitiator, chartName)
+          displayJenkinsInputForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo)
         }
       }
 
@@ -108,33 +115,34 @@ public void initiateDeploymentToEnvironment(String targetEnvName, GithubReleaseI
 
 }
 
-public void deployAppsToEnvironmentRegions(regionsToDeployTo, String jenkinsStashId, String imageVersion,
-                                           Environment environment, BuildConfig config) {
+public void deployAppsToEnvironmentRegions(List<String> regionsToDeployTo, String chartName, String imageVersion,
+                                           Environment environment) {
 
-  DeploymentUtils deployUtil = new DeploymentUtils()
+  /*  deploy at the same time in all clusters */
+  /*  todo [sb] - if more than one cluster, do it one at a time */
+  for (String region : regionsToDeployTo) {
+    build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
+          parameters: [
+              string(name: 'Chart', value: chartName),
+              string(name: 'Version', value: imageVersion),
+              string(name: 'Environment', value: environment.getName()),
+              string(name: 'Cluster', value: 'all-in-chart'),
+              string(name: 'Region', value: region),
+              booleanParam(name: 'Send success notifications', value: false)]
 
-  node('docker') {
-    unstash(jenkinsStashId) // we need this to bring back to the workspace the helm configuration.
-    /*  deploy at the same time in all clusters */
-    /*  todo [sb] - if more than one cluster, do it one at a time */
-    for (int i = 0; i < regionsToDeployTo.size(); i++) {
-      String region = regionsToDeployTo.get(i);
-      for (int j = 0; j < config.deployToClusters.size(); j++) {
-        Cluster cluster = config.deployToClusters.get(j);
-        deployUtil.deployAppWithHelm(imageVersion, environment, cluster, region)
-      }
-    }
   }
 }
 
-public void sendSlackMessageForDeployReady(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                           List<String> appsInRepo) {
-  String appsJoined = appsInRepo.join(",")
+public void sendSlackMessageForDeployReady(GithubReleaseInfo releaseInfo, String chartName,
+                                           Environment targetEnv, Map<Cluster, List<String>> appsPerCluster) {
 
   SlackAttachment attachment = new SlackAttachment()
-  attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} ready to deploy in '${targetEnv.name}'"
+  attachment.title = "Click for manual decision: [${chartName}]:${releaseInfo.tagName} ready to deploy in '${targetEnv.name}'"
   attachment.titleUrl = "${env.BUILD_URL}input"
-  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` is ready to deploy in `${targetEnv.name}`."
+
+  String appsText = computeSlackTextForAppsToDeploy(appsPerCluster)
+
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps ${appsText}, is ready to deploy in `${targetEnv.name}`."
   attachment.authorName = releaseInfo.authorName
   attachment.authorLink = releaseInfo.authorUrl
   attachment.authorIcon = releaseInfo.authorAvatar
@@ -144,12 +152,44 @@ public void sendSlackMessageForDeployReady(GithubReleaseInfo releaseInfo, Enviro
   slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
 }
 
+String computeSlackTextForAppsToDeploy(Map<Cluster, List<String>> appsPerCluster) {
+  String appsText
+  DeploymentUtils deployUtils = new DeploymentUtils()
+  if (deployUtils.areSameAppsInAllClusters(appsPerCluster)) {
+    List<String> apps = deployUtils.getAppsInFirstCluster(appsPerCluster)
+    appsText = "`${apps}` in clusters `${Cluster.toLabels(appsPerCluster.keySet())}`"
+  } else {
+    List<String> messages = []
+    appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
+      messages.add("`${appsInCluster}` in cluster `${cluster.label}`")
+    }
+    appsText = messages.join(" and ")
+  }
+  return appsText
+}
+
+String computeSimpleTextForAppsToDeploy(Map<Cluster, List<String>> appsPerCluster) {
+  String appsText
+  DeploymentUtils deployUtils = new DeploymentUtils()
+  if (deployUtils.areSameAppsInAllClusters(appsPerCluster)) {
+    List<String> apps = deployUtils.getAppsInFirstCluster(appsPerCluster)
+    appsText = "${apps} in clusters ${Cluster.toLabels(appsPerCluster.keySet())}"
+  } else {
+    List<String> messages = []
+    appsPerCluster.each { Cluster cluster, List<String> appsInCluster ->
+      messages.add("${appsInCluster} in cluster ${cluster.label}")
+    }
+    appsText = messages.join(" and ")
+  }
+  return appsText
+}
+
 public JenkinsDeployInput displayJenkinsInputForDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                                       List<String> appsInRepo, List<String> availableRegions) {
-  String appsJoined = appsInRepo.join(",")
+                                                       Map<Cluster, List<String>> appsPerCluster,
+                                                       List<String> availableRegions) {
   String envWithRegions = targetEnv.getNamesWithRegions(availableRegions)
 
-  String releaseMessage = "The release ${releaseInfo.tagName} of apps [${appsJoined}] is ready to deploy in '${envWithRegions}'."
+  String releaseMessage = "The release ${releaseInfo.tagName} of apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} is ready to deploy in '${envWithRegions}'."
   if (availableRegions.size() == 1) {
     String regionToDeploy = availableRegions.get(0)
     releaseMessage = releaseMessage + "It will be deployed in region ${regionToDeploy}"
@@ -168,49 +208,48 @@ public JenkinsDeployInput displayJenkinsInputForDeploy(GithubReleaseInfo release
   }
 }
 
-public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv, List<String> appsInRepo,
-                                          BuildConfig config, List<String> deployedInRegions, String approver) {
-  String appsJoined = appsInRepo.join(",")
+public void sendSlackMessageForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv,
+                                          Map<Cluster, List<String>> appsPerCluster,
+                                          List<String> deployedInRegions, String approver, String chartName) {
+  SlackUtils slackUtils = new SlackUtils()
+
   List<String> healthURLs = []
-  for (Cluster cluster : config.deployToClusters) {
+  for (Cluster cluster : appsPerCluster.keySet()) {
     for (String region : deployedInRegions) {
-      String entryPointUrl = targetEnv.getEntryPointUrl(cluster, region)
-      String healthURL = "<${entryPointUrl}/__health|${cluster.getLabel()}-${targetEnv.name}-${region}>"
-      healthURLs.add(healthURL)
+      healthURLs.add(slackUtils.getHealthUrl(targetEnv, cluster, region))
     }
   }
 
   SlackAttachment attachment = new SlackAttachment()
   String envWithRegions = targetEnv.getNamesWithRegions(deployedInRegions)
-  attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} was deployed and waits validation in '${envWithRegions}'"
+  attachment.title = "Click for manual decision: ${chartName}:${releaseInfo.tagName} was deployed and waits validation in '${envWithRegions}'"
   attachment.titleUrl = "${env.BUILD_URL}input"
-  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was deployed successfully and is waiting validation in ${healthURLs}."
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps ${computeSlackTextForAppsToDeploy(appsPerCluster)}, was deployed successfully and is waiting validation in ${healthURLs}."
   attachment.authorName = releaseInfo.authorName
   attachment.authorLink = releaseInfo.authorUrl
   attachment.authorIcon = releaseInfo.authorAvatar
 
-  SlackUtils slackUtils = new SlackUtils()
   /* send notification only to approver */
   slackUtils.sendEnhancedSlackNotification("@${approver}", attachment)
 }
 
 public String displayJenkinsInputForValidation(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                               List<String> appsInRepo, List<String> deployedInRegions) {
-  String appsJoined = appsInRepo.join(",")
+                                               Map<Cluster, List<String>> appsPerCluster,
+                                               List<String> deployedInRegions) {
   String envWithRegions = targetEnv.getNamesWithRegions(deployedInRegions)
 
-  String releaseMessage = "The release ${releaseInfo.tagName} of apps '[${appsJoined}]' was deployed in '${envWithRegions}' and needs validation. Is this release valid?"
+  String releaseMessage = "The release ${releaseInfo.tagName} of apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} was deployed in '${envWithRegions}' and needs validation. Is this release valid?"
   String approver =
       input(message: releaseMessage, submitterParameter: 'approver', ok: "Release is valid in ${envWithRegions}")
   return approver
 }
 
 private String openCr(String approver, GithubReleaseInfo releaseInfo, Environment environment,
-                      List<String> appsInRepo) {
+                      Map<Cluster, List<String>> appsPerCluster, String chartName) {
   try {
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
-    data.summary = "Deploying release ${releaseInfo.tagName} of apps [${appsInRepo.join(",")}] in ${environment.name}"
+    data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
     data.description = releaseInfo.description ? releaseInfo.description : releaseInfo.title
     data.details = releaseInfo.title
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
@@ -256,15 +295,14 @@ final class JenkinsDeployInput implements Serializable {
 }
 
 void sendSlackMessageForIntermediaryDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv,
-                                           List<String> appsInRepo, List<String> remainingRegions, String initiator) {
-  String appsJoined = appsInRepo.join(",")
-
+                                           Map<Cluster, List<String>> appsPerCluster, List<String> remainingRegions,
+                                           String initiator, String chartName) {
   SlackAttachment attachment = new SlackAttachment()
   String envWithRegionNames = targetEnv.getNamesWithRegions(remainingRegions)
-  attachment.title = "Click for manual decision: [${appsJoined}]:${releaseInfo.tagName} deploy in remaining regions '${envWithRegionNames}'"
+  attachment.title = "Click for manual decision: ${chartName}:${releaseInfo.tagName} deploy in remaining regions '${envWithRegionNames}'"
   attachment.titleUrl = "${env.BUILD_URL}input"
   String validatedEnvWithRegionNames = targetEnv.getNamesWithRegions(targetEnv.getValidatedRegions(remainingRegions))
-  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps `[${appsJoined}]` was *validated in ${validatedEnvWithRegionNames}* and is ready to deploy in `${envWithRegionNames}`."
+  attachment.text = "The release <${releaseInfo.url}|${releaseInfo.tagName}> of apps ${computeSlackTextForAppsToDeploy(appsPerCluster)}, was *validated in ${validatedEnvWithRegionNames}* and is ready to deploy in `${envWithRegionNames}`."
   attachment.authorName = releaseInfo.authorName
   attachment.authorLink = releaseInfo.authorUrl
   attachment.authorIcon = releaseInfo.authorAvatar

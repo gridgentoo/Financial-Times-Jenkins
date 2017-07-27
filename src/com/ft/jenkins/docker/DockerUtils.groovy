@@ -1,6 +1,8 @@
 package com.ft.jenkins.docker
 
-import static DockerUtilsConstants.*
+import static com.ft.jenkins.docker.DockerUtilsConstants.DOCKERHUB_CREDENTIALS
+import static com.ft.jenkins.docker.DockerUtilsConstants.DOCKERHUB_URL
+import static com.ft.jenkins.docker.DockerUtilsConstants.FT_DOCKER_REGISTRY_NAME
 
 final class DockerUtilsConstants {
   public static final String DOCKERHUB_CREDENTIALS = "ft.dh.credentials"
@@ -15,7 +17,13 @@ private void pushImageToDockerReg(image, String dockerRegistryUrl, String creden
 }
 
 private def buildImage(String dockerTag, String folder = ".") {
-  def image = docker.build(dockerTag, folder)
+  def image
+  /*  adding the internal nexus credentials to support the maven apps connecting to Nexus */
+  withCredentials([usernamePassword(credentialsId: "nexus.credentials", passwordVariable: 'NEXUS_PASSWORD',
+                                    usernameVariable: 'NEXUS_USERNAME')]) {
+    image = docker.build(dockerTag,
+                         "--build-arg SONATYPE_USER=${env.NEXUS_USERNAME} --build-arg SONATYPE_PASSWORD=${env.NEXUS_PASSWORD} ${folder}")
+  }
   return image
 }
 
@@ -24,8 +32,7 @@ public void buildAndPushImage(String dockerTag) {
   boolean useInternalDockerReg = dockerTag.startsWith(FT_DOCKER_REGISTRY_NAME)
   if (useInternalDockerReg) {
     pushImageToDockerReg(image, "https://${FT_DOCKER_REGISTRY_NAME}")
-  }
-  else {
+  } else {
     pushImageToDockerReg(image, DOCKERHUB_URL, DOCKERHUB_CREDENTIALS)
   }
 }
