@@ -163,6 +163,7 @@ private Map<String, String> getChartsFromEnv(Environment env, Cluster cluster) {
  * @return
  */
 private Map<String, String> parseHelmChartOutputIntoMap(String chartsOutputText) {
+  echo "Got charts raw output from helm: ${chartsOutputText}. Parsing it ..."
   Map<String, String> chartsMap = new HashMap<>()
   String[] chartOutputLines = chartsOutputText.split("\\r?\\n")
   for (String chartOutput : chartOutputLines) {
