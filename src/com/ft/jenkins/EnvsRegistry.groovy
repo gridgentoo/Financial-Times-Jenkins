@@ -42,7 +42,7 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com"
     ]
 
-    envs = [k8s, preProd, prod]
+    envs = [k8s, pac, preProd, prod]
   }
 
 
