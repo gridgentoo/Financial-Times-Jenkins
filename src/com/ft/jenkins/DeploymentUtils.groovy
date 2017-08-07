@@ -161,7 +161,7 @@ private String getHelmChartFolderName() {
 }
 
 public void runWithK8SCliTools(Environment env, Cluster cluster, String region = null, Closure codeToRun) {
-  prepareK8SCliCredentials()
+  prepareK8SCliCredentials(env, cluster, region)
   String currentDir = pwd()
 
   String apiServer = env.getApiServerForCluster(cluster, region)
@@ -177,11 +177,12 @@ public void runWithK8SCliTools(Environment env, Cluster cluster, String region =
   }
 }
 
-private void prepareK8SCliCredentials() {
+private void prepareK8SCliCredentials(Environment targetEnv, Cluster cluster, String region = null) {
+  String fullClusterName = targetEnv.getFullClusterName(cluster, region)
   withCredentials([
-      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-certificate", variable: 'CLIENT_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.ca-cert", variable: 'CA_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-key", variable: 'CLIENT_KEY']]) {
+      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.client-certificate", variable: 'CLIENT_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.ca-cert", variable: 'CA_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.client-key", variable: 'CLIENT_KEY']]) {
     sh """
       mkdir -p ${CREDENTIALS_DIR}
       rm -f ${CREDENTIALS_DIR}/*
