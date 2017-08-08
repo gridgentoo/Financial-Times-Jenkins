@@ -11,10 +11,18 @@ import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
 
-def call(String firstEnvName, String secondEnvName, String clusterName) {
-  echo "Diff between envs with params: [envToSyncFrom: ${firstEnvName}, envToBeSynced: ${secondEnvName}, cluster: ${clusterName}]"
-  Environment sourceEnv = EnvsRegistry.getEnvironment(firstEnvName)
-  Environment targetEnv = EnvsRegistry.getEnvironment(secondEnvName)
+def call(String sourceEnvName, String sourceRegion, String targetEnvName, String targetRegion,  String clusterName) {
+  echo "Diff between envs with params: [sourceEnv: ${sourceEnvName}, sourceRegion: ${sourceRegion}, targetEnv: ${targetEnvName}, targetRegion: ${targetRegion}, cluster: ${clusterName}]"
+  Environment sourceEnv = EnvsRegistry.getEnvironment(sourceEnvName)
+  Environment targetEnv = EnvsRegistry.getEnvironment(targetEnvName)
+  if (!sourceRegion) {
+    sourceRegion = null
+  }
+
+  if (!targetRegion) {
+    targetRegion = null
+  }
+
   Cluster cluster = Cluster.valueOfLabel(clusterName)
 
   DiffInfo diffInfo
@@ -27,9 +35,9 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
 
         stage('Compute diff between envs') {
           echo "Diff the clusters"
-          diffInfo = diffUtil.computeDiffBetweenEnvs(sourceEnv, targetEnv, cluster)
+          diffInfo = diffUtil.computeDiffBetweenEnvs(sourceEnv, sourceRegion, targetEnv, targetRegion, cluster)
           diffUtil.logDiffSummary(diffInfo)
-          sendSlackMessageForDiffSummary(diffInfo)
+          sendSlackNofificationOnDiff(diffInfo)
         }
 
         if (diffInfo.areEnvsInSync()) {
@@ -42,8 +50,8 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           }
 
           syncInfo.selectedChartsForAdding = getSelectedUserInputs(diffInfo.addedCharts, diffInfo,
-                                                                   "Services to be added in ${targetEnv.name}",
-                                                                   "Add services to ${targetEnv.name}")
+                                                                   "Services to be added in ${diffInfo.targetFullName()}",
+                                                                   "Add services to ${diffInfo.targetFullName()}")
           echo "The following charts were selected for adding: ${syncInfo.selectedChartsForAdding}"
         }
 
@@ -53,8 +61,8 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           }
 
           syncInfo.selectedChartsForUpdating = getSelectedUserInputs(diffInfo.modifiedCharts, diffInfo,
-                                                                     "Services to be updated in ${targetEnv.name}",
-                                                                     "Update services in ${targetEnv.name}")
+                                                                     "Services to be updated in ${diffInfo.targetFullName()}",
+                                                                     "Update services in ${diffInfo.targetFullName()}")
           echo "The following charts were selected for updating: ${syncInfo.selectedChartsForUpdating}"
         }
 
@@ -64,8 +72,8 @@ def call(String firstEnvName, String secondEnvName, String clusterName) {
           }
 
           syncInfo.selectedChartsForRemoving = getSelectedUserInputs(diffInfo.removedCharts, diffInfo,
-                                                                     "Services to be removed from ${targetEnv.name}",
-                                                                     "Remove the services from ${targetEnv.name}")
+                                                                     "Services to be removed from ${diffInfo.targetFullName()}",
+                                                                     "Remove the services from ${diffInfo.targetFullName()}")
           echo "The following charts were selected for removing: ${syncInfo.selectedChartsForRemoving}"
         }
 
@@ -162,7 +170,7 @@ void installSelectedCharts(List<String> selectedCharts, DiffInfo diffInfo) {
   for (String selectedChart : selectedCharts) {
     /*  trigger the generic job for deployment */
     String version = diffInfo.sourceChartsVersions.get(selectedChart)
-    echo "Installing chart ${selectedChart}:${version} in ${diffInfo.targetEnv.getFullClusterName(diffInfo.cluster)} "
+    echo "Installing chart ${selectedChart}:${version} in ${diffInfo.targetFullName()} "
 
     build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
           parameters: [
@@ -170,7 +178,7 @@ void installSelectedCharts(List<String> selectedCharts, DiffInfo diffInfo) {
               string(name: 'Version', value: version),
               string(name: 'Environment', value: diffInfo.targetEnv.name),
               string(name: 'Cluster', value: diffInfo.cluster.label),
-              string(name: 'Region', value: 'all'),
+              string(name: 'Region', value: diffInfo.targetRegion),
               booleanParam(name: 'Send success notifications', value: false)]
   }
 
@@ -190,12 +198,12 @@ void sendSyncSuccessNotification(DiffInfo diffInfo, SyncInfo syncInfo) {
   }
 
   SlackAttachment attachment = new SlackAttachment()
-  attachment.title = "Sync in ${diffInfo.targetEnv.name} from ${diffInfo.sourceEnv.name} done"
+  attachment.title = "Sync in ${diffInfo.targetFullName()} from ${diffInfo.sourceFullName()} done"
   attachment.titleUrl = "${env.BUILD_URL}"
 
   attachment.text = """ 
-Sync summary between source: `${diffInfo.sourceEnv.name}` and target `${diffInfo.targetEnv.name}`. 
-Modifications were applied on target `${diffInfo.targetEnv.name}`
+Sync summary between source: `${diffInfo.sourceFullName()}` and target `${diffInfo.targetFullName()}`. 
+Modifications were applied on target `${diffInfo.targetFullName()}`
 Selected added charts (${syncInfo.selectedChartsForAdding.size()}): ${diffInfo.addedChartsVersions()}
 Selected updated charts (${syncInfo.selectedChartsForUpdating.size()}): ${diffInfo.modifiedChartsVersions()}
 Selected removed charts (${syncInfo.getSelectedChartsForRemoving().size()}): ${diffInfo.removedChartsVersions()} 
@@ -217,17 +225,24 @@ void sendSyncFailureNotification(Environment sourceEnv, Environment targetEnv) {
   slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
 }
 
-void sendSlackMessageForDiffSummary(DiffInfo diffInfo) {
+void sendSlackNofificationOnDiff(DiffInfo diffInfo) {
   if (diffInfo.areEnvsInSync()) {
-    return;
+    sendSlackMessageForEnvsInSync(diffInfo)
   }
+  else {
+    sendSlackMessageForDiffSummary(diffInfo)
+  }
+}
 
+void sendSlackMessageForDiffSummary(DiffInfo diffInfo) {
   SlackAttachment attachment = new SlackAttachment()
-  attachment.title = "Click for manual decision: select charts for syncing in ${diffInfo.targetEnv.name} from ${diffInfo.sourceEnv.name}"
+  Environment sourceEnv = diffInfo.sourceEnv
+  Environment targetEnv = diffInfo.targetEnv
+  attachment.title = "Click for manual decision: select charts for syncing in ${targetEnv.getFullClusterName(diffInfo.cluster)} from ${sourceEnv.name}"
   attachment.titleUrl = "${env.BUILD_URL}input"
   attachment.text = """
-Diff summary between source: `${diffInfo.sourceEnv.name}` and target `${diffInfo.targetEnv.name}`. 
-Modifications will be applied on target `${diffInfo.targetEnv.name}`
+Diff summary between source: `${sourceEnv.name}` and target `${targetEnv.name}`. 
+Modifications will be applied on target `${targetEnv.name}`
 Added charts (${diffInfo.addedCharts.size()}): ${diffInfo.addedChartsVersions()}
 Updated charts (${diffInfo.modifiedCharts.size()}): ${diffInfo.modifiedChartsVersions()}
 Removed charts (${diffInfo.removedCharts.size()}): ${diffInfo.removedChartsVersions()} 
@@ -235,5 +250,19 @@ Removed charts (${diffInfo.removedCharts.size()}): ${diffInfo.removedChartsVersi
   attachment.color = "warning"
 
   SlackUtils slackUtils = new SlackUtils()
+  slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+}
+
+void sendSlackMessageForEnvsInSync(DiffInfo diffInfo) {
+  SlackAttachment attachment = new SlackAttachment()
+  attachment.title = "The cluster ${diffInfo.cluster} of the environments ${diffInfo.sourceEnv.name} and ${diffInfo.targetEnv.name} are in sync"
+  attachment.text = """
+The cluster ${diffInfo.cluster.label} of the environments : `${diffInfo.sourceEnv.name}` and target `${diffInfo.targetEnv.name}` do not have differences. 
+Nothing to sync. 
+"""
+  attachment.color = "good"
+
+  SlackUtils slackUtils = new SlackUtils()
   slackUtils.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
+
 }

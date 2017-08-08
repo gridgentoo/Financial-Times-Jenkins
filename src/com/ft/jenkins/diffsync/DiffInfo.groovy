@@ -5,6 +5,8 @@ import com.ft.jenkins.Environment
 
 class DiffInfo implements Serializable {
   Environment sourceEnv, targetEnv
+  String sourceRegion, targetRegion
+
   Map<String, String> sourceChartsVersions, targetChartsVersions
   List<String> addedCharts, modifiedCharts, removedCharts
   Cluster cluster
@@ -23,6 +25,14 @@ class DiffInfo implements Serializable {
 
   public String removedChartsVersions() {
     getChartsWithVersion(removedCharts, targetChartsVersions)
+  }
+
+  public String targetFullName() {
+    targetEnv.getFullClusterName(cluster, targetRegion)
+  }
+
+  public String sourceFullName() {
+    sourceEnv.getFullClusterName(cluster, sourceRegion)
   }
 
   public List<String> getChartsWithVersion(List<String> charts, Map<String, String> chartVersions) {

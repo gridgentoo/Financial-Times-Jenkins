@@ -14,25 +14,27 @@ public void logDiffSummary(DiffInfo diffInfo) {
           """)
 }
 
-public void computeDiffBetweenEnvs(Environment sourceEnv, Environment targetEnv, Cluster cluster) {
+public void computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegion, Environment targetEnv, String targetRegion, Cluster cluster) {
   DiffInfo diffInfo = new DiffInfo()
   diffInfo.sourceEnv = sourceEnv
   diffInfo.targetEnv = targetEnv
   diffInfo.cluster = cluster
+  diffInfo.sourceRegion = sourceRegion
+  diffInfo.targetRegion = targetRegion
 
-  diffInfo.sourceChartsVersions = getChartVersionsFromEnv(sourceEnv, cluster)
-  diffInfo.targetChartsVersions = getChartVersionsFromEnv(targetEnv, cluster)
+  diffInfo.sourceChartsVersions = getChartVersionsFromEnv(sourceEnv, cluster, sourceRegion)
+  diffInfo.targetChartsVersions = getChartVersionsFromEnv(targetEnv, cluster, targetRegion)
 
   diffInfo.removedCharts = getRemovedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
   diffInfo.addedCharts = getAddedCharts(diffInfo.targetChartsVersions, diffInfo.sourceChartsVersions)
   diffInfo.modifiedCharts = getModifiedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
 }
 
-private Map<String, String> getChartVersionsFromEnv(Environment env, Cluster cluster) {
+private Map<String, String> getChartVersionsFromEnv(Environment env, Cluster cluster, String region) {
   DeploymentUtils deploymentUtils = new DeploymentUtils()
   String tempFile = "tmpCharts_${System.currentTimeMillis()}"
 
-  deploymentUtils.runWithK8SCliTools(env, cluster, {
+  deploymentUtils.runWithK8SCliTools(env, cluster, region, {
     /*  get the chart versions from the cluster */
     sh "helm list --deployed | awk 'NR>1 {print \$9}' > ${tempFile}"
   })
