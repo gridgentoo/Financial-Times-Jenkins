@@ -19,7 +19,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
 public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
                                                             Cluster deployOnlyInCluster = null, String region = null) {
-  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, deployOnlyInCluster)
+  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, env, deployOnlyInCluster)
   List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
 
   /*  deploy apps in all target clusters */
@@ -67,7 +67,7 @@ public String getDockerImageRepository() {
 }
 
 
-public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation,
+public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation, Environment targetEnv,
                                                          Cluster includeOnlyCluster = null) {
   Map<Cluster, List<String>> result = [:]
   def foundConfigFiles = findFiles(glob: "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/*.yaml")
@@ -82,7 +82,7 @@ public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocat
     if (fileNameParts.length > 1) {
       /*  add the app name to the corresponding cluster if it wasn't added yet */
       Cluster targetCluster = Cluster.valueOfLabel(fileNameParts[1])
-      if (includeOnlyCluster && targetCluster != includeOnlyCluster) {
+      if ((includeOnlyCluster && targetCluster != includeOnlyCluster) || (!targetEnv.clusters.contains(targetCluster))) {
         continue
       }
       String appName = fileNameParts[0]

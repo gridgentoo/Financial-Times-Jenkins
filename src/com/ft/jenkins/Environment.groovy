@@ -11,6 +11,10 @@ class Environment implements Serializable {
   String slackChannel
   /*  The regions that this environment is split across */
   List<String> regions = null
+
+  /*  The application clusters that an environment has*/
+  List<Cluster> clusters = []
+
   /*  Mapping between region+cluster and their respective Kubernetes api servers. */
   public Map<String, String> clusterToApiServerMap
 
