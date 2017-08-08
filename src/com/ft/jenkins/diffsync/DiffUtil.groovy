@@ -6,15 +6,15 @@ import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 
 public void logDiffSummary(DiffInfo diffInfo) {
-  echo(""" Diff summary between source: ${diffInfo.sourceEnv.name} and target ${diffInfo.targetEnv.name}. 
-            Modifications will be applied on target ${diffInfo.targetEnv.name}
+  echo(""" Diff summary between source: ${diffInfo.sourceFullName()} and target ${diffInfo.targetFullName()}. 
+            Modifications will be applied on target ${diffInfo.targetFullName()}
             Added charts (${diffInfo.addedCharts.size()}): ${diffInfo.addedChartsVersions()}
             Updated charts (${diffInfo.modifiedCharts.size()}): ${diffInfo.modifiedChartsVersions()}
             Removed charts (${diffInfo.removedCharts.size()}): ${diffInfo.removedChartsVersions()} 
           """)
 }
 
-public void computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegion, Environment targetEnv, String targetRegion, Cluster cluster) {
+public DiffInfo computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegion, Environment targetEnv, String targetRegion, Cluster cluster) {
   DiffInfo diffInfo = new DiffInfo()
   diffInfo.sourceEnv = sourceEnv
   diffInfo.targetEnv = targetEnv
@@ -28,6 +28,7 @@ public void computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegion, E
   diffInfo.removedCharts = getRemovedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
   diffInfo.addedCharts = getAddedCharts(diffInfo.targetChartsVersions, diffInfo.sourceChartsVersions)
   diffInfo.modifiedCharts = getModifiedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
+  return diffInfo
 }
 
 private Map<String, String> getChartVersionsFromEnv(Environment env, Cluster cluster, String region) {

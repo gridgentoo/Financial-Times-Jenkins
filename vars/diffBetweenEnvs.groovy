@@ -236,13 +236,11 @@ void sendSlackNofificationOnDiff(DiffInfo diffInfo) {
 
 void sendSlackMessageForDiffSummary(DiffInfo diffInfo) {
   SlackAttachment attachment = new SlackAttachment()
-  Environment sourceEnv = diffInfo.sourceEnv
-  Environment targetEnv = diffInfo.targetEnv
-  attachment.title = "Click for manual decision: select charts for syncing in ${targetEnv.getFullClusterName(diffInfo.cluster)} from ${sourceEnv.name}"
+  attachment.title = "Click for manual decision: select charts for syncing from ${diffInfo.sourceFullName()} in ${diffInfo.targetFullName()}"
   attachment.titleUrl = "${env.BUILD_URL}input"
   attachment.text = """
-Diff summary between source: `${sourceEnv.name}` and target `${targetEnv.name}`. 
-Modifications will be applied on target `${targetEnv.name}`
+Diff summary between source: `${diffInfo.sourceFullName()}` and target `${diffInfo.targetFullName()}`. 
+Modifications will be applied on target `${diffInfo.targetFullName()}`
 Added charts (${diffInfo.addedCharts.size()}): ${diffInfo.addedChartsVersions()}
 Updated charts (${diffInfo.modifiedCharts.size()}): ${diffInfo.modifiedChartsVersions()}
 Removed charts (${diffInfo.removedCharts.size()}): ${diffInfo.removedChartsVersions()} 
@@ -250,19 +248,18 @@ Removed charts (${diffInfo.removedCharts.size()}): ${diffInfo.removedChartsVersi
   attachment.color = "warning"
 
   SlackUtils slackUtils = new SlackUtils()
-  slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+  slackUtils.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
 }
 
 void sendSlackMessageForEnvsInSync(DiffInfo diffInfo) {
   SlackAttachment attachment = new SlackAttachment()
-  attachment.title = "The cluster ${diffInfo.cluster} of the environments ${diffInfo.sourceEnv.name} and ${diffInfo.targetEnv.name} are in sync"
+  attachment.title = "The environments ${diffInfo.sourceFullName()} and ${diffInfo.targetFullName()} are in sync"
   attachment.text = """
-The cluster ${diffInfo.cluster.label} of the environments : `${diffInfo.sourceEnv.name}` and target `${diffInfo.targetEnv.name}` do not have differences. 
+The environments : `${diffInfo.sourceFullName()}` and target `${diffInfo.targetFullName()}` do not have differences. 
 Nothing to sync. 
 """
   attachment.color = "good"
 
   SlackUtils slackUtils = new SlackUtils()
   slackUtils.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
-
 }
