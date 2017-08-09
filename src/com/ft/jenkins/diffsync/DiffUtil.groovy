@@ -5,6 +5,22 @@ import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 
+public static List<String> getChartsDiffVersion(List<String> charts, Map<String, String> initialVersions, Map<String, String> updatedVersions) {
+  List<String> result = []
+  for (String chart : charts) {
+    result.add("${chart}:${initialVersions.get(chart)}->${updatedVersions.get(chart)}")
+  }
+  return result
+}
+
+public static List<String> getChartsWithVersion(List<String> charts, Map<String, String> chartVersions) {
+  List<String> result = []
+  for (String chart : charts) {
+    result.add("${chart}:${chartVersions.get(chart)}")
+  }
+  return result
+}
+
 public void logDiffSummary(DiffInfo diffInfo) {
   echo(""" Diff summary between source: ${diffInfo.sourceFullName()} and target ${diffInfo.targetFullName()}. 
             Modifications will be applied on target ${diffInfo.targetFullName()}
@@ -25,9 +41,10 @@ public DiffInfo computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegio
   diffInfo.sourceChartsVersions = getChartVersionsFromEnv(sourceEnv, cluster, sourceRegion)
   diffInfo.targetChartsVersions = getChartVersionsFromEnv(targetEnv, cluster, targetRegion)
 
-  diffInfo.removedCharts = getRemovedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
-  diffInfo.addedCharts = getAddedCharts(diffInfo.targetChartsVersions, diffInfo.sourceChartsVersions)
+  diffInfo.addedCharts = getAddedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
   diffInfo.modifiedCharts = getModifiedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
+  diffInfo.removedCharts = getRemovedCharts(diffInfo.sourceChartsVersions, diffInfo.targetChartsVersions)
+
   return diffInfo
 }
 
@@ -52,13 +69,18 @@ private Map<String, String> getChartVersionsFromEnv(Environment env, Cluster clu
  * @param chartsOutputText aggregated lines produced by 'helm list'
  * @return
  */
-private Map<String, String> parseHelmChartOutputIntoMap(String chartsOutputText) {
+public Map<String, String> parseHelmChartOutputIntoMap(String chartsOutputText) {
   echo "Got charts raw output from helm: ${chartsOutputText}. Parsing it ..."
   Map<String, String> chartsMap = new HashMap<>()
+
+  if (!chartsOutputText?.trim()) {
+    return chartsMap
+  }
+
   String[] chartOutputLines = chartsOutputText.split("\\r?\\n")
   for (String chartOutput : chartOutputLines) {
     String chartVersion = chartOutput.find(DeploymentUtilsConstants.CHART_VERSION_REGEX)
-    String chartName = chartOutput.substring(0, chartOutput.length() - chartVersion.length())
+    String chartName = chartOutput.substring(0, chartOutput.length() - chartVersion.length() - 1)
     chartsMap.put(chartName, chartVersion)
   }
 
@@ -78,14 +100,14 @@ private List<String> getModifiedCharts(Map<String, String> sourceEnvCharts, Map<
 }
 
 private List<String> getAddedCharts(Map<String, String> sourceEnvCharts, Map<String, String> targetEnvCharts) {
-  List<String> removedCharts = []
+  List<String> addedCharts = []
   sourceEnvCharts.keySet().each { String chartName ->
     if (chartName != null && !targetEnvCharts.containsKey(chartName)) {
-      removedCharts.add(chartName)
+      addedCharts.add(chartName)
     }
   }
 
-  return removedCharts
+  return addedCharts
 }
 
 private List<String> getRemovedCharts(Map<String, String> sourceEnvCharts, Map<String, String> targetEnvCharts) {

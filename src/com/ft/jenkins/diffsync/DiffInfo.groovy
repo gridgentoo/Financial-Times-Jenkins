@@ -16,15 +16,15 @@ class DiffInfo implements Serializable {
   }
 
   public String addedChartsVersions() {
-    return getChartsWithVersion(addedCharts, sourceChartsVersions)
+    return DiffUtil.getChartsWithVersion(addedCharts, sourceChartsVersions)
   }
 
   public String modifiedChartsVersions() {
-    return getChartsDiffVersion(modifiedCharts, targetChartsVersions, sourceChartsVersions)
+    return DiffUtil.getChartsDiffVersion(modifiedCharts, targetChartsVersions, sourceChartsVersions)
   }
 
   public String removedChartsVersions() {
-    getChartsWithVersion(removedCharts, targetChartsVersions)
+    DiffUtil.getChartsWithVersion(removedCharts, targetChartsVersions)
   }
 
   public String targetFullName() {
@@ -35,20 +35,5 @@ class DiffInfo implements Serializable {
     sourceEnv.getFullClusterName(cluster, sourceRegion)
   }
 
-  public List<String> getChartsWithVersion(List<String> charts, Map<String, String> chartVersions) {
-    List<String> result = []
-    for (String chart : charts) {
-      result.add("${chart}:${chartVersions.get(chart)}")
-    }
-    return result
-  }
-
-  public List<String> getChartsDiffVersion(List<String> charts, Map<String, String> initialVersions, Map<String, String> updatedVersions) {
-    List<String> result = []
-    for (String chart : charts) {
-      result.add("${chart}:${initialVersions.get(chart)}->${updatedVersions.get(chart)}")
-    }
-    return result
-  }
 
 }

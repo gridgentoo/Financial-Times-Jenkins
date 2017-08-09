@@ -11,7 +11,7 @@ import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
 
-def call(String sourceEnvName, String sourceRegion, String targetEnvName, String targetRegion,  String clusterName) {
+def call(String sourceEnvName, String sourceRegion, String targetEnvName, String targetRegion, String clusterName) {
   echo "Diff between envs with params: [sourceEnv: ${sourceEnvName}, sourceRegion: ${sourceRegion}, targetEnv: ${targetEnvName}, targetRegion: ${targetRegion}, cluster: ${clusterName}]"
   Environment sourceEnv = EnvsRegistry.getEnvironment(sourceEnvName)
   Environment targetEnv = EnvsRegistry.getEnvironment(targetEnvName)
@@ -26,7 +26,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
   Cluster cluster = Cluster.valueOfLabel(clusterName)
 
   DiffInfo diffInfo
-  SyncInfo syncInfo
+  SyncInfo syncInfo = new SyncInfo()
   DiffUtil diffUtil = new DiffUtil()
 
   node('docker') {
@@ -44,6 +44,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
           return  // do not continue if diff is empty.
         }
 
+        syncInfo.diffInfo = diffInfo
         stage('Select charts to be added') {
           if (diffInfo.addedCharts.isEmpty()) {
             return; //  don't do anything at this stage
@@ -99,7 +100,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
       stage("notifications") {
         if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
           sendSyncSuccessNotification(diffInfo, syncInfo)
-        } else {
+        } else if (currentBuild.currentResult != "ABORTED") {
           sendSyncFailureNotification(sourceEnv, targetEnv)
         }
       }
@@ -114,6 +115,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
 private List<String> getSelectedUserInputs(List<String> charts, DiffInfo diffInfo, String inputMessage,
                                            String okButton) {
   List checkboxes = []
+  charts.sort()
   for (int i = 0; i < charts.size(); i++) {
     String chartName = charts.get(i)
     String checkboxDescription = getCheckboxDescription(diffInfo.targetChartsVersions.get(chartName),
@@ -178,7 +180,7 @@ void installSelectedCharts(List<String> selectedCharts, DiffInfo diffInfo) {
               string(name: 'Version', value: version),
               string(name: 'Environment', value: diffInfo.targetEnv.name),
               string(name: 'Cluster', value: diffInfo.cluster.label),
-              string(name: 'Region', value: diffInfo.targetRegion),
+              string(name: 'Region', value: diffInfo.targetRegion ? diffInfo.targetRegion : "all"),
               booleanParam(name: 'Send success notifications', value: false)]
   }
 
@@ -204,9 +206,9 @@ void sendSyncSuccessNotification(DiffInfo diffInfo, SyncInfo syncInfo) {
   attachment.text = """ 
 Sync summary between source: `${diffInfo.sourceFullName()}` and target `${diffInfo.targetFullName()}`. 
 Modifications were applied on target `${diffInfo.targetFullName()}`
-Selected added charts (${syncInfo.selectedChartsForAdding.size()}): ${diffInfo.addedChartsVersions()}
-Selected updated charts (${syncInfo.selectedChartsForUpdating.size()}): ${diffInfo.modifiedChartsVersions()}
-Selected removed charts (${syncInfo.getSelectedChartsForRemoving().size()}): ${diffInfo.removedChartsVersions()} 
+Selected added charts (${syncInfo.selectedChartsForAdding.size()}): ${syncInfo.addedChartsVersions()}
+Selected updated charts (${syncInfo.selectedChartsForUpdating.size()}): ${syncInfo.modifiedChartsVersions()}
+Selected removed charts (${syncInfo.getSelectedChartsForRemoving().size()}): ${syncInfo.removedChartsVersions()} 
 """
   attachment.color = "good"
 
@@ -228,8 +230,7 @@ void sendSyncFailureNotification(Environment sourceEnv, Environment targetEnv) {
 void sendSlackNofificationOnDiff(DiffInfo diffInfo) {
   if (diffInfo.areEnvsInSync()) {
     sendSlackMessageForEnvsInSync(diffInfo)
-  }
-  else {
+  } else {
     sendSlackMessageForDiffSummary(diffInfo)
   }
 }
