@@ -43,7 +43,7 @@ public void removeAppsInChartWithHelm(String chartName, String chartVersion, Env
     sh "helm fetch --untar ${HELM_LOCAL_REPO_NAME}/${chartName} --version ${chartVersion}"
   }
 
-  Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartName, onlyFromCluster)
+  Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartName, targetEnv, onlyFromCluster)
   List<String> regionsToRemoveFrom = targetEnv.getRegionsToDeployTo(region)
 
   /*  delete the apps */
@@ -63,7 +63,7 @@ public executeAppsRemoval(Cluster targetCluster, List<String> appsToRemove, Envi
   runWithK8SCliTools(env, targetCluster, region, {
     for (String app : appsToRemove) {
       echo "Removing app ${app} from ${env.getFullClusterName(targetCluster, region)}"
-      sh "helm remove ${app}"
+      sh "helm delete ${app}"
     }
   })
 }
