@@ -206,9 +206,9 @@ void sendSyncSuccessNotification(DiffInfo diffInfo, SyncInfo syncInfo) {
   attachment.text = """ 
 Sync summary between source: `${diffInfo.sourceFullName()}` and target `${diffInfo.targetFullName()}`. 
 Modifications were applied on target `${diffInfo.targetFullName()}`
-Selected added charts (${syncInfo.selectedChartsForAdding.size()}): ${syncInfo.addedChartsVersions()}
-Selected updated charts (${syncInfo.selectedChartsForUpdating.size()}): ${syncInfo.modifiedChartsVersions()}
-Selected removed charts (${syncInfo.getSelectedChartsForRemoving().size()}): ${syncInfo.removedChartsVersions()} 
+1. Selected added charts (${syncInfo.selectedChartsForAdding.size()}): ${syncInfo.addedChartsVersions()}
+2. Selected updated charts (${syncInfo.selectedChartsForUpdating.size()}): ${syncInfo.modifiedChartsVersions()}
+3. Selected removed charts (${syncInfo.getSelectedChartsForRemoving().size()}): ${syncInfo.removedChartsVersions()} 
 """
   attachment.color = "good"
 
@@ -242,9 +242,9 @@ void sendSlackMessageForDiffSummary(DiffInfo diffInfo) {
   attachment.text = """
 Diff summary between source: `${diffInfo.sourceFullName()}` and target `${diffInfo.targetFullName()}`. 
 Modifications will be applied on target `${diffInfo.targetFullName()}`
-Added charts (${diffInfo.addedCharts.size()}): ${diffInfo.addedChartsVersions()}
-Updated charts (${diffInfo.modifiedCharts.size()}): ${diffInfo.modifiedChartsVersions()}
-Removed charts (${diffInfo.removedCharts.size()}): ${diffInfo.removedChartsVersions()} 
+1. Added charts (${diffInfo.addedCharts.size()}): ${diffInfo.addedChartsVersions()}
+2. Updated charts (${diffInfo.modifiedCharts.size()}): ${diffInfo.modifiedChartsVersions()}
+3. Removed charts (${diffInfo.removedCharts.size()}): ${diffInfo.removedChartsVersions()} 
 """
   attachment.color = "warning"
 
