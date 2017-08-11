@@ -1,0 +1,24 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: maven:3.5.0-jdk-8-alpine
+    working_directory: /usr/src/app
+    environment:
+
+    steps:
+      - checkout
+      - run:
+          name: "Maven build"
+          command: |
+            mvn clean test
+      - run:
+          name: "Maven generate reports"
+          command: |
+            mvn surefire-report:report-only
+            mvn site -DgenerateReports=false
+
+      - store_test_results:
+          path: target/site/surefire-report.html
+
+
