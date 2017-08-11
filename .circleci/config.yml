@@ -41,12 +41,14 @@ jobs:
           name: "Maven build"
           command: |
             mvn clean test
+
       - run:
-          name: "Maven generate reports"
+          name: Save test results
           command: |
-            mvn surefire-report:report-only
-            mvn site -DgenerateReports=false
-
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/junit/ \;
+          when: always
       - store_test_results:
-          path: target/site/surefire-report.html
-
+          path: ~/junit
+      - store_artifacts:
+          path: ~/junit
