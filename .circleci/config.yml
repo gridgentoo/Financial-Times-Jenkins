@@ -43,11 +43,17 @@ jobs:
             mvn clean test
 
       - run:
+          name: "Compose jacoco report & coveralls"
+          command: |
+            mvn jacoco:report coveralls:report -DrepoToken=$COVERALLS_REPO_TOKEN
+
+      - run:
           name: Save test results
           command: |
             mkdir -p ~/junit/
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/junit/ \;
           when: always
+
       - store_test_results:
           path: ~/junit
       - store_artifacts:
