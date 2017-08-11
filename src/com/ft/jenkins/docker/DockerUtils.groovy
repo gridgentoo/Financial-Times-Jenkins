@@ -35,4 +35,6 @@ public void buildAndPushImage(String dockerTag) {
   } else {
     pushImageToDockerReg(image, DOCKERHUB_URL, DOCKERHUB_CREDENTIALS)
   }
+  /*  remove the image after push */
+  sh "docker rmi ${image.id}"
 }

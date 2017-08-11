@@ -19,7 +19,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
 public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
                                                             Cluster deployOnlyInCluster = null, String region = null) {
-  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, deployOnlyInCluster)
+  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, env, deployOnlyInCluster)
   List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
 
   /*  deploy apps in all target clusters */
@@ -67,7 +67,7 @@ public String getDockerImageRepository() {
 }
 
 
-public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation,
+public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation, Environment targetEnv,
                                                          Cluster includeOnlyCluster = null) {
   Map<Cluster, List<String>> result = [:]
   def foundConfigFiles = findFiles(glob: "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/*.yaml")
@@ -82,7 +82,7 @@ public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocat
     if (fileNameParts.length > 1) {
       /*  add the app name to the corresponding cluster if it wasn't added yet */
       Cluster targetCluster = Cluster.valueOfLabel(fileNameParts[1])
-      if (includeOnlyCluster && targetCluster != includeOnlyCluster) {
+      if ((includeOnlyCluster && targetCluster != includeOnlyCluster) || (!targetEnv.clusters.contains(targetCluster))) {
         continue
       }
       String appName = fileNameParts[0]
@@ -161,7 +161,7 @@ private String getHelmChartFolderName() {
 }
 
 public void runWithK8SCliTools(Environment env, Cluster cluster, String region = null, Closure codeToRun) {
-  prepareK8SCliCredentials()
+  prepareK8SCliCredentials(env, cluster, region)
   String currentDir = pwd()
 
   String apiServer = env.getApiServerForCluster(cluster, region)
@@ -177,11 +177,12 @@ public void runWithK8SCliTools(Environment env, Cluster cluster, String region =
   }
 }
 
-private void prepareK8SCliCredentials() {
+private void prepareK8SCliCredentials(Environment targetEnv, Cluster cluster, String region = null) {
+  String fullClusterName = targetEnv.getFullClusterName(cluster, region)
   withCredentials([
-      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-certificate", variable: 'CLIENT_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.ca-cert", variable: 'CA_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s.auth.client-key", variable: 'CLIENT_KEY']]) {
+      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.client-certificate", variable: 'CLIENT_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.ca-cert", variable: 'CA_CERT'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.client-key", variable: 'CLIENT_KEY']]) {
     sh """
       mkdir -p ${CREDENTIALS_DIR}
       rm -f ${CREDENTIALS_DIR}/*
