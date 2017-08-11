@@ -55,3 +55,11 @@ public String getMostRecentGitTag() {
   echo "Retrieved most recent git tag: ${extractedGitVersion}"
   return extractedGitVersion
 }
+
+public String getLatestCommit() {
+  return sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+}
+
+public String getShortLatestCommit() {
+  return getLatestCommit().take(6)
+}
