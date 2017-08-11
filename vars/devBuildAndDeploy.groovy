@@ -6,7 +6,6 @@ import com.ft.jenkins.git.GitUtils
 def call(String environmentName, String releaseName, boolean branchRelease) {
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
-  GitUtils gitUtils = new GitUtils()
 
   String appVersion
 
@@ -17,7 +16,8 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
           checkout scm
         }
 
-        appVersion = getImageVersion(releaseName, gitUtils.getMostRecentGitTag(), branchRelease)
+        appVersion = getImageVersion(releaseName, branchRelease)
+        setCurrentBuildProps(appVersion)
 
         if (fileExists("Dockerfile")) { //  build Docker image only if we have a Dockerfile
           stage('build image') {
@@ -51,16 +51,22 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
   }
 }
 
-private String getImageVersion(String releaseName, String gitTag, boolean branchRelease) {
+private String getImageVersion(String releaseName, boolean branchRelease) {
   if (branchRelease) {
-    return "${gitTag}-${releaseName}"
+    /*  if we're releasing from a branch we need a valid semver, thus we'll be using the most recent git tag in the branch */
+    GitUtils gitUtils = new GitUtils()
+    String latestGitTag = gitUtils.getMostRecentGitTag()
+
+    /* using the latest commit so that we generate unique image names for different commits on the same branch */
+    String latestCommit = gitUtils.getShortLatestCommit()
+    return "${latestGitTag}-${latestCommit}-${releaseName}"
   }
 
   return releaseName
 }
 
-
-
-
-
-
+void setCurrentBuildProps(String appVersion) {
+  GitUtils gitUtils = new GitUtils()
+  currentBuild.displayName="${env.BUILD_NUMBER} - ${gitUtils.getShortLatestCommit()}"
+  currentBuild.description="version: ${appVersion}"
+}
