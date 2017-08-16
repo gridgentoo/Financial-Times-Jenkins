@@ -5,7 +5,8 @@ import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 
-public static List<String> getChartsDiffVersion(List<String> charts, Map<String, String> initialVersions, Map<String, String> updatedVersions) {
+public static List<String> getChartsDiffVersion(List<String> charts, Map<String, String> initialVersions,
+                                                Map<String, String> updatedVersions) {
   List<String> result = []
   for (String chart : charts) {
     result.add("${chart}:${initialVersions.get(chart)}->${updatedVersions.get(chart)}")
@@ -30,7 +31,8 @@ public void logDiffSummary(DiffInfo diffInfo) {
           """)
 }
 
-public DiffInfo computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegion, Environment targetEnv, String targetRegion, Cluster cluster) {
+public DiffInfo computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegion, Environment targetEnv,
+                                       String targetRegion, Cluster cluster) {
   DiffInfo diffInfo = new DiffInfo()
   diffInfo.sourceEnv = sourceEnv
   diffInfo.targetEnv = targetEnv
@@ -50,15 +52,15 @@ public DiffInfo computeDiffBetweenEnvs(Environment sourceEnv, String sourceRegio
 
 private Map<String, String> getChartVersionsFromEnv(Environment env, Cluster cluster, String region) {
   DeploymentUtils deploymentUtils = new DeploymentUtils()
-  String tempFile = "tmpCharts_${System.currentTimeMillis()}"
 
+  String chartsOutput
   deploymentUtils.runWithK8SCliTools(env, cluster, region, {
     /*  get the chart versions from the cluster */
-    sh "helm list --deployed | awk 'NR>1 {print \$9}' > ${tempFile}"
+    chartsOutput = sh(returnStdout: true, script: "helm list --deployed | awk 'NR>1 {print \$9}'")
   })
 
-  String charts = readFile(tempFile)
-  return parseHelmChartOutputIntoMap(charts)
+  echo "Got charts raw output from helm: ${chartsOutput}. Parsing it ..."
+  return parseHelmChartOutputIntoMap(chartsOutput)
 }
 
 /**
@@ -70,7 +72,6 @@ private Map<String, String> getChartVersionsFromEnv(Environment env, Cluster clu
  * @return
  */
 public Map<String, String> parseHelmChartOutputIntoMap(String chartsOutputText) {
-  echo "Got charts raw output from helm: ${chartsOutputText}. Parsing it ..."
   Map<String, String> chartsMap = new HashMap<>()
 
   if (!chartsOutputText?.trim()) {
