@@ -26,6 +26,7 @@ class EnvsRegistry implements Serializable {
     Environment pac = new Environment()
     pac.name = "pac"
     pac.slackChannel = "#k8s-pipeline-notif"
+    pac.regions = ["eu", "us"]
     pac.clusters = [Cluster.PAC]
     pac.clusterToApiServerMap = [
         ("eu-" + Cluster.PAC.toString()): "https://pre-prod-eu-pac-api.ft.com",
