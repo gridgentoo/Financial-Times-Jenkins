@@ -43,7 +43,7 @@ def call(GithubReleaseInfo releaseInfo, BuildConfig buildConfig) {
           chartName = deployUtil.publishHelmChart(appVersion)
         }
       }
-      appsInRepo = deployUtil.getAppsToDeployInChart("${HELM_CONFIG_FOLDER}/${chartName}", EnvsRegistry.getEnvironment(Environment.PRE_PROD_NAME))
+      appsInRepo = deployUtil.getAppsToDeployInChart("${HELM_CONFIG_FOLDER}/${chartName}", EnvsRegistry.getEnvironment(buildConfig.preprodEnvName))
     }
 
     initiateDeploymentToEnvironment(buildConfig.preprodEnvName, chartName, appVersion, releaseInfo, appsInRepo
