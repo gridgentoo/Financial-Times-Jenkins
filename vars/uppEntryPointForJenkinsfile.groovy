@@ -9,7 +9,7 @@ import com.ft.jenkins.Environment
 
 def call() {
   BuildConfig config = new BuildConfig()
-  config.setProdEnvName(Environment.PRE_PROD_NAME)
+  config.setPreprodEnvName(Environment.PRE_PROD_NAME)
   config.setProdEnvName(Environment.PROD_NAME)
 
   genericEntryPointForJenkinsfile(config)
