@@ -11,9 +11,8 @@ public class DeploymentUtilsConstants {
 //  public static String HELM_CHART_LOCATION_REGEX = "${HELM_CONFIG_FOLDER}/**/Chart.yaml"
   public static final String HELM_CHART_LOCATION_REGEX = "helm/**/Chart.yaml"
   public static final String CHART_VERSION_REGEX = "[0-9]+\\.[0-9]+\\.[0-9]+.*"
-  public static String APPS_CONFIG_FOLDER = "app-configs"
+  public static final String APPS_CONFIG_FOLDER = "app-configs"
   public static final String DEFAULT_HELM_VALUES_FILE = "values.yaml"
-  public static final String OPTION_ALL = "All"
 
   public static final String HELM_S3_BUCKET = "s3://upp-helm-repo/"
   public static final String HELM_AWS_CREDENTIALS = "ft.helm-repo.aws-credentials"

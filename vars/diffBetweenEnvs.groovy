@@ -37,7 +37,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
           echo "Diff the clusters"
           diffInfo = diffUtil.computeDiffBetweenEnvs(sourceEnv, sourceRegion, targetEnv, targetRegion, cluster)
           diffUtil.logDiffSummary(diffInfo)
-          sendSlackNofificationOnDiff(diffInfo)
+          sendSlackNotificationOnDiff(diffInfo)
         }
 
         if (diffInfo.areEnvsInSync()) {
@@ -227,15 +227,15 @@ void sendSyncFailureNotification(Environment sourceEnv, Environment targetEnv) {
   slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
 }
 
-void sendSlackNofificationOnDiff(DiffInfo diffInfo) {
+void sendSlackNotificationOnDiff(DiffInfo diffInfo) {
   if (diffInfo.areEnvsInSync()) {
-    sendSlackMessageForEnvsInSync(diffInfo)
+    sendSlackNotificationForEnvsInSync(diffInfo)
   } else {
-    sendSlackMessageForDiffSummary(diffInfo)
+    sendSlackNotificationForDiffSummary(diffInfo)
   }
 }
 
-void sendSlackMessageForDiffSummary(DiffInfo diffInfo) {
+void sendSlackNotificationForDiffSummary(DiffInfo diffInfo) {
   SlackAttachment attachment = new SlackAttachment()
   attachment.title = "Click for manual decision: select charts for syncing from ${diffInfo.sourceFullName()} in ${diffInfo.targetFullName()}"
   attachment.titleUrl = "${env.BUILD_URL}input"
@@ -252,7 +252,7 @@ Modifications will be applied on target `${diffInfo.targetFullName()}`
   slackUtils.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
 }
 
-void sendSlackMessageForEnvsInSync(DiffInfo diffInfo) {
+void sendSlackNotificationForEnvsInSync(DiffInfo diffInfo) {
   SlackAttachment attachment = new SlackAttachment()
   attachment.title = "The environments ${diffInfo.sourceFullName()} and ${diffInfo.targetFullName()} are in sync"
   attachment.text = """
