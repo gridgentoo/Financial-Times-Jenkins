@@ -4,11 +4,7 @@
 Jenkins shared pipeline library to be used for deployment in Kubernetes clusters.
 
 ## Documentation
-[Pipeline flowcharts](https://docs.google.com/document/d/1TTih1gcj-Vsqjp1aCAzsP4lpt6ivR8jDIXaZtBxNaUU/edit?pli=1#heading=h.hpqc84ha0jfi)
-
-[Design](https://docs.google.com/document/d/1TTih1gcj-Vsqjp1aCAzsP4lpt6ivR8jDIXaZtBxNaUU/edit?pli=1#heading=h.2y66m9r2u0oe)
-
-[Implementation details](https://docs.google.com/document/d/1TTih1gcj-Vsqjp1aCAzsP4lpt6ivR8jDIXaZtBxNaUU/edit?pli=1#heading=h.algtjm358t0q)
+[Deployment in k8s](https://docs.google.com/a/ft.com/document/d/15ecubJwkszH1B360Ah31uXy2UekpWlgfEmQeH9_wko8/edit?usp=sharing)
 
 ## What to do when adding a new environment
 When provisioning a new environment, Jenkins needs to "see" it, in order to be able to deploy to it.
