@@ -48,7 +48,7 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
 
       echo "Using app config file ${configurationFileName} to deploy with helm"
 
-      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName} --set region=${region}"
+      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName} --set region=${region} --set target_env=${env.name}"
     }
   })
 }
