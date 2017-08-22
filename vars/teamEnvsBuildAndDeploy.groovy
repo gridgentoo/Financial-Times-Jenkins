@@ -39,7 +39,7 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
     }
   }
 
-  /*  this is called outside of a node, so that the node is released, and so the executor is releases during the deploy. */
+  /*  this is called outside of a node, so that the node is released, and so the executor is released during the deploy. */
   stage("deploy chart") {
     /*  trigger the generic job for deployment */
     build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
