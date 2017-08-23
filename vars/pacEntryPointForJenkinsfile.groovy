@@ -9,7 +9,7 @@ import com.ft.jenkins.BuildConfig
 def call() {
   BuildConfig config = new BuildConfig()
   //  todo [sb] adjust these once we have all the envs defined
-  config.setPreprodEnvName("preprodPAC")
+  config.setPreprodEnvName("preprodpac")
   config.setProdEnvName("prod-pac")
 
   genericEntryPointForJenkinsfile(config)
