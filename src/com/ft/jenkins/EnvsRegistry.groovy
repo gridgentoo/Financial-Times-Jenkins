@@ -15,7 +15,7 @@ class EnvsRegistry implements Serializable {
     ]
 
     Environment k8sContentTest = new Environment()
-    k8s.name = "k8sConentTest"
+    k8s.name = "k8sContentTest"
     k8s.slackChannel = "@sorin.buliarca"
     k8s.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     k8s.clusterToApiServerMap = [
