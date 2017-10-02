@@ -8,6 +8,7 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
   DockerUtils dockerUtils = new DockerUtils()
 
   String appVersion
+  String chartName
 
   node('docker') {
     catchError {
@@ -26,28 +27,29 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
           }
         }
 
-        String chartName
         stage('publish chart') {
           chartName = deployUtil.publishHelmChart(appVersion)
         }
 
-        stage("deploy chart") {
-          /*  trigger the generic job for deployment */
-          build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
-                parameters: [
-                    string(name: 'Chart', value: chartName),
-                    string(name: 'Version', value: appVersion),
-                    string(name: 'Environment', value: environmentName),
-                    string(name: 'Cluster', value: 'all-in-chart'),
-                    string(name: 'Region', value: 'all'),
-                    booleanParam(name: 'Send success notifications', value: true)]
-        }
       }
     }
 
     stage("cleanup") {
       cleanWs()
     }
+  }
+
+  /*  this is called outside of a node, so that the node is released, and so the executor is released during the deploy. */
+  stage("deploy chart") {
+    /*  trigger the generic job for deployment */
+    build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
+          parameters: [
+              string(name: 'Chart', value: chartName),
+              string(name: 'Version', value: appVersion),
+              string(name: 'Environment', value: environmentName),
+              string(name: 'Cluster', value: 'all-in-chart'),
+              string(name: 'Region', value: 'all'),
+              booleanParam(name: 'Send success notifications', value: true)]
   }
 }
 

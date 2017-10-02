@@ -1,3 +1,4 @@
+import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.Cluster
 import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.DeploymentUtilsConstants
@@ -14,7 +15,7 @@ import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 
-def call(GithubReleaseInfo releaseInfo) {
+def call(GithubReleaseInfo releaseInfo, BuildConfig buildConfig) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
 
@@ -42,13 +43,13 @@ def call(GithubReleaseInfo releaseInfo) {
           chartName = deployUtil.publishHelmChart(appVersion)
         }
       }
-      appsInRepo = deployUtil.getAppsInChart("${HELM_CONFIG_FOLDER}/${chartName}", EnvsRegistry.getEnvironment(Environment.PRE_PROD_NAME))
+      appsInRepo = deployUtil.getAppsInChart("${HELM_CONFIG_FOLDER}/${chartName}", EnvsRegistry.getEnvironment(buildConfig.preprodEnvName))
     }
 
-    initiateDeploymentToEnvironment(Environment.PRE_PROD_NAME, chartName, appVersion, releaseInfo, appsInRepo
+    initiateDeploymentToEnvironment(buildConfig.preprodEnvName, chartName, appVersion, releaseInfo, appsInRepo
                                     , 1)
 
-    initiateDeploymentToEnvironment(Environment.PROD_NAME, chartName, appVersion, releaseInfo, appsInRepo
+    initiateDeploymentToEnvironment(buildConfig.prodEnvName, chartName, appVersion, releaseInfo, appsInRepo
                                     , 7)
 
   }

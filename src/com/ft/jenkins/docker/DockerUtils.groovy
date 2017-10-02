@@ -2,12 +2,14 @@ package com.ft.jenkins.docker
 
 import static com.ft.jenkins.docker.DockerUtilsConstants.DOCKERHUB_CREDENTIALS
 import static com.ft.jenkins.docker.DockerUtilsConstants.DOCKERHUB_URL
+import static com.ft.jenkins.docker.DockerUtilsConstants.FT_DOCKER_REGISTRY_CREDENTIALS
 import static com.ft.jenkins.docker.DockerUtilsConstants.FT_DOCKER_REGISTRY_NAME
 
 final class DockerUtilsConstants {
   public static final String DOCKERHUB_CREDENTIALS = "ft.dh.credentials"
   public static final String DOCKERHUB_URL = ""; // For Jenkins to connect to Dockerhub, it needs the URL empty.
-  public static final String FT_DOCKER_REGISTRY_NAME = "up-registry.ft.com"
+  public static final String FT_DOCKER_REGISTRY_NAME = "nexus.in.ft.com:5000"
+  public static final String FT_DOCKER_REGISTRY_CREDENTIALS = "ft.docker_internal.credentials"
 }
 
 private void pushImageToDockerReg(image, String dockerRegistryUrl, String credentials = null) {
@@ -31,7 +33,7 @@ public void buildAndPushImage(String dockerTag) {
   def image = buildImage(dockerTag)
   boolean useInternalDockerReg = dockerTag.startsWith(FT_DOCKER_REGISTRY_NAME)
   if (useInternalDockerReg) {
-    pushImageToDockerReg(image, "https://${FT_DOCKER_REGISTRY_NAME}")
+    pushImageToDockerReg(image, "https://${FT_DOCKER_REGISTRY_NAME}", FT_DOCKER_REGISTRY_CREDENTIALS)
   } else {
     pushImageToDockerReg(image, DOCKERHUB_URL, DOCKERHUB_CREDENTIALS)
   }
