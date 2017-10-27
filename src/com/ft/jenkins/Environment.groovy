@@ -1,7 +1,7 @@
 package com.ft.jenkins
 
 class Environment implements Serializable {
-  public static final String STAGING_NAME = "pre-prod"
+  public static final String STAGING_NAME = "staging"
   public static final String PROD_NAME = "prod"
 
 
