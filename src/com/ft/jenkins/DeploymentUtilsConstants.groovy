@@ -10,9 +10,9 @@ public class DeploymentUtilsConstants {
   /*  todo [sb] After a jenkins plugins update, the following line no longer works. Please try again later, as we'd like to reuse the value of a constant in other constants */
 //  public static String HELM_CHART_LOCATION_REGEX = "${HELM_CONFIG_FOLDER}/**/Chart.yaml"
   public static final String HELM_CHART_LOCATION_REGEX = "helm/**/Chart.yaml"
+  public static final String CHART_VERSION_REGEX = "[0-9]+\\.[0-9]+\\.[0-9]+.*"
   public static final String APPS_CONFIG_FOLDER = "app-configs"
   public static final String DEFAULT_HELM_VALUES_FILE = "values.yaml"
-  public static final String OPTION_ALL = "All"
 
   public static final String HELM_S3_BUCKET = "s3://upp-helm-repo/"
   public static final String HELM_AWS_CREDENTIALS = "ft.helm-repo.aws-credentials"
@@ -20,5 +20,7 @@ public class DeploymentUtilsConstants {
   public static final String HELM_LOCAL_REPO_NAME = "upp"
 
   public static final String GENERIC_DEPLOY_JOB = 'k8s-deployment/utils/deploy-upp-helm-chart'
+
+  public static final String APPROVER_INPUT = "approver"
 
 }

@@ -19,7 +19,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
 
 public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
                                                             Cluster deployOnlyInCluster = null, String region = null) {
-  Map<Cluster, List<String>> appsPerCluster = getAppsToDeployInChart(chartFolderLocation, env, deployOnlyInCluster)
+  Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartFolderLocation, env, deployOnlyInCluster)
   List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
 
   /*  deploy apps in all target clusters */
@@ -35,6 +35,39 @@ public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLo
   }
   return appsPerCluster
 }
+
+public void removeAppsInChartWithHelm(String chartName, String chartVersion, Environment targetEnv,
+                                  Cluster onlyFromCluster = null, String region = null) {
+  /*  fetch the chart locally */
+  runHelmOperations {
+    sh "helm fetch --untar ${HELM_LOCAL_REPO_NAME}/${chartName} --version ${chartVersion}"
+  }
+
+  Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartName, targetEnv, onlyFromCluster)
+  List<String> regionsToRemoveFrom = targetEnv.getRegionsToDeployTo(region)
+
+  /*  delete the apps */
+  appsPerCluster.each { Cluster targetCluster, List<String> appsToRemove ->
+    if (regionsToRemoveFrom) {
+      for (String regionToRemoveFrom : regionsToRemoveFrom) {
+        executeAppsRemoval(targetCluster, appsToRemove, targetEnv, regionToRemoveFrom)
+      }
+    } else { // the environment has no region
+      executeAppsRemoval(targetCluster, appsToRemove, targetEnv)
+    }
+  }
+}
+
+public executeAppsRemoval(Cluster targetCluster, List<String> appsToRemove, Environment env,
+                          String region = null) {
+  runWithK8SCliTools(env, targetCluster, region, {
+    for (String app : appsToRemove) {
+      echo "Removing app ${app} from ${env.getFullClusterName(targetCluster, region)}"
+      sh "helm delete ${app}"
+    }
+  })
+}
+
 
 public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, String chartFolderLocation,
                              Environment env, String region = null) {
@@ -67,8 +100,8 @@ public String getDockerImageRepository() {
 }
 
 
-public Map<Cluster, List<String>> getAppsToDeployInChart(String chartFolderLocation, Environment targetEnv,
-                                                         Cluster includeOnlyCluster = null) {
+public Map<Cluster, List<String>> getAppsInChart(String chartFolderLocation, Environment targetEnv,
+                                                 Cluster includeOnlyCluster = null) {
   Map<Cluster, List<String>> result = [:]
   def foundConfigFiles = findFiles(glob: "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/*.yaml")
 
