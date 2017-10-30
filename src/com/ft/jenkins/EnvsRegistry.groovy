@@ -10,13 +10,22 @@ class EnvsRegistry implements Serializable {
     k8s.slackChannel = "#k8s-pipeline-notif"
     k8s.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     k8s.clusterToApiServerMap = [
-        (Cluster.DELIVERY.toString())  : "https://k8s-delivery-upp-eu-api.ft.com",
-        (Cluster.PUBLISHING.toString()): "https://k8s-pub-upp-eu-api.ft.com"
+        (Cluster.DELIVERY.toString())  : "https://upp-k8s-delivery-test-eu-api.ft.com",
+        (Cluster.PUBLISHING.toString()): "https://upp-k8s-publishing-test-eu-api.ft.com"
+    ]
+
+    Environment xp = new Environment()
+    xp.name = "xp"
+    xp.slackChannel = "#k8s-pipeline-notif"
+    xp.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
+    xp.clusterToApiServerMap = [
+        (Cluster.DELIVERY.toString())  : "https://upp-k8s-delivery-test-eu-api.ft.com",
+        (Cluster.PUBLISHING.toString()): "https://upp-k8s-publishing-test-eu-api.ft.com"
     ]
 
     Environment k8sContentTest = new Environment()
     k8sContentTest.name = "k8sCT"
-    k8sContentTest.slackChannel = "@sorin.buliarca"
+    k8sContentTest.slackChannel = "#k8s-pipeline-notif"
     k8sContentTest.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     k8sContentTest.clusterToApiServerMap = [
         (Cluster.DELIVERY.toString())  : "https://upp-k8s-delivery-test-eu-api.ft.com",
@@ -52,16 +61,16 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PAC.toString()): "https://prod-us-pac-api.ft.com",
     ]
 
-    Environment preProd = new Environment()
-    preProd.name = Environment.PRE_PROD_NAME
-    preProd.slackChannel = "#k8s-pipeline-notif"
-    preProd.regions = ["eu", "us"]
-    preProd.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
-    preProd.clusterToApiServerMap = [
-        ("eu-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
-        ("us-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
-        ("eu-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com"
+    Environment staging = new Environment()
+    staging.name = Environment.STAGING_NAME
+    staging.slackChannel = "#k8s-pipeline-notif"
+    staging.regions = ["eu", "us"]
+    staging.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
+    staging.clusterToApiServerMap = [
+        ("eu-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
+        ("us-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
+        ("eu-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com",
+        ("us-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com"
     ]
 
     Environment prod = new Environment()
@@ -70,13 +79,13 @@ class EnvsRegistry implements Serializable {
     prod.regions = ["eu", "us"]
     prod.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     prod.clusterToApiServerMap = [
-        ("eu-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
-        ("us-" + Cluster.DELIVERY)  : "https://k8s-delivery-upp-eu-api.ft.com",
-        ("eu-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://k8s-pub-upp-eu-api.ft.com"
+        ("eu-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
+        ("us-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
+        ("eu-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com",
+        ("us-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com"
     ]
 
-    envs = [k8sContentTest, k8s, preProdPAC, prodPac, preProd, prod, k8sSyncTest]
+    envs = [k8sContentTest, xp, k8s, preProdPAC, prodPac, staging, prod, k8sSyncTest]
   }
 
 
