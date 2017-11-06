@@ -49,8 +49,8 @@ def call(GithubReleaseInfo releaseInfo, BuildConfig buildConfig) {
     initiateDeploymentToEnvironment(buildConfig.preprodEnvName, chartName, appVersion, releaseInfo, appsInRepo
                                     , 1)
 
-    initiateDeploymentToEnvironment(buildConfig.prodEnvName, chartName, appVersion, releaseInfo, appsInRepo
-                                    , 7)
+//    initiateDeploymentToEnvironment(buildConfig.prodEnvName, chartName, appVersion, releaseInfo, appsInRepo
+//                                    , 7)
 
   }
 
@@ -71,7 +71,7 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
 
       //  todo [sb] use a template engine for the Strings. See http://docs.groovy-lang.org/next/html/documentation/template-engines.html#_simpletemplateengine
 
-      sendSlackMessageForDeployReady(releaseInfo, chartName, environment, appsPerCluster)
+//      sendSlackMessageForDeployReady(releaseInfo, chartName, environment, appsPerCluster)
 
       List<String> remainingRegionsToDeployTo = environment.getRegions()
       String crId = null
@@ -83,31 +83,31 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
                                                 deployInitiator, chartName)
         }
 
-        JenkinsDeployInput deployInput = displayJenkinsInputForDeploy(releaseInfo, environment, appsPerCluster,
-                                                                      remainingRegionsToDeployTo)
-
-        deployInitiator = deployInput.approver
-
-        if (crId == null) {
-          crId = openCr(deployInitiator, releaseInfo, environment, appsPerCluster, chartName)
-        }
+//        JenkinsDeployInput deployInput = displayJenkinsInputForDeploy(releaseInfo, environment, appsPerCluster,
+//                                                                      remainingRegionsToDeployTo)
+//
+//        deployInitiator = deployInput.approver
+//
+//        if (crId == null) {
+//          crId = openCr(deployInitiator, releaseInfo, environment, appsPerCluster, chartName)
+//        }
 
         List<String> regionsToDeployTo = []
-        if (deployInput.selectedRegion == "All") {
+//        if (deployInput.selectedRegion == "All") {
           regionsToDeployTo.addAll(remainingRegionsToDeployTo)
-        } else {
-          regionsToDeployTo.add(deployInput.getSelectedRegion())
-        }
+//        } else {
+//          regionsToDeployTo.add(deployInput.getSelectedRegion())
+//        }
 
         deployAppsToEnvironmentRegions(regionsToDeployTo, chartName, version, environment)
 
         remainingRegionsToDeployTo.removeAll(regionsToDeployTo)
 
-        stage("validate apps in ${environment.getNamesWithRegions(regionsToDeployTo)}") {
-          sendSlackMessageForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo,
-                                        deployInitiator, chartName)
-          displayJenkinsInputForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo)
-        }
+//        stage("validate apps in ${environment.getNamesWithRegions(regionsToDeployTo)}") {
+//          sendSlackMessageForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo,
+//                                        deployInitiator, chartName)
+//          displayJenkinsInputForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo)
+//        }
       }
 
       closeCr(crId, environment)
@@ -129,7 +129,7 @@ public void deployAppsToEnvironmentRegions(List<String> regionsToDeployTo, Strin
               string(name: 'Environment', value: environment.getName()),
               string(name: 'Cluster', value: 'all-in-chart'),
               string(name: 'Region', value: region),
-              booleanParam(name: 'Send success notifications', value: false)]
+              booleanParam(name: 'Send success notifications', value: true)]
 
   }
 }
