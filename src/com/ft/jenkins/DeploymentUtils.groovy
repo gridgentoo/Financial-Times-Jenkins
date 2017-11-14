@@ -73,7 +73,7 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
                              Environment env, String region = null) {
   runWithK8SCliTools(env, targetCluster, region, {
     for (String app : appsToDeploy) {
-      String configurationFileName = getAppConfigurationFileName(chartFolderLocation, env, targetCluster, app)
+      String configurationFileName = getAppConfigurationFileName(chartFolderLocation, env, targetCluster, app, region)
       if (!configurationFileName) {
         throw new ConfigurationNotFoundException(
             "Cannot find app configuration file ${configurationFileName}. Maybe it does not meet the naming conventions.")
@@ -268,28 +268,38 @@ String getReleaseCandidateName(String branchName) {
   return values[values.length - 1]
 }
 
+
+private String computeAppConfigFullPath(String appConfigFileName, String chartFolderLocation) {
+  return "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/${appConfigFileName}.yaml"
+}
+
 private String getAppConfigurationFileName(String chartFolderLocation, Environment targetEnv, Cluster targetCluster,
-                                           String app) {
-  String appsConfigFolder = "${chartFolderLocation}/${APPS_CONFIG_FOLDER}"
+                                           String app, String region) {
+  String appConfigPath
+  // if region is specified looking for configuration file for a specific env for specific region, e.g. publishing_pre-prod_us
+  if (region) {
+    appConfigPath = computeAppConfigFullPath("${app}_${targetCluster.getLabel()}_${targetEnv.getName()}_${region}",
+                                             chartFolderLocation)
+    if (fileExists(appConfigPath)) {
+      return appConfigPath
+    }
+  }
 
   //looking for configuration file for a specific env, e.g. publishing_pre-prod
-  String appConfigFileName = "${app}_${targetCluster.getLabel()}_${targetEnv.getName()}"
-  String appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
-  echo "searching for: ${appConfigPath}"
+  appConfigPath = computeAppConfigFullPath("${app}_${targetCluster.getLabel()}_${targetEnv.getName()}", chartFolderLocation)
   if (fileExists(appConfigPath)) {
     return appConfigPath
   }
 
-  //looking for configuration file for all envs
-  appConfigFileName = "${app}_${targetCluster.getLabel()}"
-  appConfigPath = "${appsConfigFolder}/${appConfigFileName}.yaml"
-  echo "searching for: ${appConfigPath}"
+  //looking for configuration file for all envs, e.g publishing
+  appConfigPath = computeAppConfigFullPath("${app}_${targetCluster.getLabel()}", chartFolderLocation)
   if (fileExists(appConfigPath)) {
     return appConfigPath
   }
 }
 
 private boolean fileExists(String path) {
+  echo "searching for: ${path}"
   def foundConfigFiles = findFiles(glob: path)
   return foundConfigFiles.length > 0
 }
