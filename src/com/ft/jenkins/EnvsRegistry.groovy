@@ -79,10 +79,10 @@ class EnvsRegistry implements Serializable {
     prod.regions = ["eu", "us"]
     prod.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     prod.clusterToApiServerMap = [
-        ("eu-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
-        ("us-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
-        ("eu-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com"
+        ("eu-" + Cluster.DELIVERY)  : "https://upp-prod-delivery-eu-api.ft.com",
+        ("us-" + Cluster.DELIVERY)  : "https://upp-prod-delivery-us-api.ft.com",
+        ("eu-" + Cluster.PUBLISHING): "https://upp-prod-publish-eu-api.ft.com",
+        ("us-" + Cluster.PUBLISHING): "https://upp-prod-publish-us-api.ft.com"
     ]
 
     envs = [k8sContentTest, xp, k8s, preProdPAC, prodPac, staging, prod, k8sSyncTest]
