@@ -33,6 +33,8 @@ def call() {
 
   Cluster cluster = Cluster.valueOfLabel(clusterName)
 
+  currentBuild.displayName = "${sourceEnv.getFullClusterName(cluster, sourceRegion)} -> ${targetEnv.getFullClusterName(cluster, targetRegion)}"
+
   DiffInfo diffInfo
   SyncInfo syncInfo = new SyncInfo()
   DiffUtil diffUtil = new DiffUtil()
