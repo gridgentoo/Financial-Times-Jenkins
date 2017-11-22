@@ -11,7 +11,15 @@ import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
 
-def call(String sourceEnvName, String sourceRegion, String targetEnvName, String targetRegion, String clusterName) {
+def call() {
+
+  String sourceEnvName= env."Source env"
+  String sourceRegion=env."Source region"
+  String targetEnvName = env."Target env"
+  String targetRegion = env."Target region"
+  String clusterName = env."Cluster"
+  boolean selectInputsByDefault = Boolean.valueOf(env."Select all by default")
+
   echo "Diff between envs with params: [sourceEnv: ${sourceEnvName}, sourceRegion: ${sourceRegion}, targetEnv: ${targetEnvName}, targetRegion: ${targetRegion}, cluster: ${clusterName}]"
   Environment sourceEnv = EnvsRegistry.getEnvironment(sourceEnvName)
   Environment targetEnv = EnvsRegistry.getEnvironment(targetEnvName)
@@ -24,6 +32,8 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
   }
 
   Cluster cluster = Cluster.valueOfLabel(clusterName)
+
+  currentBuild.displayName = "${sourceEnv.getFullClusterName(cluster, sourceRegion)} -> ${targetEnv.getFullClusterName(cluster, targetRegion)}"
 
   DiffInfo diffInfo
   SyncInfo syncInfo = new SyncInfo()
@@ -52,7 +62,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
 
           syncInfo.selectedChartsForAdding = getSelectedUserInputs(diffInfo.addedCharts, diffInfo,
                                                                    "Services to be added in ${diffInfo.targetFullName()}",
-                                                                   "Add services to ${diffInfo.targetFullName()}")
+                                                                   "Add services to ${diffInfo.targetFullName()}", selectInputsByDefault)
           echo "The following charts were selected for adding: ${syncInfo.selectedChartsForAdding}"
         }
 
@@ -63,7 +73,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
 
           syncInfo.selectedChartsForUpdating = getSelectedUserInputs(diffInfo.modifiedCharts, diffInfo,
                                                                      "Services to be updated in ${diffInfo.targetFullName()}",
-                                                                     "Update services in ${diffInfo.targetFullName()}")
+                                                                     "Update services in ${diffInfo.targetFullName()}", selectInputsByDefault)
           echo "The following charts were selected for updating: ${syncInfo.selectedChartsForUpdating}"
         }
 
@@ -74,7 +84,7 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
 
           syncInfo.selectedChartsForRemoving = getSelectedUserInputs(diffInfo.removedCharts, diffInfo,
                                                                      "Services to be removed from ${diffInfo.targetFullName()}",
-                                                                     "Remove the services from ${diffInfo.targetFullName()}")
+                                                                     "Remove the services from ${diffInfo.targetFullName()}", selectInputsByDefault)
           echo "The following charts were selected for removing: ${syncInfo.selectedChartsForRemoving}"
         }
 
@@ -113,14 +123,14 @@ def call(String sourceEnvName, String sourceRegion, String targetEnvName, String
 }
 
 private List<String> getSelectedUserInputs(List<String> charts, DiffInfo diffInfo, String inputMessage,
-                                           String okButton) {
+                                           String okButton, boolean selectInputsByDefault) {
   List checkboxes = []
   charts.sort()
   for (int i = 0; i < charts.size(); i++) {
     String chartName = charts.get(i)
     String checkboxDescription = getCheckboxDescription(diffInfo.targetChartsVersions.get(chartName),
                                                         diffInfo.sourceChartsVersions.get(chartName))
-    checkboxes.add(booleanParam(defaultValue: false,
+    checkboxes.add(booleanParam(defaultValue: selectInputsByDefault,
                                 description: checkboxDescription,
                                 name: chartName))
   }
