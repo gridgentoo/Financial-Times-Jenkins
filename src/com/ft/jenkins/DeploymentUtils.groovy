@@ -90,12 +90,12 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
 }
 
 public String getClusterUrlsAsHelmValues(Environment environment, String region) {
-  StringBuilder result = new StringBuilder()
+  String result = ""
   for (Cluster cluster : environment.clusters) {
     String clusterUrl = environment.getEntryPointUrl(cluster, region)
-    result.append(" --set cluster.${cluster.label}.url=${clusterUrl}")
+    result += " --set cluster.${cluster.label}.url=${clusterUrl}"
   }
-  return result.toString()
+  return result
 }
 
 /**
