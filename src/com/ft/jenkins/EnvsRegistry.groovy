@@ -79,6 +79,7 @@ class EnvsRegistry implements Serializable {
     prodPAC.clusterToApiServerMap = [
         ("eu-" + Cluster.PAC.toString()): "https://pac-prod-eu-api.ft.com",
         ("us-" + Cluster.PAC.toString()): "https://pac-prod-us-api.ft.com",
+    ]
 
     Environment staging = new Environment()
     staging.name = Environment.STAGING_NAME
