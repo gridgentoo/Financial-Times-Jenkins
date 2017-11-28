@@ -15,16 +15,6 @@ class EnvsRegistry implements Serializable {
         ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-publishing-test-eu-api.ft.com"
     ]
 
-    Environment preProdPAC = new Environment()
-    preProdPAC.name = "preprodpac"
-    preProdPAC.slackChannel = "#k8s-pipeline-notif"
-    preProdPAC.regions = ["eu", "us"]
-    preProdPAC.clusters = [Cluster.PAC]
-    preProdPAC.clusterToApiServerMap = [
-        ("eu-" + Cluster.PAC.toString()): "https://pre-prod-eu-pac-api.ft.com",
-        ("us-" + Cluster.PAC.toString()): "https://pre-prod-us-pac-api.ft.com",
-    ]
-
     Environment stagingPAC = new Environment()
     stagingPAC.name = "stagingpac"
     stagingPAC.slackChannel = "#k8s-pipeline-notif"
@@ -35,17 +25,17 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PAC.toString()): "https://pac-staging-us-api.ft.com",
     ]
 
-    Environment prodPac = new Environment()
-    prodPac.name = "prod-pac"
-    prodPac.slackChannel = "#k8s-pipeline-notif"
-    prodPac.regions = ["eu", "us"]
-    prodPac.clusters = [Cluster.PAC]
-    prodPac.clusterToApiServerMap = [
-        ("eu-" + Cluster.PAC.toString()): "https://prod-eu-pac-api.ft.com",
-        ("us-" + Cluster.PAC.toString()): "https://prod-us-pac-api.ft.com",
+    Environment prodPAC = new Environment()
+    prodPAC.name = "prodpac"
+    prodPAC.slackChannel = "#k8s-pipeline-notif"
+    prodPAC.regions = ["eu", "us"]
+    prodPAC.clusters = [Cluster.PAC]
+    prodPAC.clusterToApiServerMap = [
+        ("eu-" + Cluster.PAC.toString()): "https://pac-prod-eu-api.ft.com",
+        ("us-" + Cluster.PAC.toString()): "https://pac-prod-us-api.ft.com",
     ]
 
-    // todo uncomment and adjust when we'll have a staging env.
+// todo uncomment and adjust when we'll have a staging env.
 //    Environment staging = new Environment()
 //    staging.name = Environment.STAGING_NAME
 //    staging.slackChannel = "#k8s-pipeline-notif"
@@ -57,27 +47,6 @@ class EnvsRegistry implements Serializable {
 //        ("eu-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com",
 //        ("us-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com"
 //    ]
-    Environment prodPAC = new Environment()
-    prodPAC.name = "prodpac"
-    prodPAC.slackChannel = "#k8s-pipeline-notif"
-    prodPAC.regions = ["eu", "us"]
-    prodPAC.clusters = [Cluster.PAC]
-    prodPAC.clusterToApiServerMap = [
-        ("eu-" + Cluster.PAC.toString()): "https://pac-prod-eu-api.ft.com",
-        ("us-" + Cluster.PAC.toString()): "https://pac-prod-us-api.ft.com",
-    ]
-
-    Environment staging = new Environment()
-    staging.name = Environment.STAGING_NAME
-    staging.slackChannel = "#k8s-pipeline-notif"
-    staging.regions = ["eu", "us"]
-    staging.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
-    staging.clusterToApiServerMap = [
-        ("eu-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
-        ("us-" + Cluster.DELIVERY)  : "https://upp-k8s-delivery-test-eu-api.ft.com",
-        ("eu-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://upp-k8s-publishing-test-eu-api.ft.com"
-    ]
 
     Environment prod = new Environment()
     prod.name = Environment.PROD_NAME
@@ -91,7 +60,7 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PUBLISHING): "https://upp-prod-publish-us-api.ft.com"
     ]
 
-    envs = [k8s, preProdPAC, stagingPAC, prodPac, prodPAC, prod]
+    envs = [k8s, stagingPAC, prodPAC, prod]
   }
 
 
