@@ -12,7 +12,7 @@ class EnvsRegistry implements Serializable {
     k8s.regions = ['eu']
     k8s.clusterToApiServerMap = [
         ("eu-" + Cluster.DELIVERY.toString())  : "https://upp-k8s-dev-delivery-eu-api.ft.com",
-        ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-publishing-test-eu-api.ft.com",
+        ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu-api.ft.com",
         ("eu-" + Cluster.NEO4J.toString()): "https://upp-k8s-neo4j-eu-api.ft.com"
     ]
 
