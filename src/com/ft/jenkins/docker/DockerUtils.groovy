@@ -30,6 +30,12 @@ private def buildImage(String dockerTag, String folder = ".") {
 }
 
 public void buildAndPushImage(String dockerTag) {
+  if (imageExists(dockerTag)) {
+    /*  do not overwrite */
+    echo "Docker image ${dockerTag} already exists. Skip building it ..."
+    return
+  }
+
   def image = buildImage(dockerTag)
   boolean useInternalDockerReg = dockerTag.startsWith(FT_DOCKER_REGISTRY_NAME)
   if (useInternalDockerReg) {
@@ -39,4 +45,13 @@ public void buildAndPushImage(String dockerTag) {
   }
   /*  remove the image after push */
   sh "docker rmi ${image.id}"
+}
+
+private boolean imageExists(String tag) {
+  try {
+    docker.image(tag).pull()
+    return true
+  } catch (e) {
+    return false
+  }
 }
