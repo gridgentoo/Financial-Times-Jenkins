@@ -46,11 +46,12 @@ def call(GithubReleaseInfo releaseInfo, BuildConfig buildConfig) {
       appsInRepo = deployUtil.getAppsInChart("${HELM_CONFIG_FOLDER}/${chartName}", EnvsRegistry.getEnvironment(buildConfig.prodEnvName))
     }
 
-//    initiateDeploymentToEnvironment(buildConfig.preprodEnvName, chartName, appVersion, releaseInfo, appsInRepo
-//                                    , 1)
 
-    /*  we don't have yet a staging environment, so deploying automatically to the k8s one */
+    /* deploying automatically to the only k8s team env */
     autoDeployToEnvironment("k8s", chartName, appVersion, 1)
+
+    initiateDeploymentToEnvironment(buildConfig.preprodEnvName, chartName, appVersion, releaseInfo, appsInRepo
+                                    , 5)
 
     initiateDeploymentToEnvironment(buildConfig.prodEnvName, chartName, appVersion, releaseInfo, appsInRepo
                                     , 7)
