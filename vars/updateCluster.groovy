@@ -2,7 +2,7 @@ import com.ft.jenkins.aws.ClusterManagementUtils
 import com.ft.jenkins.docker.DockerUtils
 
 def call() {
-  String repoURL = 'git@github.com:Financial-Times/k8s-aws-delivery-poc.git'
+  String repoURL = 'https://github.com/Financial-Times/k8s-aws-delivery-poc.git'
   String relativeTargetDir = 'k8s-provisioner'
 
   String awsRegion = env."AWS region"
@@ -33,7 +33,7 @@ def call() {
         stage('update cluster') {
           String vaultPass = getVaultPass(ClusterManagementUtils.getFullEnvironmentType(environmentType))
           clusterManagementUtils.updateCluster(awsRegion, clusterName, clusterEnvironment,
-                  environmentType, platform, vaultPass)
+                  environmentType, platform, vaultPass, gitBranch)
         }
       }
     }
@@ -48,7 +48,7 @@ def call() {
 
 private String getVaultPass(String envType) {
   withCredentials([
-          [$class: 'FileBinding', credentialsId: "ft.k8s-provision.content-${envType}.vault.pass", variable: 'VAULT_PASS']]) {
-    return ${env.VAULT_PASS}
+          [$class: 'StringBinding', credentialsId: "ft.k8s-provision.content-${envType}.vault.pass", variable: 'VAULT_PASS']]) {
+    return env.VAULT_PASS
   }
 }
