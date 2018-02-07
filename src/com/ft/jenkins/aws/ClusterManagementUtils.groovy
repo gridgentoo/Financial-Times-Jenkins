@@ -16,8 +16,7 @@ public void updateCluster(String awsRegion, String clusterName, String clusterEn
           "-e 'VAULT_PASS=${vaultPass}' "
 
   docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
-    sh "printenv"
-//      sh "update.sh"
+      sh "update.sh"
   }
 }
 
