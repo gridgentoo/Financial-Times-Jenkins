@@ -5,13 +5,17 @@ import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
 public void updateCluster(String awsRegion, String clusterName, String clusterEnv, String envType,
                           String platform, String vaultPass, String gitBranch) {
   prepareK8SCliCredentials(getFullClusterName(awsRegion, clusterEnv, envType, platform))
-  docker.image("k8s-provisioner:${gitBranch}").inside("-v \$(pwd)/credentials:/ansible/credentials " +
+  String currentDir = pwd()
+  GString dockerRunArgs =
+          "-v ${currentDir}/${CREDENTIALS_DIR}:/ansible/credentials " +
           "-e 'AWS_REGION=${awsRegion}'" +
           "-e 'CLUSTER_NAME=${clusterName}'" +
           "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}'" +
           "-e 'ENVIRONMENT_TYPE=${envType}'" +
           "-e 'PLATFORM=${platform}'" +
-          "-e 'VAULT_PASS=${vaultPass}'") {
+          "-e 'VAULT_PASS=${vaultPass}'"
+
+  docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
     sh "printenv"
 //      sh "update.sh"
   }
