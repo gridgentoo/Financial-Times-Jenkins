@@ -11,7 +11,6 @@ def call() {
   String environmentType = env."Environment type"
   String platform = env."Platform"
   String gitBranch = env."Git branch"
-  String vaultPass = getVaultPass(ClusterManagementUtils.getFullEnvironmentType(environmentType))
 
   ClusterManagementUtils clusterManagementUtils = new ClusterManagementUtils()
   DockerUtils dockerUtils = new DockerUtils()
@@ -32,6 +31,7 @@ def call() {
         }
 
         stage('update cluster') {
+          String vaultPass = getVaultPass(ClusterManagementUtils.getFullEnvironmentType(environmentType))
           clusterManagementUtils.updateCluster(awsRegion, clusterName, clusterEnvironment,
                   environmentType, platform, vaultPass)
         }
@@ -49,6 +49,6 @@ def call() {
 private String getVaultPass(String envType) {
   withCredentials([
           [$class: 'FileBinding', credentialsId: "ft.k8s-provision.content-${envType}.vault.pass", variable: 'VAULT_PASS']]) {
-    return env.VAULT_PASS
+    return ${env.VAULT_PASS}
   }
 }
