@@ -4,7 +4,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
 
 public void updateCluster(String awsRegion, String clusterName, String clusterEnv, String envType,
                           String platform, String vaultPass) {
-  prepareK8SCliCredentials(getFullClusterName(awsRegion, clusterName, envType, platform))
+  prepareK8SCliCredentials(getFullClusterName(awsRegion, clusterEnv, envType, platform))
   docker.image("k8s-provisioner:local").inside("-v \$(pwd)/credentials:/ansible/credentials " +
           "-e 'AWS_REGION=${awsRegion}'" +
           "-e 'CLUSTER_NAME=${clusterName}'" +
@@ -26,8 +26,8 @@ public static String getFullEnvironmentType(String envType) {
   return envType
 }
 
-private static String getFullClusterName(String awsRegion, String clusterName, String envType, String platform) {
-  return "${platform}.${getFullEnvironmentType(envType)}.${clusterName}.${awsRegion}"
+private static String getFullClusterName(String awsRegion, String clusterEnv, String envType, String platform) {
+  return "${platform}.${getFullEnvironmentType(envType)}.${clusterEnv}.${awsRegion}"
 }
 
 private void prepareK8SCliCredentials(String fullClusterName) {
