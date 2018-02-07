@@ -5,20 +5,21 @@ import static com.ft.jenkins.docker.DockerUtilsConstants.DOCKERHUB_URL
 import static com.ft.jenkins.docker.DockerUtilsConstants.FT_DOCKER_REGISTRY_CREDENTIALS
 import static com.ft.jenkins.docker.DockerUtilsConstants.FT_DOCKER_REGISTRY_NAME
 
+
 final class DockerUtilsConstants {
   public static final String DOCKERHUB_CREDENTIALS = "ft.dh.credentials"
-  public static final String DOCKERHUB_URL = ""; // For Jenkins to connect to Dockerhub, it needs the URL empty.
+  public static final String DOCKERHUB_URL = "" // For Jenkins to connect to Dockerhub, it needs the URL empty.
   public static final String FT_DOCKER_REGISTRY_NAME = "nexus.in.ft.com:5000"
   public static final String FT_DOCKER_REGISTRY_CREDENTIALS = "ft.docker_internal.credentials"
 }
 
-private void pushImageToDockerReg(image, String dockerRegistryUrl, String credentials = null) {
+public void pushImageToDockerReg(image, String dockerRegistryUrl, String credentials = null) {
   docker.withRegistry(dockerRegistryUrl, credentials) {
     image.push()
   }
 }
 
-private def buildImage(String dockerTag, String folder = ".") {
+public def buildImage(String dockerTag, String folder = ".") {
   def image
   /*  adding the internal nexus credentials to support the maven apps connecting to Nexus */
   withCredentials([usernamePassword(credentialsId: "nexus.credentials", passwordVariable: 'NEXUS_PASSWORD',
@@ -47,7 +48,7 @@ public void buildAndPushImage(String dockerTag) {
   sh "docker rmi ${image.id}"
 }
 
-private boolean imageExists(String tag) {
+public boolean imageExists(String tag) {
   try {
     docker.image(tag).pull()
     return true
@@ -55,3 +56,5 @@ private boolean imageExists(String tag) {
     return false
   }
 }
+
+return this // We're returning the script in order to allow it to be loaded in a variable and executed on demand (check DockerUtilsTest for an example)
