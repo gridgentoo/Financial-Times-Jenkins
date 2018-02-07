@@ -8,12 +8,12 @@ public void updateCluster(String awsRegion, String clusterName, String clusterEn
   String currentDir = pwd()
   GString dockerRunArgs =
           "-v ${currentDir}/${CREDENTIALS_DIR}:/ansible/credentials " +
-          "-e 'AWS_REGION=${awsRegion}'" +
-          "-e 'CLUSTER_NAME=${clusterName}'" +
-          "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}'" +
-          "-e 'ENVIRONMENT_TYPE=${envType}'" +
-          "-e 'PLATFORM=${platform}'" +
-          "-e 'VAULT_PASS=${vaultPass}'"
+          "-e 'AWS_REGION=${awsRegion}' " +
+          "-e 'CLUSTER_NAME=${clusterName}' " +
+          "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}' " +
+          "-e 'ENVIRONMENT_TYPE=${envType}' " +
+          "-e 'PLATFORM=${platform}' " +
+          "-e 'VAULT_PASS=${vaultPass}' "
 
   docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
     sh "printenv"
