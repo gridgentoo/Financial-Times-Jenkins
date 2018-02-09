@@ -5,6 +5,16 @@ class EnvsRegistry implements Serializable {
   public static List<Environment> envs
 
   static {
+    Environment devCJ = new Environment()
+    devCJ.name = "devcj"
+    devCJ.slackChannel = "#k8s-pipeline-notif"
+    devCJ.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
+    devCJ.regions = ["eu"]
+    devCJ.clusterToApiServerMap = [
+            ("eu-" + Cluster.DELIVERY)  : "https://upp-dev-cj-delivery-eu-api.ft.com",
+            ("eu-" + Cluster.PUBLISHING): "https://upp-dev-cj-publish-eu-api.ft.com"
+    ]
+
     Environment k8s = new Environment()
     k8s.name = "k8s"
     k8s.slackChannel = "#k8s-pipeline-notif"
@@ -64,7 +74,7 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.NEO4J): "https://upp-prod-neo4j-us-api.ft.com"
     ]
 
-    envs = [k8s, stagingPAC, staging, prodPAC, prod]
+    envs = [devCJ, k8s, stagingPAC, staging, prodPAC, prod]
   }
 
 
