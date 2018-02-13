@@ -39,4 +39,7 @@ For each of the API servers in the environment Jenkins needs 3 keys in order to 
     1. ft.k8s-auth.${cluster_label}-${env_name}[-${region}].client-key (example `ft.k8s-auth.delivery-staging-us.client-key` ) -> this is the private key of the user used to authenticate in the k8s cluster -> admin-key.pem from the kubeconfig credentials
     
 1. Push the branch and create a Pull Request.
+1. After merge, add the new environment to the Jenkins jobs:
+    1. [Deploys a helm chart from the upp repo](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/deploy-upp-helm-chart/)
+    1. [Diff and Sync 2 k8s envs](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/diff-between-envs/)
     
