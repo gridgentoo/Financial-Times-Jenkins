@@ -6,15 +6,15 @@ public void updateCluster(String awsRegion, String clusterName, String clusterEn
                           String platform, String vaultPass, String gitBranch) {
   prepareK8SCliCredentials(getFullClusterName(awsRegion, clusterEnv, envType, platform))
   String currentDir = pwd()
-  GString dockerRunArgs =
+  String dockerRunArgs =
+      "-u root " +
       "-v ${currentDir}/${CREDENTIALS_DIR}:/ansible/credentials " +
       "-e 'AWS_REGION=${awsRegion}' " +
       "-e 'CLUSTER_NAME=${clusterName}' " +
       "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}' " +
       "-e 'ENVIRONMENT_TYPE=${envType}' " +
       "-e 'PLATFORM=${platform}' " +
-      "-e 'VAULT_PASS=${vaultPass}' " +
-      "-e 'ANSIBLE_LOCAL_TEMP=${currentDir}' "
+      "-e 'VAULT_PASS=${vaultPass}' "
 
   docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
     sh "/update.sh"
