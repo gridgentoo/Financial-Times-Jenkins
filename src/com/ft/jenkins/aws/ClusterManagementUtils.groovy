@@ -7,16 +7,17 @@ public void updateCluster(String awsRegion, String clusterName, String clusterEn
   prepareK8SCliCredentials(getFullClusterName(awsRegion, clusterEnv, envType, platform))
   String currentDir = pwd()
   GString dockerRunArgs =
-          "-v ${currentDir}/${CREDENTIALS_DIR}:/ansible/credentials " +
-          "-e 'AWS_REGION=${awsRegion}' " +
-          "-e 'CLUSTER_NAME=${clusterName}' " +
-          "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}' " +
-          "-e 'ENVIRONMENT_TYPE=${envType}' " +
-          "-e 'PLATFORM=${platform}' " +
-          "-e 'VAULT_PASS=${vaultPass}' "
+      "-v ${currentDir}/${CREDENTIALS_DIR}:/ansible/credentials " +
+      "-e 'AWS_REGION=${awsRegion}' " +
+      "-e 'CLUSTER_NAME=${clusterName}' " +
+      "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}' " +
+      "-e 'ENVIRONMENT_TYPE=${envType}' " +
+      "-e 'PLATFORM=${platform}' " +
+      "-e 'VAULT_PASS=${vaultPass}' " +
+      "-e 'ANSIBLE_LOCAL_TEMP=${currentDir}' "
 
   docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
-      sh "update.sh"
+    sh "/update.sh"
   }
 }
 
@@ -35,7 +36,7 @@ private static String getFullClusterName(String awsRegion, String clusterEnv, St
 
 private void prepareK8SCliCredentials(String fullClusterName) {
   withCredentials([
-          [$class: 'FileBinding', credentialsId: "ft.k8s-provision.${fullClusterName}.credentials", variable: 'CREDENTIALS'],
+      [$class: 'FileBinding', credentialsId: "ft.k8s-provision.${fullClusterName}.credentials", variable: 'CREDENTIALS'],
   ]) {
     sh """
       mkdir -p ${CREDENTIALS_DIR}
