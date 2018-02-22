@@ -33,7 +33,7 @@ def call() {
         stage('update cluster') {
           String vaultPass = getVaultPass(ClusterManagementUtils.getFullEnvironmentType(environmentType))
           clusterManagementUtils.updateCluster(awsRegion, clusterName, clusterEnvironment,
-                  environmentType, platform, vaultPass, gitBranch)
+                                               environmentType, platform, vaultPass, gitBranch)
         }
       }
     }
@@ -48,7 +48,7 @@ def call() {
 
 private String getVaultPass(String envType) {
   withCredentials([
-          [$class: 'StringBinding', credentialsId: "ft.k8s-provision.content-${envType}.vault.pass", variable: 'VAULT_PASS']]) {
+      [$class: 'StringBinding', credentialsId: "ft.k8s-provision.content-${envType}.vault.pass", variable: 'VAULT_PASS']]) {
     return env.VAULT_PASS
   }
 }
