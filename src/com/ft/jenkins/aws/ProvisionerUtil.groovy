@@ -3,21 +3,26 @@ package com.ft.jenkins.aws
 import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
 
 public void updateCluster(String awsRegion, String clusterName, String clusterEnv, String envType,
-                          String platform, String vaultPass, String gitBranch) {
+                          String platform, String gitBranch) {
   String credentialsDir = prepareK8SCliCredentials(getFullClusterName(awsRegion, clusterEnv, envType, platform))
-  String dockerRunArgs =
-      "-u root " +
-      "-v ${credentialsDir.trim()}:/ansible/credentials " +
-      "-e 'AWS_REGION=${awsRegion}' " +
-      "-e 'CLUSTER_NAME=${clusterName}' " +
-      "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}' " +
-      "-e 'ENVIRONMENT_TYPE=${envType}' " +
-      "-e 'PLATFORM=${platform}' " +
-      "-e 'VAULT_PASS=${vaultPass}' "
+  withCredentials([
+      [$class: 'StringBinding', credentialsId: "ft.k8s-provision.content-${envType}.vault.pass", variable: 'VAULT_PASS']]) {
 
-  docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
-    sh "/update.sh"
+    String dockerRunArgs =
+        "-u root " +
+        "-v ${credentialsDir.trim()}:/ansible/credentials " +
+        "-e 'AWS_REGION=${awsRegion}' " +
+        "-e 'CLUSTER_NAME=${clusterName}' " +
+        "-e 'CLUSTER_ENVIRONMENT=${clusterEnv}' " +
+        "-e 'ENVIRONMENT_TYPE=${envType}' " +
+        "-e 'PLATFORM=${platform}' " +
+        "-e 'VAULT_PASS=${env.VAULT_PASS}' "
+
+    docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
+      sh "/update.sh"
+    }
   }
+
 }
 
 public static String getFullEnvironmentType(String envType) {

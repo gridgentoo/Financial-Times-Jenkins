@@ -1,4 +1,4 @@
-import com.ft.jenkins.aws.ClusterManagementUtils
+import com.ft.jenkins.aws.ProvisionerUtil
 import com.ft.jenkins.docker.DockerUtils
 
 def call() {
@@ -12,12 +12,12 @@ def call() {
   String platform = env."Platform"
   String gitBranch = env."Git branch"
 
-  ClusterManagementUtils clusterManagementUtils = new ClusterManagementUtils()
+  ProvisionerUtil clusterManagementUtils = new ProvisionerUtil()
   DockerUtils dockerUtils = new DockerUtils()
 
   catchError {
     node('docker') {
-      timeout(30) { //  timeout after 30 mins to not block jenkins
+      timeout(60) { //  timeout after 60 mins to not block jenkins
         stage('checkout') {
           checkout([$class           : 'GitSCM',
                     branches         : [[name: gitBranch]],
@@ -31,9 +31,8 @@ def call() {
         }
 
         stage('update cluster') {
-          String vaultPass = getVaultPass(ClusterManagementUtils.getFullEnvironmentType(environmentType))
           clusterManagementUtils.updateCluster(awsRegion, clusterName, clusterEnvironment,
-                                               environmentType, platform, vaultPass, gitBranch)
+                                               environmentType, platform, gitBranch)
         }
       }
     }
@@ -46,9 +45,3 @@ def call() {
   }
 }
 
-private String getVaultPass(String envType) {
-  withCredentials([
-      [$class: 'StringBinding', credentialsId: "ft.k8s-provision.content-${envType}.vault.pass", variable: 'VAULT_PASS']]) {
-    return env.VAULT_PASS
-  }
-}
