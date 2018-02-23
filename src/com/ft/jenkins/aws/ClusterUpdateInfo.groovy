@@ -1,9 +1,11 @@
 package com.ft.jenkins.aws
 
-class ClusterUpdateInfo {
-  String awsRegion
-  String clusterName
-  String clusterEnvironment
-  String environmentType
+import com.ft.jenkins.EnvType
+
+class ClusterUpdateInfo implements Serializable {
+  String region
+  String envName
+  String cluster
+  EnvType envType
   String platform
 }
