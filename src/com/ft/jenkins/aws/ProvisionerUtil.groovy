@@ -53,6 +53,7 @@ public ClusterUpdateInfo getClusterUpdateInfo(String clusterFullName) {
 
 private String prepareK8SCliCredentials(String fullClusterName) {
   /*  unzip the TLS assets of the cluster stored as credentials in Jenkins */
+  echo "Unzip the TLS assets used when the cluster was created"
   withCredentials([file(credentialsId: "ft.k8s-provision.${fullClusterName}.credentials", variable: 'CREDENTIALS')]) {
     sh("""
       mkdir -p ${CREDENTIALS_DIR}
