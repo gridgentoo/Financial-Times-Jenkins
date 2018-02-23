@@ -5,14 +5,16 @@ def call() {
   String repoURL = 'https://github.com/Financial-Times/k8s-aws-delivery-poc.git'
   String relativeTargetDir = 'k8s-provisioner'
 
-  String awsRegion = env."AWS region"
-  String clusterName = env."Cluster name"
-  String clusterEnvironment = env."Cluster environment"
-  String environmentType = env."Environment type"
-  String platform = env."Platform"
+//  String awsRegion = env."AWS region"
+//  String clusterName = env."Cluster name"
+//  String clusterEnvironment = env."Cluster environment"
+//  String environmentType = env."Environment type"
+//  String platform = env."Platform"
   String gitBranch = env."Git branch"
 
-  ProvisionerUtil clusterManagementUtils = new ProvisionerUtil()
+  String clusterFullname=env."Cluster name"
+
+  ProvisionerUtil provisionerUtil = new ProvisionerUtil()
   DockerUtils dockerUtils = new DockerUtils()
 
   catchError {
@@ -31,8 +33,7 @@ def call() {
         }
 
         stage('update cluster') {
-          clusterManagementUtils.updateCluster(awsRegion, clusterName, clusterEnvironment,
-                                               environmentType, platform, gitBranch)
+          provisionerUtil.updateCluster(clusterFullname, gitBranch)
         }
       }
     }

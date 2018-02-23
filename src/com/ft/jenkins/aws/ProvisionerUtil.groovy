@@ -22,6 +22,9 @@ public void updateCluster(String awsRegion, String clusterName, String clusterEn
       sh "/update.sh"
     }
   }
+}
+
+public ClusterUpdateInfo getClusterUpdateInfo(String clusterFullName) {
 
 }
 
