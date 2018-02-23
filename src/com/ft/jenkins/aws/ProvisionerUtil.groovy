@@ -9,7 +9,7 @@ public void updateCluster(String clusterFullname, String gitBranch) {
   String credentialsDir = prepareK8SCliCredentials(clusterFullname)
   ClusterUpdateInfo updateInfo = getClusterUpdateInfo(clusterFullname)
 
-  GString vaultCredentialsId = "ft.k8s-provision.content-${updateInfo.envType.shortName}.vault.pass"
+  GString vaultCredentialsId = "ft.k8s-provision.env-type-${updateInfo.envType.shortName}.vault.pass"
 
   withCredentials([string(credentialsId: vaultCredentialsId, variable: 'VAULT_PASS')]) {
 
