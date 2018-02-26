@@ -9,6 +9,9 @@ def call() {
   String clusterFullname=env."Cluster name"
   String gitBranch = env."Git branch"
 
+  currentBuild.displayName="${env.BUILD_NUMBER} - ${clusterFullname}"
+  currentBuild.description="Update branch: ${gitBranch}"
+
   ProvisionerUtil provisionerUtil = new ProvisionerUtil()
   DockerUtils dockerUtils = new DockerUtils()
 
