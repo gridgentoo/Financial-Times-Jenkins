@@ -9,7 +9,7 @@ public void updateCluster(String fullClusterName, String gitBranch) {
   echo "Unzipped the TLS credentials used when the cluster ${fullClusterName} was created in folder ${credentialsDir}"
 
   ClusterUpdateInfo updateInfo = getClusterUpdateInfo(fullClusterName)
-  echo "For cluster ${fullClusterName} determined update info: ${ClusterUpdateInfo} "
+  echo "For cluster ${fullClusterName} determined update info: ${updateInfo.toString()}"
 
   echo "Starting update for cluster ${fullClusterName} ... "
   performUpdateCluster(updateInfo, credentialsDir, fullClusterName, gitBranch)

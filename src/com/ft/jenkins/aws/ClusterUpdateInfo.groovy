@@ -8,4 +8,9 @@ class ClusterUpdateInfo implements Serializable {
   String cluster
   EnvType envType
   String platform
+
+  @Override
+  String toString() {
+    return "[envname: ${envName}, region: ${region}, cluster: ${cluster}, envType: ${envType.shortName}, platform: ${platform}]"
+  }
 }
