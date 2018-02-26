@@ -1,39 +1,22 @@
-import com.ft.jenkins.aws.ProvisionerUtil
 import com.ft.jenkins.docker.DockerUtils
+import com.ft.jenkins.provision.ProvisionConstants
+import com.ft.jenkins.provision.ProvisionerUtil
 
 def call() {
-  //  todo [move those]
-  String repoURL = 'https://github.com/Financial-Times/k8s-aws-delivery-poc.git'
-  String relativeTargetDir = 'k8s-provisioner'
+  String clusterFullname = env."Cluster name"
+  String gitBranch = env."Provisioner Git branch"
 
-  String clusterFullname=env."Cluster name"
-  String gitBranch = env."Git branch"
-
-  currentBuild.displayName="${env.BUILD_NUMBER} - ${clusterFullname}"
-  currentBuild.description="Update branch: ${gitBranch}"
+  setCurrentBuildInfo(clusterFullname, gitBranch)
 
   ProvisionerUtil provisionerUtil = new ProvisionerUtil()
-  DockerUtils dockerUtils = new DockerUtils()
 
   catchError {
     node('docker') {
-      timeout(60) { //  timeout after 60 mins to not block jenkins
-        stage('checkout') {
-          checkout([$class           : 'GitSCM',
-                    branches         : [[name: gitBranch]],
-                    extensions       : [[$class: 'RelativeTargetDirectory', relativeTargetDir: relativeTargetDir]],
-                    userRemoteConfigs: [[url: repoURL]]
-          ])
-        }
+      buildProvisionerImage(gitBranch)
 
-        stage('build image') {
-          dockerUtils.buildImage("k8s-provisioner:${gitBranch}", relativeTargetDir)
-        }
-
-        stage('update cluster') {
-          //  todo [sb] create CR for staging & prod
-          provisionerUtil.updateCluster(clusterFullname, gitBranch)
-        }
+      stage('update cluster') {
+        //  todo [sb] create CR for staging & prod
+        provisionerUtil.updateCluster(clusterFullname, gitBranch)
       }
     }
   }
@@ -42,6 +25,31 @@ def call() {
     node("docker") {
       cleanWs()
     }
+  }
+}
+
+private void setCurrentBuildInfo(String clusterFullname, String gitBranch) {
+  currentBuild.displayName = "${env.BUILD_NUMBER} - ${clusterFullname}"
+  currentBuild.description = "Provisioner branch: ${gitBranch}"
+}
+
+private void buildProvisionerImage(String gitBranch) {
+  String relativeTargetDir = 'k8s-provisioner'
+
+  timeout(60) { //  timeout after 60 mins to not block jenkins
+    stage('checkout provisioner branch') {
+      checkout([$class           : 'GitSCM',
+                branches         : [[name: gitBranch]],
+                extensions       : [[$class: 'RelativeTargetDirectory', relativeTargetDir: relativeTargetDir]],
+                userRemoteConfigs: [[url: ProvisionConstants.REPO_URL]]
+      ])
+    }
+
+    stage('build provisioner image') {
+      DockerUtils dockerUtils = new DockerUtils()
+      dockerUtils.buildImage("${ProvisionConstants.DOCKER_IMAGE}:${gitBranch}", relativeTargetDir)
+    }
+
   }
 }
 

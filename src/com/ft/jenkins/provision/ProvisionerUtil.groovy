@@ -1,4 +1,4 @@
-package com.ft.jenkins.aws
+package com.ft.jenkins.provision
 
 import com.ft.jenkins.Environment
 
@@ -31,7 +31,7 @@ private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, 
         "-e 'PLATFORM=${updateInfo.platform}' " +
         "-e 'VAULT_PASS=${env.VAULT_PASS}' "
 
-    docker.image("k8s-provisioner:${gitBranch}").inside(dockerRunArgs) {
+    docker.image("${ProvisionConstants.DOCKER_IMAGE}:${gitBranch}").inside(dockerRunArgs) {
       sh "/update.sh"
     }
   }

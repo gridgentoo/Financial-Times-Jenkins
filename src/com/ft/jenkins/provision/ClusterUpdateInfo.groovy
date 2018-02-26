@@ -1,4 +1,4 @@
-package com.ft.jenkins.aws
+package com.ft.jenkins.provision
 
 import com.ft.jenkins.EnvType
 
