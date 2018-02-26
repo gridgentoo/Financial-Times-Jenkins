@@ -7,3 +7,7 @@ public String getRequiredParameterValue(String paramName) {
   }
   return paramValue
 }
+
+public String getJenkinsBuildAuthor() {
+  return currentBuild.rawBuild?.getCause(Cause.UserIdCause)?.getUserId()
+}

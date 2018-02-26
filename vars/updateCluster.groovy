@@ -3,10 +3,11 @@ import com.ft.jenkins.provision.ProvisionConstants
 import com.ft.jenkins.provision.ProvisionerUtil
 
 def call() {
-  String clusterFullname = env."Cluster name"
+  String fullClusterName = env."Cluster name"
   String gitBranch = env."Provisioner Git branch"
+  String updateReason = env."Update reason"
 
-  setCurrentBuildInfo(clusterFullname, gitBranch)
+  setCurrentBuildInfo(fullClusterName, gitBranch)
 
   ProvisionerUtil provisionerUtil = new ProvisionerUtil()
 
@@ -16,7 +17,7 @@ def call() {
 
       stage('update cluster') {
         //  todo [sb] create CR for staging & prod
-        provisionerUtil.updateCluster(clusterFullname, gitBranch)
+        provisionerUtil.updateCluster(fullClusterName, gitBranch, updateReason)
       }
     }
   }
