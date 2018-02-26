@@ -8,6 +8,8 @@ import com.ft.jenkins.changerequests.ChangeRequestCloseData
 import com.ft.jenkins.changerequests.ChangeRequestEnvironment
 import com.ft.jenkins.changerequests.ChangeRequestOpenData
 import com.ft.jenkins.changerequests.ChangeRequestsUtils
+import com.ft.jenkins.slack.SlackAttachment
+import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
 
@@ -24,11 +26,69 @@ public void updateCluster(String fullClusterName, String gitBranch, String updat
   catchError { // don't propagate error, so that we can close the CR
     echo "Starting update for cluster ${fullClusterName} ... "
 
-    performUpdateCluster(updateInfo, credentialsDir, fullClusterName, gitBranch)
+    sendStartUpdateNotification(fullClusterName, updateReason)
+
+    catchError {
+      performUpdateCluster(updateInfo, credentialsDir, fullClusterName, gitBranch)
+    }
     echo "Ended update for cluster ${fullClusterName}"
+    sendFinishUpdateNotification(fullClusterName, updateReason)
   }
 
   closeChangeRequest(crId, updatedEnv)
+}
+
+private void sendStartUpdateNotification(String fullClusterName, String updateReason) {
+  String buildAuthor = new ParamUtils().jenkinsBuildAuthor
+
+  if (!buildAuthor) {
+    return
+  }
+
+  SlackAttachment attachment = new SlackAttachment()
+  attachment.title = "Starting update of cluster '${fullClusterName}' for reason: '${updateReason}'"
+  attachment.titleUrl = "${env.BUILD_URL}"
+
+  attachment.text = """You can get a closer look at the update by watching the AWS CloudFormation Stack events.
+    Login into AWS at https://awslogin.in.ft.com -> CloudFormation -> filter for stack ${fullClusterName}.
+    """
+  attachment.color = "warning"
+
+  SlackUtils slackUtils = new SlackUtils()
+  try {
+    slackUtils.sendEnhancedSlackNotification("@${buildAuthor}", attachment)
+  }
+  catch (e) { //  do not fail if slack notification fails
+    echo "Error while sending slack notification: ${e.message}"
+  }
+}
+
+private void sendFinishUpdateNotification(String fullClusterName, String updateReason) {
+  String buildAuthor = new ParamUtils().jenkinsBuildAuthor
+
+  if (!buildAuthor) {
+    return
+  }
+
+  SlackAttachment attachment = new SlackAttachment()
+  attachment.title = "Finished update of cluster '${fullClusterName}' for reason: '${updateReason}'"
+  attachment.titleUrl = "${env.BUILD_URL}"
+
+  if (currentBuild.resultIsBetterOrEqualTo("SUCCESS")) {
+    attachment.text = "Success"
+    attachment.color = "good"
+  } else {
+    attachment.text = "A failure has occurred during update. Check the console logs and the CloudFormation stack events."
+    attachment.color = "danger"
+  }
+
+  SlackUtils slackUtils = new SlackUtils()
+  try {
+    slackUtils.sendEnhancedSlackNotification("@${buildAuthor}", attachment)
+  }
+  catch (e) { //  do not fail if slack notification fails
+    echo "Error while sending slack notification: ${e.message}"
+  }
 }
 
 private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullClusterName, String updateReason,
