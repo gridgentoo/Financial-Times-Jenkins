@@ -4,15 +4,23 @@ import com.ft.jenkins.Environment
 
 import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
 
-public void updateCluster(String clusterFullname, String gitBranch) {
+public void updateCluster(String fullClusterName, String gitBranch) {
+  String credentialsDir = unzipTlsCredentialsForCluster(fullClusterName)
+  echo "Unzipped the TLS credentials used when the cluster ${fullClusterName} was created in folder ${credentialsDir}"
 
-  String credentialsDir = prepareK8SCliCredentials(clusterFullname)
-  ClusterUpdateInfo updateInfo = getClusterUpdateInfo(clusterFullname)
+  ClusterUpdateInfo updateInfo = getClusterUpdateInfo(fullClusterName)
+  echo "For cluster ${fullClusterName} determined update info: ${ClusterUpdateInfo} "
 
+  echo "Starting update for cluster ${fullClusterName} ... "
+  performUpdateCluster(updateInfo, credentialsDir, fullClusterName, gitBranch)
+  echo "Ended update for cluster ${fullClusterName}"
+}
+
+private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, String clusterFullname,
+                                  String gitBranch) {
   GString vaultCredentialsId = "ft.k8s-provision.env-type-${updateInfo.envType.shortName}.vault.pass"
 
   withCredentials([string(credentialsId: vaultCredentialsId, variable: 'VAULT_PASS')]) {
-
     String dockerRunArgs =
         "-u root " +
         "-v ${credentialsDir.trim()}:/ansible/credentials " +
@@ -51,9 +59,7 @@ public ClusterUpdateInfo getClusterUpdateInfo(String clusterFullName) {
   return info
 }
 
-private String prepareK8SCliCredentials(String fullClusterName) {
-  /*  unzip the TLS assets of the cluster stored as credentials in Jenkins */
-  echo "Unzip the TLS assets used when the cluster was created"
+private String unzipTlsCredentialsForCluster(String fullClusterName) {
   withCredentials([file(credentialsId: "ft.k8s-provision.${fullClusterName}.credentials", variable: 'CREDENTIALS')]) {
     sh("""
       mkdir -p ${CREDENTIALS_DIR}
