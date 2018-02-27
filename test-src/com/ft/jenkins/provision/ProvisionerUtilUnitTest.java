@@ -20,7 +20,7 @@ class ProvisionerUtilUnitTest {
 
   @Test
   public void testClusterUpdateInfoForInCompleteName() {
-    assertThrows(IllegalArgumentException.class, () -> provisionerUtil.getClusterUpdateInfo("upp-delivery-eu"));
+    assertThrows(IllegalArgumentException.class, () -> provisionerUtil.getClusterUpdateInfo("upp-eu"));
   }
 
   @Test
@@ -68,6 +68,30 @@ class ProvisionerUtilUnitTest {
               () -> assertEquals(EnvType.DEVELOPMENT, updateInfo.getEnvType()),
               () -> assertEquals("devcj", updateInfo.getEnvName()),
               () -> assertEquals("publish", updateInfo.getCluster())
+    );
+  }
+
+  @Test
+  public void testClusterUpdateInfoForEnvWithoutCluster() {
+    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("pac-staging-us");
+    assertAll("update info properties",
+              () -> assertEquals("pac", updateInfo.getPlatform()),
+              () -> assertEquals("us", updateInfo.getRegion()),
+              () -> assertEquals(EnvType.TEST, updateInfo.getEnvType()),
+              () -> assertEquals("staging", updateInfo.getEnvName()),
+              () -> assertEquals("", updateInfo.getCluster())
+    );
+  }
+
+  @Test
+  public void testClusterUpdateInfoForEnvWithoutClusterAndComposedName() {
+    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("pac-k8s-dev-test-us");
+    assertAll("update info properties",
+              () -> assertEquals("pac", updateInfo.getPlatform()),
+              () -> assertEquals("us", updateInfo.getRegion()),
+              () -> assertEquals(EnvType.DEVELOPMENT, updateInfo.getEnvType()),
+              () -> assertEquals("k8s-dev-test", updateInfo.getEnvName()),
+              () -> assertEquals("", updateInfo.getCluster())
     );
   }
 }

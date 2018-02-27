@@ -1,5 +1,6 @@
 package com.ft.jenkins.provision
 
+import com.ft.jenkins.Cluster
 import com.ft.jenkins.EnvType
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
@@ -165,18 +166,35 @@ public ClusterUpdateInfo getClusterUpdateInfo(String clusterFullName) {
   ClusterUpdateInfo info = new ClusterUpdateInfo()
   String[] components = clusterFullName.split("-")
   int componentsNum = components.length
-  if (componentsNum < 4) {
+  if (componentsNum < 3) {
     throw new IllegalArgumentException("The full cluser name: ${clusterFullName} is incomplete")
   }
-  /*  the full name looks like upp-k8s-dev-delivery-eu */
+
+  /*  the full name looks like upp-k8s-dev-delivery-eu, and might have or not a cluster name.
+      PAC doesn't have a cluster name. PAC clusters have the full name like pac-staging-eu.
+      First determine if we have a cluster component */
+  if (doesNameHasClusterComponent(components)) {
+    info.cluster = components[componentsNum - 2]
+    /*  in between sits the env name */
+    info.envName = components[1..componentsNum - 3].join("-")
+  } else {
+    info.cluster = ""
+    /*  in between sits the env name */
+    info.envName = components[1..componentsNum - 2].join("-")
+
+  }
   info.platform = components[0]
   info.region = components[componentsNum - 1]
-  info.cluster = components[componentsNum - 2]
-  /*  in between sits the env name */
-  info.envName = components[1..componentsNum - 3].join("-")
 
   info.envType = Environment.getEnvTypeForName(info.envName)
+
   return info
+}
+
+private boolean doesNameHasClusterComponent(String[] components) {
+  String possibleClusterComponent = components[components.length - 2]
+  Cluster determinedCluster = Cluster.valueOfLabel(possibleClusterComponent)
+  return determinedCluster != null
 }
 
 private String unzipTlsCredentialsForCluster(String fullClusterName) {
