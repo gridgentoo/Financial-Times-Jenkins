@@ -30,7 +30,7 @@ public void updateCluster(String fullClusterName, String gitBranch, String updat
     sendStartUpdateNotification(fullClusterName, updateReason)
 
     catchError {
-      performUpdateCluster(updateInfo, credentialsDir, fullClusterName, gitBranch)
+      performUpdateCluster(updateInfo, credentialsDir, gitBranch)
     }
     echo "Ended update for cluster ${fullClusterName}"
     sendFinishUpdateNotification(fullClusterName, updateReason)
@@ -137,9 +137,8 @@ private void closeChangeRequest(String crId, Environment environment) {
 }
 
 
-private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, String clusterFullname,
-                                  String gitBranch) {
-  GString vaultCredentialsId = "ft.k8s-provision.env-type-${updateInfo.envType.shortName}.vault.pass"
+private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, String gitBranch) {
+  GString vaultCredentialsId = "ft.k8s-provision.${updateInfo.platform}.env-type-${updateInfo.envType.shortName}.vault.pass"
 
   withCredentials([string(credentialsId: vaultCredentialsId, variable: 'VAULT_PASS')]) {
     String dockerRunArgs =
