@@ -45,7 +45,8 @@ private void buildProvisionerImage(String gitBranch) {
                 userRemoteConfigs: [[url: ProvisionConstants.REPO_URL]]
       ])
     }
-
+    /*  create a dummy credentials folder so that the image build will work */
+    sh "mkdir -p ${relativeTargetDir}/credentials"
     stage('build provisioner image') {
       DockerUtils dockerUtils = new DockerUtils()
       dockerUtils.buildImage("${ProvisionConstants.DOCKER_IMAGE}:${gitBranch}", relativeTargetDir)
