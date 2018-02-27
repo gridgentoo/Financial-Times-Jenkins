@@ -16,7 +16,6 @@ def call() {
       buildProvisionerImage(gitBranch)
 
       stage('update cluster') {
-        //  todo [sb] create CR for staging & prod
         provisionerUtil.updateCluster(fullClusterName, gitBranch, updateReason)
       }
     }
