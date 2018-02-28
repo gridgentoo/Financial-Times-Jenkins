@@ -87,4 +87,20 @@ class EnvsRegistry implements Serializable {
     return null
   }
 
+  public static Environment getEnvironmentByFullName(String clusterFullName) {
+    if (clusterFullName == null) {
+      return null
+    }
+
+    for (Environment environment: envs) {
+      for (String apiServer: environment.clusterToApiServerMap.values()) {
+        if (apiServer.contains("${clusterFullName}-api.ft.com")) {
+          return environment
+        }
+      }
+    }
+
+    return null
+  }
+
 }

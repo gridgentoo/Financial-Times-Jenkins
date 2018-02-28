@@ -48,7 +48,7 @@ public void sendEnhancedSlackNotification(String channel, SlackAttachment attach
   echo "Sending attachment to slack: ${attachmentJson}"
   withCredentials([[$class: 'StringBinding', credentialsId: credentialId, variable: 'SLACK_TOKEN']]) {
     String requestBody = "token=${env.SLACK_TOKEN}&attachments=${encodedAttachment}&channel=${encodedChannel}&username=${BOT_USERNAME}"
-    echo "Whole request body: ${requestBody}"
+//    echo "Whole request body: ${requestBody}"
     httpRequest(httpMode: 'POST',
                 url: 'https://slack.com/api/chat.postMessage',
                 customHeaders: [[maskValue: false, name: 'content-type', value: 'application/x-www-form-urlencoded']],
