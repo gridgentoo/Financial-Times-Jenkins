@@ -7,7 +7,7 @@ def call() {
   String gitBranch = env."Provisioner Git branch"
   String updateReason = env."Update reason"
 
-  setCurrentBuildInfo(fullClusterName, gitBranch)
+  setCurrentBuildInfo(fullClusterName, gitBranch, updateReason)
 
   ProvisionerUtil provisionerUtil = new ProvisionerUtil()
 
@@ -28,9 +28,9 @@ def call() {
   }
 }
 
-private void setCurrentBuildInfo(String clusterFullname, String gitBranch) {
+private void setCurrentBuildInfo(String clusterFullname, String gitBranch, String updateReason) {
   currentBuild.displayName = "${env.BUILD_NUMBER} - ${clusterFullname}"
-  currentBuild.description = "Provisioner branch: ${gitBranch}"
+  currentBuild.description = "Reason: '${updateReason}'; Provisioner branch: `${gitBranch}`"
 }
 
 private void buildProvisionerImage(String gitBranch) {
