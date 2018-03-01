@@ -5,6 +5,6 @@ package com.ft.jenkins.provision
  */
 final class ProvisionConstants {
 
-  public static final String REPO_URL = 'https://github.com/Financial-Times/k8s-aws-delivery-poc.git'
+  public static final String REPO_URL = 'https://github.com/Financial-Times/content-k8s-provisioner.git'
   public static final String DOCKER_IMAGE = 'k8s-provisioner'
 }
