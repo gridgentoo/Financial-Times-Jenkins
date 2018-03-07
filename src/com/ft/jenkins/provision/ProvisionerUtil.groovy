@@ -145,6 +145,8 @@ private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, 
         "-u root " +
         "-v ${credentialsDir.trim()}:/ansible/credentials " +
         "-e 'AWS_REGION=${updateInfo.region}' " +
+        "-e 'AWS_ACCESS_KEY=${env."Upp provisioning user AWS Access Key Id"}' " +
+        "-e 'AWS_SECRET_ACCESS_KEY=${env."Upp provisioning user AWS Secret Access Key"}' " +
         "-e 'CLUSTER_NAME=${updateInfo.envName}' " +
         "-e 'CLUSTER_ENVIRONMENT=${updateInfo.cluster}' " +
         "-e 'ENVIRONMENT_TYPE=${updateInfo.envType.shortName}' " +
