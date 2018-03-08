@@ -141,20 +141,22 @@ private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, 
   GString vaultCredentialsId = "ft.k8s-provision.${updateInfo.platform}.env-type-${updateInfo.envType.shortName}.vault.pass"
 
   withCredentials([string(credentialsId: vaultCredentialsId, variable: 'VAULT_PASS')]) {
-    String dockerRunArgs =
-        "-u root " +
-        "-v ${credentialsDir.trim()}:/ansible/credentials " +
-        "-e 'AWS_REGION=${updateInfo.region}' " +
-        "-e 'AWS_ACCESS_KEY=${env."Upp provisioning user AWS Access Key Id"}' " +
-        "-e 'AWS_SECRET_ACCESS_KEY=${env."Upp provisioning user AWS Secret Access Key"}' " +
-        "-e 'CLUSTER_NAME=${updateInfo.envName}' " +
-        "-e 'CLUSTER_ENVIRONMENT=${updateInfo.cluster}' " +
-        "-e 'ENVIRONMENT_TYPE=${updateInfo.envType.shortName}' " +
-        "-e 'PLATFORM=${updateInfo.platform}' " +
-        "-e 'VAULT_PASS=${env.VAULT_PASS}' "
+    wrap([$class: 'MaskPasswordsBuildWrapper']) { //  mask the password params
+      String dockerRunArgs =
+          "-u root " +
+          "-v ${credentialsDir.trim()}:/ansible/credentials " +
+          "-e 'AWS_REGION=${updateInfo.region}' " +
+          "-e 'AWS_ACCESS_KEY=${env."Upp provisioning user AWS Access Key Id"}' " +
+          "-e 'AWS_SECRET_ACCESS_KEY=${env."Upp provisioning user AWS Secret Access Key"}' " +
+          "-e 'CLUSTER_NAME=${updateInfo.envName}' " +
+          "-e 'CLUSTER_ENVIRONMENT=${updateInfo.cluster}' " +
+          "-e 'ENVIRONMENT_TYPE=${updateInfo.envType.shortName}' " +
+          "-e 'PLATFORM=${updateInfo.platform}' " +
+          "-e 'VAULT_PASS=${env.VAULT_PASS}' "
 
-    docker.image("${ProvisionConstants.DOCKER_IMAGE}:${gitBranch}").inside(dockerRunArgs) {
-      sh "/update.sh"
+      docker.image("${ProvisionConstants.DOCKER_IMAGE}:${gitBranch}").inside(dockerRunArgs) {
+        sh "/update.sh"
+      }
     }
   }
 }
