@@ -1,7 +1,11 @@
 import com.ft.jenkins.*
 
 def call() {
-  Environment targetEnv = computeTargetEnvironment()
+  ParamUtils paramUtils = new ParamUtils()
+  String environmentInput = paramUtils.getRequiredParameterValue("Environment")
+  String cmsInput = paramUtils.getRequiredParameterValue("CMS")
+
+  Environment targetEnv = computeTargetEnvironment(environmentInput)
   DeploymentUtils deployUtil = new DeploymentUtils()
 
   String GET_MONGO_CONTAINER_CMD = "kubectl get pods | grep mongodb | awk '{print \$1}' | head -1"
@@ -34,7 +38,7 @@ def call() {
       deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, null, SERVICE_STARTUP)
     }
     stage('Get UUIDs and publish content') {
-      switch (CMS) {
+      switch (cmsInput) {
         case "Methode":
           def methodeCall = SETUP_ENDPOINT_HITTER >> GET_METHODE_UUIDS >> CALL_ENDPOINT_HITTER
           deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, null, methodeCall)
@@ -53,9 +57,7 @@ def call() {
   }
 }
 
-private static Environment computeTargetEnvironment() {
-  ParamUtils paramUtils = new ParamUtils()
-  String environmentInput = paramUtils.getRequiredParameterValue("Environment")
+private Environment computeTargetEnvironment(String environmentInput) {
   Environment targetEnv = EnvsRegistry.getEnvironment(environmentInput)
   if (targetEnv == null) {
     throw new IllegalArgumentException("Unknown environment ${environmentInput}. The environment is required.")
