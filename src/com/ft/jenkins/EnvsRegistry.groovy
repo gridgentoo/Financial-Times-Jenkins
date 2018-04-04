@@ -52,7 +52,7 @@ class EnvsRegistry implements Serializable {
     gcPAC.regions = ["eu"]
     gcPAC.clusters = [Cluster.PAC]
     gcPAC.clusterToApiServerMap = [
-        ("eu-" + Cluster.PAC.toString()): "https://pac-golden-corpus.ft.com"
+        ("eu-" + Cluster.PAC.toString()): "https://pac-golden-corpus-eu-api.ft.com"
     ]
 
     Environment staging = new Environment()
