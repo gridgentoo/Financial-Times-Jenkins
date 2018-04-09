@@ -151,6 +151,7 @@ private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, 
           "-e 'CLUSTER_NAME=${updateInfo.envName}' " +
           "-e 'CLUSTER_ENVIRONMENT=${updateInfo.cluster}' " +
           "-e 'ENVIRONMENT_TYPE=${updateInfo.envType.shortName}' " +
+          "-e 'OIDC_ISSUER_URL=${updateInfo.oidcIssuerUrl}' " +
           "-e 'PLATFORM=${updateInfo.platform}' " +
           "-e 'VAULT_PASS=${env.VAULT_PASS}' "
 
@@ -190,6 +191,19 @@ public ClusterUpdateInfo getClusterUpdateInfo(String clusterFullName) {
   info.region = components[componentsNum - 1]
 
   info.envType = Environment.getEnvTypeForName(info.envName)
+
+  if (info.cluster != 'neo4j') {
+    info.oidcIssuerUrl = "https://${clusterFullName}-dex.ft.com"
+  }
+  else {
+    //  todo [SB] remove this logic when we merge neo4j into a cluster or we use managed neo4j
+    if (info.envName == 'k8s') { // for the neo4j dev cluster use the delivery one for login
+      info.oidcIssuerUrl = "https://upp-k8s-dev-delivery-${info.region}-dex.ft.com"
+    }
+    else {
+      info.oidcIssuerUrl = "https://${info.platform}-${info.envName}-delivery-${info.region}-dex.ft.com"
+    }
+  }
 
   return info
 }

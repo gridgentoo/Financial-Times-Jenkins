@@ -31,7 +31,8 @@ class ProvisionerUtilUnitTest {
               () -> assertEquals("eu", updateInfo.getRegion()),
               () -> assertEquals(EnvType.DEVELOPMENT, updateInfo.getEnvType()),
               () -> assertEquals("k8s-dev", updateInfo.getEnvName()),
-              () -> assertEquals("delivery", updateInfo.getCluster())
+              () -> assertEquals("delivery", updateInfo.getCluster()),
+              () -> assertEquals("https://upp-k8s-dev-delivery-eu-dex.ft.com", updateInfo.getOidcIssuerUrl())
     );
   }
 
@@ -43,6 +44,7 @@ class ProvisionerUtilUnitTest {
               () -> assertEquals("eu", updateInfo.getRegion()),
               () -> assertEquals(EnvType.PROD, updateInfo.getEnvType()),
               () -> assertEquals("prod", updateInfo.getEnvName()),
+              () -> assertEquals("https://pac-prod-delivery-eu-dex.ft.com", updateInfo.getOidcIssuerUrl()),
               () -> assertEquals("delivery", updateInfo.getCluster())
     );
   }
@@ -67,6 +69,7 @@ class ProvisionerUtilUnitTest {
               () -> assertEquals("us", updateInfo.getRegion()),
               () -> assertEquals(EnvType.DEVELOPMENT, updateInfo.getEnvType()),
               () -> assertEquals("devcj", updateInfo.getEnvName()),
+              () -> assertEquals("https://upp-devcj-publish-us-dex.ft.com", updateInfo.getOidcIssuerUrl()),
               () -> assertEquals("publish", updateInfo.getCluster())
     );
   }
@@ -79,6 +82,7 @@ class ProvisionerUtilUnitTest {
               () -> assertEquals("us", updateInfo.getRegion()),
               () -> assertEquals(EnvType.TEST, updateInfo.getEnvType()),
               () -> assertEquals("staging", updateInfo.getEnvName()),
+              () -> assertEquals("https://pac-staging-us-dex.ft.com", updateInfo.getOidcIssuerUrl()),
               () -> assertEquals("", updateInfo.getCluster())
     );
   }
@@ -91,7 +95,47 @@ class ProvisionerUtilUnitTest {
               () -> assertEquals("us", updateInfo.getRegion()),
               () -> assertEquals(EnvType.DEVELOPMENT, updateInfo.getEnvType()),
               () -> assertEquals("k8s-dev-test", updateInfo.getEnvName()),
+              () -> assertEquals("https://pac-k8s-dev-test-us-dex.ft.com", updateInfo.getOidcIssuerUrl()),
               () -> assertEquals("", updateInfo.getCluster())
+    );
+  }
+
+  @Test
+  public void testGetOidcForNeo4jDevCluster() {
+    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("upp-k8s-neo4j-eu");
+    assertAll("update info properties",
+              () -> assertEquals("upp", updateInfo.getPlatform()),
+              () -> assertEquals("eu", updateInfo.getRegion()),
+              () -> assertEquals(EnvType.DEVELOPMENT, updateInfo.getEnvType()),
+              () -> assertEquals("k8s", updateInfo.getEnvName()),
+              () -> assertEquals("https://upp-k8s-dev-delivery-eu-dex.ft.com", updateInfo.getOidcIssuerUrl()),
+              () -> assertEquals("neo4j", updateInfo.getCluster())
+    );
+  }
+
+  @Test
+  public void testGetOidcForNeo4jProdCluster() {
+    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("upp-prod-neo4j-eu");
+    assertAll("update info properties",
+              () -> assertEquals("upp", updateInfo.getPlatform()),
+              () -> assertEquals("eu", updateInfo.getRegion()),
+              () -> assertEquals(EnvType.PROD, updateInfo.getEnvType()),
+              () -> assertEquals("prod", updateInfo.getEnvName()),
+              () -> assertEquals("https://upp-prod-delivery-eu-dex.ft.com", updateInfo.getOidcIssuerUrl()),
+              () -> assertEquals("neo4j", updateInfo.getCluster())
+    );
+  }
+
+  @Test
+  public void testGetOidcForNeo4jStagingUsCluster() {
+    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("upp-staging-neo4j-us");
+    assertAll("update info properties",
+              () -> assertEquals("upp", updateInfo.getPlatform()),
+              () -> assertEquals("us", updateInfo.getRegion()),
+              () -> assertEquals(EnvType.TEST, updateInfo.getEnvType()),
+              () -> assertEquals("staging", updateInfo.getEnvName()),
+              () -> assertEquals("https://upp-staging-delivery-us-dex.ft.com", updateInfo.getOidcIssuerUrl()),
+              () -> assertEquals("neo4j", updateInfo.getCluster())
     );
   }
 }
