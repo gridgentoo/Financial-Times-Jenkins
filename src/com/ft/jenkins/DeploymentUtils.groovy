@@ -81,10 +81,12 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
 
       echo "Using app config file ${configurationFileName} to deploy with helm"
 
-      /*  expose the clusters URLs */
-      env.clusters
-
-      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName} --set region=${region} --set target_env=${env.name} ${getClusterUrlsAsHelmValues(env, region)}"
+      String additionalHelmValues =
+          "--set region=${region} " +
+          "--set target_env=${env.name} " +
+          "--set __ext.target_cluster.sub_domain=${env.getClusterSubDomain(targetCluster, region)} " +
+          "${getClusterUrlsAsHelmValues(env, region)}"
+      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName} ${additionalHelmValues}"
     }
   })
 }
