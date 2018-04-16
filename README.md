@@ -6,9 +6,20 @@ Jenkins shared pipeline library to be used for deployment in Kubernetes clusters
 ## Documentation
 [Deployment in k8s](https://docs.google.com/a/ft.com/document/d/15ecubJwkszH1B360Ah31uXy2UekpWlgfEmQeH9_wko8/edit?usp=sharing)
 
+### Helm integration
+On every helm install/upgrade the following values are automatically inserted:
+
+1. `region`: the reigon where the targeted cluster lives. Example: `eu`, `us`
+1. `target_env`: the name of the environment as defined in the Environment registry. Example: `k8s`, `prod`
+1. `__ext.target_cluster.sub_domain`: the DNS subdomain of the targeted cluster. This is computed from the mapped API server declared in the EnvsRegistry. Example: `upp-prod-publish-us`, `pac-prod-eu`
+1. For every cluster in the targeted environment, the URLs are exposed with the values `cluster.${cluster_label}.url`. Example: `--set cluster.delivery.url=https://upp-k8s-dev-delivery-eu.ft.com --set cluster.publishing.url=https://upp-k8s-dev-publish-eu.ft.com`
+
+*NOTE*: in the future all these values will be moved under the `__ext` namespace to avoid clashes with other developer introduced values.
+
 ## What to do when adding a new environment
 When provisioning a new environment, Jenkins needs to "see" it, in order to be able to deploy to it.
 Here are the steps needed in order for Jenkins to "see" it.
+
 1.  Create a new branch for this repository
 1. Add the definition of the new environment in the EnvsRegistry.groovy. Here's an example:
     ```
