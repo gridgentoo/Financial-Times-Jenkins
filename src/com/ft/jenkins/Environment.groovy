@@ -1,5 +1,7 @@
 package com.ft.jenkins
 
+import java.util.regex.Matcher
+
 class Environment implements Serializable {
   public static final String STAGING_NAME = "staging"
   public static final String PROD_NAME = "prod"
@@ -18,8 +20,31 @@ class Environment implements Serializable {
   /*  Mapping between region+cluster and their respective Kubernetes api servers. */
   Map<String, String> clusterToApiServerMap
 
+  public static EnvType getEnvTypeForName(String envName) {
+    if (envName == PROD_NAME) {
+      return EnvType.PROD
+    }
+    if (envName == STAGING_NAME) {
+      return EnvType.TEST
+    }
+    return EnvType.DEVELOPMENT
+  }
+
   public String getEntryPointUrl(Cluster cluster, String region = null) {
-    return getApiServerForCluster(cluster,region).replace("-api","")
+    def apiServer = getApiServerForCluster(cluster, region)
+    if (apiServer != null) {
+      return apiServer.replace("-api", "")
+    }
+    return null
+  }
+
+  public String getClusterSubDomain(Cluster cluster, String region = null) {
+    String entryPointUrl = getEntryPointUrl(cluster, region)
+    if (entryPointUrl == null) {
+      return null
+    }
+    Matcher matcher = entryPointUrl =~ /https:\/\/(.*)\.ft\.com/
+    return matcher[0][1]
   }
 
   public String getApiServerForCluster(Cluster cluster, String region = null) {

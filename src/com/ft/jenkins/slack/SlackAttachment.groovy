@@ -9,7 +9,7 @@ class SlackAttachment implements Serializable {
   String title = ""
   String titleUrl = ""
 
-  /*  According to https://api.slack.com/docs/message-attachments#attachment_structure the color can be good, warning, danger, or any other hex color code */
+  /**  According to https://api.slack.com/docs/message-attachments#attachment_structure the color can be good, warning, danger, or any other hex color code */
   String color = "good"
   String footer = ""
   String footerIcon = ""
