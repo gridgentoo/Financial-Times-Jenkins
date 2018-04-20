@@ -9,43 +9,63 @@ def call() {
   String regionInput = paramUtils.getRequiredParameterValue("Region")
   String cmsInput = paramUtils.getRequiredParameterValue("CMS")
   String indexInput = paramUtils.getRequiredParameterValue("Index")
+  String zapIndexInput = paramUtils.getRequiredParameterValue("Zap index")
 
   Environment targetEnv = computeTargetEnvironment(environmentInput)
   DeploymentUtils deployUtil = new DeploymentUtils()
 
+  String UUIDS_FILE_PATH = "uuids.txt"
   String GET_MONGO_CONTAINER_CMD = "kubectl get pods | grep mongodb | awk '{print \$1}' | head -1"
 
-  String GET_METHODE_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FTCOM-METHODE/ },\"type\": {\$nin: [\"ContentPackage\",\"Content\",\"ImageSet\"]}}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > uuids.txt"
-  String GET_WORDPRESS_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | jq -r '.uuid' > uuids.txt"
-  String GET_VIDEO_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | jq -r '.uuid' >> uuids.txt"
+  String GET_METHODE_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FTCOM-METHODE/ },\"type\": {\$nin: [\"ContentPackage\",\"Content\",\"ImageSet\"]}}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
+  String GET_WORDPRESS_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | jq -r '.uuid' > ${UUIDS_FILE_PATH}"
+  String GET_VIDEO_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | jq -r '.uuid' > ${UUIDS_FILE_PATH}"
 
   Closure SERVICE_SHUTDOWN = { sh "kubectl scale --replicas=0 deployments/content-rw-elasticsearch" }
+
+  String AWS_ACCESS_KEY
+  String AWS_SECRET_KEY
+  String ES_ENDPOINT
+
+  Closure GET_CONFIGURATION = {
+    AWS_ACCESS_KEY = sh(
+            script: "kubectl get secret global-secrets -o yaml | grep aws.access_key_id | head -1 | awk '{print \$2}' | base64 -d",
+            returnStdout: true
+    ).trim()
+    AWS_SECRET_KEY = sh(
+            script: "kubectl get secret global-secrets -o yaml | grep aws.secret_access_key | head -1 | awk '{print \$2}' | base64 -d",
+            returnStdout: true
+    ).trim()
+    ES_ENDPOINT = sh(
+            script: "kubectl get configmap global-config -o yaml | grep aws.content.elasticsearch.endpoint | awk '{print \$2}'",
+            returnStdout: true
+    ).trim()
+  }
+
   Closure INDEX_DELETION = {
     sh 'export GOROOT=/usr/lib/go && export GOPATH=/gopath && export GOBIN=/gopath/bin && export PATH=$PATH:$GOROOT/bin:$GOPATH/bin && ' +
             "go get -u github.com/Financial-Times/elasticsearch-index-zapper && " +
-            "elasticsearch-index-zapper --aws-access-key=`kubectl get secret global-secrets -o yaml | grep aws.access_key_id | head -1 | awk '{print \$2}' | base64 -d` " +
-            "--aws-secret-access-key=`kubectl get secret global-secrets -o yaml | grep aws.secret_access_key | head -1 | awk '{print \$2}' | base64 -d` " +
-            "--elasticsearch-endpoint=`kubectl get configmap global-config -o yaml | grep aws.content.elasticsearch.endpoint | awk '{print \$2}'` " +
+            "elasticsearch-index-zapper --aws-access-key=${AWS_ACCESS_KEY} " +
+            "--aws-secret-access-key=${AWS_SECRET_KEY} " +
+            "--elasticsearch-endpoint=${ES_ENDPOINT}` " +
             "--elasticsearch-index='${indexInput}'"
   }
+
   Closure SERVICE_STARTUP = { sh "kubectl scale --replicas=2 deployments/content-rw-elasticsearch" }
 
   Closure GET_METHODE_UUIDS = {
-    sh 'export GOROOT=/usr/lib/go && export GOPATH=/gopath && export GOBIN=/gopath/bin && export PATH=$PATH:$GOROOT/bin:$GOPATH/bin && ' +
-            "go get -u github.com/Financial-Times/endpoint-hitter && " +
-            "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_METHODE_UUIDS_CMD} && " +
-            "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid}"
+    sh "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_METHODE_UUIDS_CMD}"
   }
   Closure GET_WORDPRESS_UUIDS = {
-    sh 'export GOROOT=/usr/lib/go && export GOPATH=/gopath && export GOBIN=/gopath/bin && export PATH=$PATH:$GOROOT/bin:$GOPATH/bin && ' +
-            "go get -u github.com/Financial-Times/endpoint-hitter && " +
-            "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_WORDPRESS_UUIDS_CMD} && " +
-            "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid}"
+    sh "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_WORDPRESS_UUIDS_CMD}"
   }
   Closure GET_VIDEO_UUIDS = {
+    sh "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_VIDEO_UUIDS_CMD}"
+  }
+
+  Closure CALL_ENDPOINT_HITTER = {
     sh 'export GOROOT=/usr/lib/go && export GOPATH=/gopath && export GOBIN=/gopath/bin && export PATH=$PATH:$GOROOT/bin:$GOPATH/bin && ' +
             "go get -u github.com/Financial-Times/endpoint-hitter && " +
-            "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_VIDEO_UUIDS_CMD} && " +
             "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid}"
   }
 
@@ -57,7 +77,13 @@ def call() {
       }
 
       stage('Delete ES index') {
-        runGoWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, INDEX_DELETION)
+        if(zapIndexInput) {
+          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_CONFIGURATION)
+          echo "INDEX DELETION: ${INDEX_DELETION}"
+//          runGo(INDEX_DELETION)
+        } else {
+          echo 'Skipping ES index zapping'
+        }
       }
 
       stage('Enable content-rw-elasticsearch') {
@@ -65,17 +91,25 @@ def call() {
       }
 
       stage('Get UUIDs and publish content') {
-        switch (cmsInput) {
-          case "Methode":
-            runGoWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_METHODE_UUIDS)
-            break
-          case "Wordpress":
-            runGoWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_WORDPRESS_UUIDS)
-            break
-          case "Video":
-            runGoWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_VIDEO_UUIDS)
-            break
-          default: error("CMS parameter value is unknown!")
+        String[] cmsArray = cmsInput.split(",")
+        for(int i = 0; i < cmsArray.length; i++) {
+          sh "rm -f uuids.txt"
+          switch (cmsArray[i]) {
+            case "Methode":
+              echo 'Publishing from Methode...'
+              deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_METHODE_UUIDS)
+              break
+            case "Wordpress":
+              echo 'Publishing from Wordpress...'
+              deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_WORDPRESS_UUIDS)
+              break
+            case "Video":
+              echo 'Publishing from Video...'
+              deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_VIDEO_UUIDS)
+              break
+            default: error("CMS parameter value is unknown!")
+          }
+          runGo(CALL_ENDPOINT_HITTER)
         }
       }
     }
@@ -83,6 +117,18 @@ def call() {
     stage('cleanup') {
       cleanWs()
     }
+  }
+}
+
+private void runGo(Closure codeToRun) {
+  String currentDir = pwd()
+
+  GString dockerRunArgs = "-v ${currentDir}:/workspace"
+
+  docker.image("1.9.5-alpine3.7").inside(dockerRunArgs) {
+    sh "apk --update add git go libc-dev"
+
+    codeToRun.call()
   }
 }
 
