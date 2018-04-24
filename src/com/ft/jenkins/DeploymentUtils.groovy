@@ -86,7 +86,7 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
           "--set target_env=${env.name} " +
           "--set __ext.target_cluster.sub_domain=${env.getClusterSubDomain(targetCluster, region)} " +
           "${getClusterUrlsAsHelmValues(env, region)}"
-      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName} ${additionalHelmValues}"
+      sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName} ${additionalHelmValues}"
     }
   })
 }
