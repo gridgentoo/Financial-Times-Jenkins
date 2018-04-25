@@ -23,7 +23,7 @@ def call() {
 
   DeploymentUtils deploymentUtils = new DeploymentUtils()
   node('docker') {
-    setBuildDisplayName(chart, version, deployOnlyInRegion, targetEnv)
+    setBuildDisplayName(chart, version, deployOnlyInRegion, targetEnv, deployOnlyInCluster)
 
     Map<Cluster, List<String>> deployedAppsPerCluster
 
@@ -72,8 +72,7 @@ public void setBuildDescription(Map<Cluster, List<String>> appsPerCluster, Strin
   currentBuild.description = appsText
 }
 
-public void setBuildDisplayName(String chart, String version, String deployOnlyInRegion, Environment targetEnv) {
-  Cluster deployOnlyInCluster
+public void setBuildDisplayName(String chart, String version, String deployOnlyInRegion, Environment targetEnv, Cluster deployOnlyInCluster) {
   StringBuilder displayName = new StringBuilder("${currentBuild.number} - ${chart}:${version} -> ${targetEnv.name}")
   if (deployOnlyInRegion) {
     displayName.append(" - only ${deployOnlyInRegion}")
