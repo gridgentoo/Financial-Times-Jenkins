@@ -14,10 +14,11 @@ def call() {
   String UUIDS_FILE_PATH = "uuids.txt"
   String INDEX_ZAPPER_APP_NAME = "elasticsearch-index-zapper"
   String GET_MONGO_CONTAINER_CMD = "kubectl get pods | grep mongodb | awk '{print \$1}' | head -1"
+  String JQ_ALTERNATIVE_CMD = "sed '/uuid/!d' | sed s/\\\"uuid\\\"://g | sed s/\\\"//g | sed s/\\ //g | sed -e 's/[{}]//g' | awk -v RS=':' '{print \$1}'"
 
   String GET_METHODE_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FTCOM-METHODE/ },\"type\": {\$nin: [\"ContentPackage\",\"Content\",\"ImageSet\"]}}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
-  String GET_WORDPRESS_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | jq -r '.uuid' > ${UUIDS_FILE_PATH}"
-  String GET_VIDEO_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | jq -r '.uuid' > ${UUIDS_FILE_PATH}"
+  String GET_WORDPRESS_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
+  String GET_VIDEO_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
 
   Closure SERVICE_SHUTDOWN = { sh "kubectl scale --replicas=0 deployments/content-rw-elasticsearch" }
 
@@ -50,8 +51,8 @@ def call() {
             'go install && ' +
             "${INDEX_ZAPPER_APP_NAME} --aws-access-key=${AWS_ACCESS_KEY} " +
             "--aws-secret-access-key=${AWS_SECRET_KEY} " +
-            "--elasticsearch-endpoint=${ES_ENDPOINT}` " +
-            "--elasticsearch-index='${indexInput}'"
+            "--elasticsearch-endpoint=${ES_ENDPOINT} " +
+            "--elasticsearch-index=${indexInput}"
   }
 
   Closure SERVICE_STARTUP = { sh "kubectl scale --replicas=2 deployments/content-rw-elasticsearch" }
@@ -68,8 +69,7 @@ def call() {
 
   Closure CALL_ENDPOINT_HITTER = {
 
-    sh 'export GOROOT=/usr/lib/go && export GOPATH=/gopath && export GOBIN=/gopath/bin && export PATH=$PATH:$GOROOT/bin:$GOPATH/bin && ' +
-            "go get -u github.com/Financial-Times/endpoint-hitter && " +
+    sh "go get -u github.com/Financial-Times/endpoint-hitter && " +
             "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid}"
   }
 
@@ -92,7 +92,7 @@ def call() {
       }
 
       stage('Enable content-rw-elasticsearch') {
-         deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_STARTUP)
+        deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_STARTUP)
       }
 
       stage('Get UUIDs and publish content') {
@@ -135,7 +135,7 @@ private void runGo(Closure codeToRun) {
           "--user 0"
 
   docker.image("golang:1.9.5-alpine3.7").inside(dockerRunArgs) {
-    sh "apk add --no-cache git"
+    sh "apk add --no-cache git jq"
 
     codeToRun.call()
   }
