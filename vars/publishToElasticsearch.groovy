@@ -82,7 +82,7 @@ def call() {
 
   Closure CALL_ENDPOINT_HITTER = {
     sh "go get -u github.com/Financial-Times/endpoint-hitter && " +
-            "cd \$GOPATH/src/endpoint-hitter && git checkout logging && go install && " +
+            "cd \$GOPATH/src/github.com/Financial-Times/endpoint-hitter && git checkout logging && go install && " +
             "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid} --auth-user=${AUTH_USER} --auth-password=${AUTH_PASSWORD}"
   }
 
