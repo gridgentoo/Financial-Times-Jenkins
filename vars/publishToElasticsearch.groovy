@@ -25,6 +25,8 @@ def call() {
   String AWS_ACCESS_KEY
   String AWS_SECRET_KEY
   String ES_ENDPOINT
+  String AUTH_USER
+  String AUTH_PASSWORD
 
   Closure GET_CONFIGURATION = {
     AWS_ACCESS_KEY = sh(
@@ -37,6 +39,17 @@ def call() {
     ).trim()
     ES_ENDPOINT = sh(
             script: "kubectl get configmap global-config -o yaml | grep aws.content.elasticsearch.endpoint | awk '{print \$2}'",
+            returnStdout: true
+    ).trim()
+  }
+
+  Closure GET_VARNISH_AUTH = {
+    AUTH_USER = sh(
+            script: "kubectl get secret varnish-auth -o yaml | grep htpasswd | head -1 | awk '{print \$2}' | base64 -d | grep ops- | cut -d':' -f1",
+            returnStdout: true
+    ).trim()
+    AUTH_PASSWORD = sh(
+            script: "kubectl get secret varnish-auth -o yaml | grep htpasswd | head -1 | awk '{print \$2}' | base64 -d | grep ops- | cut -d':' -f2",
             returnStdout: true
     ).trim()
   }
@@ -68,9 +81,9 @@ def call() {
   }
 
   Closure CALL_ENDPOINT_HITTER = {
-
     sh "go get -u github.com/Financial-Times/endpoint-hitter && " +
-            "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid}"
+            "cd \$GOPATH/src/endpoint-hitter && git checkout logging && go install && " +
+            "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid} --auth-user=${AUTH_USER} --auth-password=${AUTH_PASSWORD}"
   }
 
   node('docker') {
@@ -99,6 +112,8 @@ def call() {
         echo "CMS Input: ${cmsInput}"
         String[] cmsArray = cmsInput.split(",")
         echo "CMS Array: ${cmsArray}"
+        deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_VARNISH_AUTH)
+        echo "Using varnish credentials for user ${AUTH_USER}"
         for (int i = 0; i < cmsArray.length; i++) {
           echo "CMS: ${cmsArray[i]}"
           sh "rm -f uuids.txt"
