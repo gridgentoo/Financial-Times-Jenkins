@@ -16,9 +16,9 @@ def call() {
   String GET_MONGO_CONTAINER_CMD = "kubectl get pods | grep mongodb | awk '{print \$1}' | head -1"
   String JQ_ALTERNATIVE_CMD = "sed '/uuid/!d' | sed s/\\\"uuid\\\"://g | sed s/\\\"//g | sed s/\\ //g | sed -e 's/[{}]//g' | awk -v RS=':' '{print \$1}'"
 
-  String GET_METHODE_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FTCOM-METHODE/ },\"type\": {\$nin: [\"ContentPackage\",\"Content\",\"ImageSet\"]}}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
-  String GET_WORDPRESS_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
-  String GET_VIDEO_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); db.content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
+  String GET_METHODE_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FTCOM-METHODE/ },\"type\": {\$nin: [\"ContentPackage\",\"Content\",\"ImageSet\"]}}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
+  String GET_WORDPRESS_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
+  String GET_VIDEO_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
 
   Closure SERVICE_SHUTDOWN = { sh "kubectl scale --replicas=0 deployments/content-rw-elasticsearch" }
 
@@ -81,23 +81,22 @@ def call() {
   }
 
   Closure CALL_ENDPOINT_HITTER = {
-    sh "go get -u github.com/Financial-Times/endpoint-hitter && cp ${UUIDS_FILE_PATH} \$GOPATH/src/github.com/Financial-Times/endpoint-hitter/ && " +
-            "cd \$GOPATH/src/github.com/Financial-Times/endpoint-hitter && git checkout logging && go install && " +
+    sh "go get -u github.com/Financial-Times/endpoint-hitter && " +
             "endpoint-hitter --target-url=${getDeliveryClusterUrl(environmentInput, regionInput)}/__post-publication-combiner/{uuid} --auth-user=${AUTH_USER} --auth-password=${AUTH_PASSWORD}"
   }
 
   node('docker') {
     catchError {
       stage('Disable content-rw-elasticsearch') {
-        deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_SHUTDOWN)
-        sleep(5) // Wait 5s for content-rw-elasticsearch to be disabled
+        if (zapIndexInput == "true") {
+          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_SHUTDOWN)
+          sleep(5) // Wait 5s for content-rw-elasticsearch to be disabled
+        }
       }
 
       stage('Delete ES index') {
-        if (zapIndexInput) {
-          echo "INDEX DELETION BEFORE: ${AWS_ACCESS_KEY}"
+        if (zapIndexInput == "true") {
           deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_CONFIGURATION)
-          echo "INDEX DELETION AFTER: ${AWS_ACCESS_KEY}"
           runGo(INDEX_DELETION)
         } else {
           echo 'Skipping ES index zapping'
@@ -105,18 +104,18 @@ def call() {
       }
 
       stage('Enable content-rw-elasticsearch') {
-        deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_STARTUP)
+        if (zapIndexInput == "true") {
+          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_STARTUP)
+        }
       }
 
       stage('Get UUIDs and publish content') {
-        echo "CMS Input: ${cmsInput}"
         String[] cmsArray = cmsInput.split(",")
-        echo "CMS Array: ${cmsArray}"
         deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_VARNISH_AUTH)
         echo "Using varnish credentials for user ${AUTH_USER}"
         for (int i = 0; i < cmsArray.length; i++) {
           echo "CMS: ${cmsArray[i]}"
-          sh "rm -f uuids.txt"
+          sh "rm -f ${UUIDS_FILE_PATH}"
           switch (cmsArray[i]) {
             case "Methode":
               echo 'Publishing from Methode...'
