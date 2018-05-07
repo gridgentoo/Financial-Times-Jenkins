@@ -53,7 +53,7 @@ def call() {
       stage('Get UUIDs and publish content') {
         String[] cmsArray = cmsInput.split(",")
         deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, getVarnishAuth() as Closure)
-        echo "Using varnish credentials for user ${AUTH_USER}"
+        echo "Using varnish credentials for user ${Configuration.AUTH_USER}"
         for (int i = 0; i < cmsArray.length; i++) {
           echo "CMS: ${cmsArray[i]}"
           sh "rm -f ${UUIDS_FILE_PATH}"
@@ -105,52 +105,61 @@ private void runGo(Closure codeToRun) {
 }
 
 private def getConfiguration() {
-  Configuration.AWS_ACCESS_KEY = sh(
-          script: "kubectl get secret global-secrets -o yaml | grep aws.access_key_id | head -1 | awk '{print \$2}' | base64 -d",
-          returnStdout: true
-  ).trim()
-  Configuration.AWS_SECRET_KEY = sh(
-          script: "kubectl get secret global-secrets -o yaml | grep aws.secret_access_key | head -1 | awk '{print \$2}' | base64 -d",
-          returnStdout: true
-  ).trim()
-  Configuration.ES_ENDPOINT = sh(
-          script: "kubectl get configmap global-config -o yaml | grep aws.content.elasticsearch.endpoint | awk '{print \$2}'",
-          returnStdout: true
-  ).trim()
+  return {
+    Configuration.AWS_ACCESS_KEY = sh(
+            script: "kubectl get secret global-secrets -o yaml | grep aws.access_key_id | head -1 | awk '{print \$2}' | base64 -d",
+            returnStdout: true
+    ).trim()
+    Configuration.AWS_SECRET_KEY = sh(
+            script: "kubectl get secret global-secrets -o yaml | grep aws.secret_access_key | head -1 | awk '{print \$2}' | base64 -d",
+            returnStdout: true
+    ).trim()
+    Configuration.ES_ENDPOINT = sh(
+            script: "kubectl get configmap global-config -o yaml | grep aws.content.elasticsearch.endpoint | awk '{print \$2}'",
+            returnStdout: true
+    ).trim()
+  }
 }
 
 private def getVarnishAuth() {
-  Configuration.AUTH_USER = sh(
-          script: "kubectl get secret varnish-auth -o yaml | grep htpasswd | head -1 | awk '{print \$2}' | base64 -d | grep ops- | cut -d':' -f1",
-          returnStdout: true
-  ).trim()
-  Configuration.AUTH_PASSWORD = sh(
-          script: "kubectl get secret varnish-auth -o yaml | grep htpasswd | head -1 | awk '{print \$2}' | base64 -d | grep ops- | cut -d':' -f2",
-          returnStdout: true
-  ).trim()
+  return {
+    Configuration.AUTH_USER = sh(
+            script: "kubectl get secret varnish-auth -o yaml | grep htpasswd | head -1 | awk '{print \$2}' | base64 -d | grep ops- | cut -d':' -f1",
+            returnStdout: true
+    ).trim()
+    Configuration.AUTH_PASSWORD = sh(
+            script: "kubectl get secret varnish-auth -o yaml | grep htpasswd | head -1 | awk '{print \$2}' | base64 -d | grep ops- | cut -d':' -f2",
+            returnStdout: true
+    ).trim()
+  }
 }
 
-private def deleteIndex(String indexZapperAppName, String awsAccessKey, String awsSecretKey, String esEndpoint, String indexInput) {
-  git credentialsId: 'ft-upp-team', url: 'git@github.com:Financial-Times/elasticsearch-index-zapper.git', branch: 'master'
+private
+def deleteIndex(String indexZapperAppName, String awsAccessKey, String awsSecretKey, String esEndpoint, String indexInput) {
+  return {
+    git credentialsId: 'ft-upp-team', url: 'git@github.com:Financial-Times/elasticsearch-index-zapper.git', branch: 'master'
 
-  sh "mkdir -p \$GOPATH/src/${indexZapperAppName} && mv ./* \$GOPATH/src/${indexZapperAppName} && " +
-          "cd \$GOPATH/src/${indexZapperAppName} && " +
-          'go get -u github.com/kardianos/govendor && ' +
-          'govendor sync && ' +
-          'go install && ' +
-          "${indexZapperAppName} --aws-access-key=${awsAccessKey} " +
-          "--aws-secret-access-key=${awsSecretKey} " +
-          "--elasticsearch-endpoint=${esEndpoint} " +
-          "--elasticsearch-index=${indexInput}"
+    sh "mkdir -p \$GOPATH/src/${indexZapperAppName} && mv ./* \$GOPATH/src/${indexZapperAppName} && " +
+            "cd \$GOPATH/src/${indexZapperAppName} && " +
+            'go get -u github.com/kardianos/govendor && ' +
+            'govendor sync && ' +
+            'go install && ' +
+            "${indexZapperAppName} --aws-access-key=${awsAccessKey} " +
+            "--aws-secret-access-key=${awsSecretKey} " +
+            "--elasticsearch-endpoint=${esEndpoint} " +
+            "--elasticsearch-index=${indexInput}"
+  }
 }
 
 private def executeSh(String command) {
-  sh "${command}"
+  return { sh "${command}" }
 }
 
 private def callEndpointHitter(String clusterUrl, String authUser, String authPassword) {
-  sh "go get -u github.com/Financial-Times/endpoint-hitter && " +
-          "endpoint-hitter --target-url=${clusterUrl}/__post-publication-combiner/{uuid} --auth-user=${authUser} --auth-password=${authPassword}"
+  return {
+    sh "go get -u github.com/Financial-Times/endpoint-hitter && " +
+            "endpoint-hitter --target-url=${clusterUrl}/__post-publication-combiner/{uuid} --auth-user=${authUser} --auth-password=${authPassword}"
+  }
 }
 
 private static Environment computeTargetEnvironment(String environmentInput) {
