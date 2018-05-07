@@ -20,8 +20,6 @@ def call() {
   String GET_WORDPRESS_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
   String GET_VIDEO_UUIDS_CMD = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
 
-  Closure SERVICE_SHUTDOWN = { sh "kubectl scale --replicas=0 deployments/content-rw-elasticsearch" }
-
   String AWS_ACCESS_KEY
   String AWS_SECRET_KEY
   String ES_ENDPOINT
@@ -54,22 +52,6 @@ def call() {
     ).trim()
   }
 
-  Closure INDEX_DELETION = {
-    git credentialsId: 'ft-upp-team', url: 'git@github.com:Financial-Times/elasticsearch-index-zapper.git', branch: 'master'
-
-    sh "mkdir -p \$GOPATH/src/${INDEX_ZAPPER_APP_NAME} && mv ./* \$GOPATH/src/${INDEX_ZAPPER_APP_NAME} && " +
-            "cd \$GOPATH/src/${INDEX_ZAPPER_APP_NAME} && " +
-            'go get -u github.com/kardianos/govendor && ' +
-            'govendor sync && ' +
-            'go install && ' +
-            "${INDEX_ZAPPER_APP_NAME} --aws-access-key=${AWS_ACCESS_KEY} " +
-            "--aws-secret-access-key=${AWS_SECRET_KEY} " +
-            "--elasticsearch-endpoint=${ES_ENDPOINT} " +
-            "--elasticsearch-index=${indexInput}"
-  }
-
-  Closure SERVICE_STARTUP = { sh "kubectl scale --replicas=2 deployments/content-rw-elasticsearch" }
-
   Closure GET_METHODE_UUIDS = {
     sh "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_METHODE_UUIDS_CMD}"
   }
@@ -89,7 +71,7 @@ def call() {
     catchError {
       stage('Disable content-rw-elasticsearch') {
         if (zapIndexInput == "true") {
-          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_SHUTDOWN)
+          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, stopElasticsearchReadWriter() as Closure)
           sleep(5) // Wait 5s for content-rw-elasticsearch to be disabled
         }
       }
@@ -97,7 +79,7 @@ def call() {
       stage('Delete ES index') {
         if (zapIndexInput == "true") {
           deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, GET_CONFIGURATION)
-          runGo(INDEX_DELETION)
+          runGo(deleteIndex(INDEX_ZAPPER_APP_NAME, AWS_ACCESS_KEY, AWS_SECRET_KEY, ES_ENDPOINT, indexInput) as Closure)
         } else {
           echo 'Skipping ES index zapping'
         }
@@ -105,7 +87,7 @@ def call() {
 
       stage('Enable content-rw-elasticsearch') {
         if (zapIndexInput == "true") {
-          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, SERVICE_STARTUP)
+          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, startElasticsearchReadWriter() as Closure)
         }
       }
 
@@ -153,6 +135,28 @@ private void runGo(Closure codeToRun) {
 
     codeToRun.call()
   }
+}
+
+private def deleteIndex(String indexZapperAppName, String awsAccessKey, String awsSecretKey, String esEndpoint, String indexInput) {
+  git credentialsId: 'ft-upp-team', url: 'git@github.com:Financial-Times/elasticsearch-index-zapper.git', branch: 'master'
+
+  sh "mkdir -p \$GOPATH/src/${indexZapperAppName} && mv ./* \$GOPATH/src/${indexZapperAppName} && " +
+          "cd \$GOPATH/src/${indexZapperAppName} && " +
+          'go get -u github.com/kardianos/govendor && ' +
+          'govendor sync && ' +
+          'go install && ' +
+          "${indexZapperAppName} --aws-access-key=${awsAccessKey} " +
+          "--aws-secret-access-key=${awsSecretKey} " +
+          "--elasticsearch-endpoint=${esEndpoint} " +
+          "--elasticsearch-index=${indexInput}"
+}
+
+private def stopElasticsearchReadWriter() {
+  sh "kubectl scale --replicas=0 deployments/content-rw-elasticsearch"
+}
+
+private def startElasticsearchReadWriter() {
+  sh "kubectl scale --replicas=2 deployments/content-rw-elasticsearch"
 }
 
 private static Environment computeTargetEnvironment(String environmentInput) {
