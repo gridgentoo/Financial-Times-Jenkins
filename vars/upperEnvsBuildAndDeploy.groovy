@@ -107,14 +107,17 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
 
         remainingRegionsToDeployTo.removeAll(regionsToDeployTo)
 
+        // close the CR only after we deployed to all the regions of the environment
+        if (remainingRegionsToDeployTo.isEmpty()) {
+          closeCr(crId, environment)
+        }
+
         stage("validate apps in ${environment.getNamesWithRegions(regionsToDeployTo)}") {
           sendSlackMessageForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo,
                                         deployInitiator, chartName)
           displayJenkinsInputForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo)
         }
       }
-
-      closeCr(crId, environment)
     }
   }
 
