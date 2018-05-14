@@ -56,7 +56,11 @@ node("docker") {
             sh "mv ${dexSecretFile} ${chartFolderLocation}/templates/dex-config.yaml"
 
             deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
-                sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 ${additionalHelmValues}"
+                sh """
+                    helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 ${additionalHelmValues};
+                    sleep 5; kubectl scale deployment content-auth-dex --replicas=0;
+                    sleep 5; kubectl scale deployment content-auth-dex --replicas=2;
+                    sleep 15; kubectl get pod --selector=app=content-auth-dex"""
             })
         }
     }
