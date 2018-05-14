@@ -44,10 +44,12 @@ def call() {
                 }
                 checkoutDexConfig(app)
 
-                String additionalHelmValues = buildHelmValues(secrets, clusterName)
+                String valuesFile = "values.yaml"
+                writeFile([file: valuesFile, text: buildHelmValues2(secrets, clusterName)])
+
                 String helmDryRunOutput = "output.txt"
                 deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
-                    sh "helm upgrade --debug --dry-run ${app} ${chartFolderLocation} -i --timeout 1200 ${additionalHelmValues} > ${helmDryRunOutput}"
+                    sh "helm upgrade --debug --dry-run ${app} ${chartFolderLocation} -i --timeout 1200 -f ${valuesFile} > ${helmDryRunOutput}"
                 })
 
                 String dexSecretFile = writeDexSecret(helmDryRunOutput)
@@ -58,7 +60,7 @@ def call() {
 
                 deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
                     sh """
-                        helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 ${additionalHelmValues};
+                        helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200
                         sleep 5; kubectl scale deployment content-auth-dex --replicas=0;
                         sleep 5; kubectl scale deployment content-auth-dex --replicas=2;
                         sleep 15; kubectl get pod --selector=app=content-auth-dex"""
@@ -108,14 +110,11 @@ private Object checkoutDexConfig(String app) {
     ])
 }
 
-private String buildHelmValues(Map<String, String> secrets, String clusterName) {
-    String additionalHelmValues =
-            "--set github.client.id=${secrets."github.client.id"} " +
-                    "--set github.client.secret=${secrets."github.client.secret"} " +
-                    "--set kubectl.login.secret=${secrets."kubectl.login.secret"} " +
-                    "--set cluster.name=${clusterName} " +
-                    "--set ldap.host=${secrets."ldap.host"} " +
-                    "--set ldap.bindDN=${secrets."ldap.bindDN"} " +
-                    "--set ldap.bindPW=${secrets."ldap.bindPW"} "
-    additionalHelmValues
+private String buildHelmValues2(Map<String, String> secrets, String clusterName) {
+    String helmValues = "github:\n  client:\n    id: " + '\\"' + secrets."github.client.id" + '\\"' +
+            "\n    secret: " + '\\"' + secrets."github.client.secret" + '\\"' + "\nkubectl:\n  login:\n    secret: " +
+            '\\"' + secrets."kubectl.login.secret" + '\\"' + "\ncluster:\n  name: " + '\\"' + clusterName + '\\"' +
+            "\nldap:\n  host: " + '\\"' + secrets."ldap.host" + '\\"' + "\n  bindDN: " + '\\"' + secrets."ldap.bindDN" + '\\"' +
+            "\n  bindPW: " + '\\"' + secrets."ldap.bindPW" + '\\"' + "\n"
+    return helmValues
 }
