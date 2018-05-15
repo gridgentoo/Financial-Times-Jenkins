@@ -75,6 +75,7 @@ def call() {
     }
 
     stage('Cleaning up and switch to normal flow') {
+      sleep(120) // Wait for the last messages to be consumed
       deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(STOP_CONTENT_RW_REINDEXER_CMD) as Closure)
       if (zapIndexInput == "true") {
         deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(START_CONTENT_RW_CMD) as Closure)
