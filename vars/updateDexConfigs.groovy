@@ -60,7 +60,7 @@ def call() {
 
                 deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
                     sh """
-                        kubectl apply -f ${chartFolderLocation}/templates/dex-config.yaml;
+                        kubectl apply -f ${chartFolderLocation}/templates/dex-config.yaml --validate=false;
                         sleep 5; kubectl scale deployment content-auth-dex --replicas=0;
                         sleep 5; kubectl scale deployment content-auth-dex --replicas=2;
                         sleep 15; kubectl get pod --selector=app=content-auth-dex"""
@@ -105,7 +105,7 @@ private String writeDexSecret(String helmDryRunOutput) {
 
 private Object checkoutDexConfig(String app) {
     checkout([$class           : 'GitSCM',
-              branches         : [[name: "fix-static-client-config"]],
+              branches         : [[name: "master"]],
               userRemoteConfigs: [[url: "git@github.com:Financial-Times/${app}.git", credentialsId: "ft-upp-team"]]
     ])
 }
