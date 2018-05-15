@@ -94,7 +94,7 @@ private String writeDexSecret(String helmDryRunOutput) {
         if (line.contains("dex-config.yaml")) {
             writeLine = true
         }
-        if (writeLine && !line.contains(":")) {
+        if (writeLine && line.contains("enablePasswordDB")) {
             writeLine = false
         }
     }
@@ -105,7 +105,7 @@ private String writeDexSecret(String helmDryRunOutput) {
 
 private Object checkoutDexConfig(String app) {
     checkout([$class           : 'GitSCM',
-              branches         : [[name: "debug"]],
+              branches         : [[name: "master"]],
               userRemoteConfigs: [[url: "git@github.com:Financial-Times/${app}.git", credentialsId: "ft-upp-team"]]
     ])
 }
