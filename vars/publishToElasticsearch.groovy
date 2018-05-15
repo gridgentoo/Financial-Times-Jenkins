@@ -23,7 +23,7 @@ def call() {
   String STOP_CONTENT_RW_CMD = "kubectl scale --replicas=0 deployments/content-rw-elasticsearch"
   String START_CONTENT_RW_CMD = "kubectl scale --replicas=2 deployments/content-rw-elasticsearch"
   String STOP_CONTENT_RW_REINDEXER_CMD = "kubectl scale --replicas=0 deployments/content-rw-elasticsearch-reindexer"
-  String START_CONTENT_RW_REINDEXER_CMD = "kubectl scale --replicas=5 deployments/content-rw-elasticsearch-reindexer"
+  String START_CONTENT_RW_REINDEXER_CMD = "kubectl scale --replicas=3 deployments/content-rw-elasticsearch-reindexer"
   String GET_METHODE_UUIDS_CMD = "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_METHODE_UUIDS_MONGO_QUERY}"
   String GET_WORDPRESS_UUIDS_CMD = "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_WORDPRESS_UUIDS_MONGO_QUERY}"
   String GET_VIDEO_UUIDS_CMD = "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_VIDEO_UUIDS_MONGO_QUERY}"
