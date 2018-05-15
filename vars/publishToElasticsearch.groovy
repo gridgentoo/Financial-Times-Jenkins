@@ -22,17 +22,20 @@ def call() {
 
   String STOP_CONTENT_RW_CMD = "kubectl scale --replicas=0 deployments/content-rw-elasticsearch"
   String START_CONTENT_RW_CMD = "kubectl scale --replicas=2 deployments/content-rw-elasticsearch"
+  String STOP_CONTENT_RW_REINDEXER_CMD = "kubectl scale --replicas=0 deployments/content-rw-elasticsearch-reindexer"
+  String START_CONTENT_RW_REINDEXER_CMD = "kubectl scale --replicas=5 deployments/content-rw-elasticsearch-reindexer"
   String GET_METHODE_UUIDS_CMD = "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_METHODE_UUIDS_MONGO_QUERY}"
   String GET_WORDPRESS_UUIDS_CMD = "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_WORDPRESS_UUIDS_MONGO_QUERY}"
   String GET_VIDEO_UUIDS_CMD = "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_VIDEO_UUIDS_MONGO_QUERY}"
 
   node('docker') {
     catchError {
-      stage('Disable content-rw-elasticsearch') {
+      stage('Switch to reindexing flow') {
         if (zapIndexInput == "true") {
           deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(STOP_CONTENT_RW_CMD) as Closure)
           sleep(5) // Wait 5s for content-rw-elasticsearch to be disabled
         }
+        deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(START_CONTENT_RW_REINDEXER_CMD) as Closure)
       }
 
       stage('Delete ES index') {
@@ -41,12 +44,6 @@ def call() {
           runGo(deleteIndex(INDEX_ZAPPER_APP_NAME, Configuration.AWS_ACCESS_KEY, Configuration.AWS_SECRET_KEY, Configuration.ES_ENDPOINT, indexInput) as Closure)
         } else {
           echo 'Skipping ES index zapping'
-        }
-      }
-
-      stage('Enable content-rw-elasticsearch') {
-        if (zapIndexInput == "true") {
-          deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(START_CONTENT_RW_CMD) as Closure)
         }
       }
 
@@ -77,7 +74,11 @@ def call() {
       }
     }
 
-    stage('cleanup') {
+    stage('Cleaning up and switch to normal flow') {
+      deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(STOP_CONTENT_RW_REINDEXER_CMD) as Closure)
+      if (zapIndexInput == "true") {
+        deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(START_CONTENT_RW_CMD) as Closure)
+      }
       cleanWs()
     }
   }
