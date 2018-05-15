@@ -105,7 +105,7 @@ private String writeDexSecret(String helmDryRunOutput) {
 
 private Object checkoutDexConfig(String app) {
     checkout([$class           : 'GitSCM',
-              branches         : [[name: "master"]],
+              branches         : [[name: "debug"]],
               userRemoteConfigs: [[url: "git@github.com:Financial-Times/${app}.git", credentialsId: "ft-upp-team"]]
     ])
 }
