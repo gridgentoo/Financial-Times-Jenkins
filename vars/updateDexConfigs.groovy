@@ -26,7 +26,11 @@ def call() {
                 }
                 Cluster targetCluster = Cluster.valueOfLabel(clusterUpdateInfo.cluster)
                 if (targetCluster == null) {
-                    throw new IllegalArgumentException("Unknown cluster" + clusterUpdateInfo.cluster)
+                    if (clusterName.contains("pac")) {
+                        targetCluster = Cluster.PAC
+                    } else {
+                        throw new IllegalArgumentException("Unknown cluster" + clusterUpdateInfo.cluster)
+                    }
                 }
                 String targetRegion = clusterUpdateInfo.region
                 if (targetRegion == null) {
