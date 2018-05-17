@@ -14,11 +14,10 @@ def call() {
   String UUIDS_FILE_PATH = "uuids.txt"
   String INDEX_ZAPPER_APP_NAME = "elasticsearch-index-zapper"
   String GET_MONGO_CONTAINER_CMD = "kubectl get pods | grep mongodb | awk '{print \$1}' | head -1"
-  String JQ_ALTERNATIVE_CMD = "sed '/uuid/!d' | sed s/\\\"uuid\\\"://g | sed s/\\\"//g | sed s/\\ //g | sed -e 's/[{}]//g' | awk -v RS=':' '{print \$1}'"
 
-  String GET_METHODE_UUIDS_MONGO_QUERY = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FTCOM-METHODE/ },\"type\": {\$nin: [\"ContentPackage\",\"Content\",\"ImageSet\"]}}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
-  String GET_WORDPRESS_UUIDS_MONGO_QUERY = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
-  String GET_VIDEO_UUIDS_MONGO_QUERY = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"identifiers.authority\": {\$regex: /NEXT-VIDEO-EDITOR/ }}, {_id: false, uuid: 1}).forEach(function(o) { printjson(o)})' --quiet | ${JQ_ALTERNATIVE_CMD} > ${UUIDS_FILE_PATH}"
+  String GET_METHODE_UUIDS_MONGO_QUERY = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"mediaType\":null,\"identifiers.authority\": \"http://api.ft.com/system/FTCOM-METHODE\",\$or:[{\"type\":\"Article\"},{\"type\":null}]}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
+  String GET_WORDPRESS_UUIDS_MONGO_QUERY = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"mediaType\":null,\"identifiers.authority\": {\$regex: /FT-LABS/ }}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
+  String GET_VIDEO_UUIDS_MONGO_QUERY = "mongo upp-store -eval 'rs.slaveOk(); connection=db.getMongo(); connection.setReadPref(\"secondaryPreferred\"); connection.getDB(\"upp-store\").content.find({\"identifiers.authority\": \"http://api.ft.com/system/NEXT-VIDEO-EDITOR\"}, {_id: false, uuid: 1}).forEach(function(o) { print(o.uuid)})' --quiet > ${UUIDS_FILE_PATH}"
 
   String STOP_CONTENT_RW_CMD = "kubectl scale --replicas=0 deployments/content-rw-elasticsearch"
   String START_CONTENT_RW_CMD = "kubectl scale --replicas=2 deployments/content-rw-elasticsearch"
