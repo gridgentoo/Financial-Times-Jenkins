@@ -45,7 +45,7 @@ Here are the steps needed in order for Jenkins to "see" it.
 1. Don't forget to add the newly defined environment to the `envs` list in the EnvsRegistry class.
 1. Define in [Jenkins](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/) the credentials needed for accessing the K8S API servers. 
 For each of the API servers in the environment Jenkins needs 1 key in order to access it, therefore you need to create 1 Jenkins credential / cluster that are of type `Secret Text` with the following ids
-    1. `ft.k8s-auth.${cluster_label}-${env_name}[-${region}].token` (example `ft.k8s-auth.delivery-staging-us.token`) -> this is the token of the Jenkins service account from the Kubernetes cluster.
+    1. `ft.k8s-auth.${full-cluster-name}.token` (example `ft.k8s-auth.upp-k8s-dev-delivery-eu.token`) -> this is the token of the Jenkins service account from the Kubernetes cluster.
 1. Define in [Jenkins](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/) the credentials with the TLS assets of the cluster.
    This will be used when updating the kubernetes cluster using (this Jenkins job)[Update a Kubernetes cluster](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/update-cluster/)
    The credential must be named `ft.k8s-provision.${full-cluster-name}.credentials`. Example `ft.k8s-provision.upp-k8s-dev-delivery-eu.credentials`.

@@ -210,8 +210,8 @@ public void runWithK8SCliTools(Environment targetEnv, Cluster cluster, String re
   String currentDir = pwd()
 
   String apiServer = targetEnv.getApiServerForCluster(cluster, region)
-  String fullClusterName = targetEnv.getFullClusterName(cluster, region)
-  withCredentials([string(credentialsId: "ft.k8s-auth.${fullClusterName}.token", variable: 'TOKEN')]) {
+  String clusterSubDomain = targetEnv.getClusterSubDomain(cluster, region)
+  withCredentials([string(credentialsId: "ft.k8s-auth.${clusterSubDomain}.token", variable: 'TOKEN')]) {
     GString dockerRunArgs =
         "-e 'K8S_API_SERVER=${apiServer}' " +
         "-e 'KUBECONFIG=${currentDir}/kubeconfig' " +
