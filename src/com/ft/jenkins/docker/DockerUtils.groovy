@@ -38,6 +38,9 @@ public void buildAndPushImage(String dockerTag) {
   }
 
   def image = buildImage(dockerTag)
+
+  securityScan(image)
+
   boolean useInternalDockerReg = dockerTag.startsWith(FT_DOCKER_REGISTRY_NAME)
   if (useInternalDockerReg) {
     pushImageToDockerReg(image, "https://${FT_DOCKER_REGISTRY_NAME}", FT_DOCKER_REGISTRY_CREDENTIALS)
@@ -55,6 +58,13 @@ public boolean imageExists(String tag) {
   } catch (e) {
     return false
   }
+}
+
+public void securityScan(def image) {
+  sh "curl \"https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64\" > clair-scanner"
+  sh "chmod 750 clair-scanner"
+  sh "./clair-scanner --clair=\"http://10.172.43.22:6060\" ${image.id}"
+  sh "rm clair-scanner"
 }
 
 return this // We're returning the script in order to allow it to be loaded in a variable and executed on demand (check DockerUtilsTest for an example)
