@@ -8,94 +8,97 @@ import com.ft.jenkins.provision.ProvisionerUtil
 import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
 
 def call() {
-    node("docker") {
-        stage('initial cleanup') {
-            cleanWs()
-        }
+    node('docker') {
+        stage('cleanup') { cleanWs() }
+        catchError { updateDexConfig() } //catch any errors to ensure cleanup is always executed
+        stage('cleanup') { cleanWs() }
+    }
+}
 
-        DeploymentUtils deploymentUtils = new DeploymentUtils()
-        String app = "upp-dex-config"
-        String chartFolderLocation = "helm/" + app
-        String appVersion
+private void updateDexConfig() {
+    DeploymentUtils deploymentUtils = new DeploymentUtils()
+    String app = "upp-dex-config"
+    String chartFolderLocation = "helm/" + app
+    String appVersion
 
-        def configMap = readJSON text: env."Dex config"
-        List<String> clusters = new ArrayList<>()
-        clusters.addAll((HashSet<String>) configMap.keySet())
-        List<String> selectedClusters = new ArrayList<>()
+    Map<String, Map<String, String>> configMap = readConfig()
+    List<String> clusters = new ArrayList<>()
+    clusters.addAll((HashSet<String>) configMap.keySet())
+    List<String> selectedClusters = new ArrayList<>()
 
-        stage('Select clusters to update') {
-            selectedClusters = getSelectedUserInputs(clusters,
-                    "Clusters to deploy dex-config to",
-                    "Update dex-config")
-            echo "The following charts were selected for adding: ${selectedClusters}"
-        }
+    stage('Select clusters to update') {
+        selectedClusters = getSelectedUserInputs(clusters,
+                "Clusters to deploy dex-config to",
+                "Update dex-config")
+        echo "The following charts were selected for adding: ${selectedClusters}"
+    }
 
-        selectedClusters.each { String clusterName ->
-            Map<String, String> secrets = configMap."$clusterName"
-            stage(clusterName) {
-                ProvisionerUtil provisionerUtil = new ProvisionerUtil()
-                ClusterUpdateInfo clusterUpdateInfo = provisionerUtil.getClusterUpdateInfo(clusterName)
-                if (clusterUpdateInfo == null || clusterUpdateInfo.cluster == null || clusterUpdateInfo.region == null) {
-                    throw new IllegalArgumentException("Cannot extract cluster info from cluster name " + clusterName)
+    selectedClusters.each { String clusterName ->
+        Map<String, String> secrets = configMap."$clusterName"
+
+        stage(clusterName) {
+            ProvisionerUtil provisionerUtil = new ProvisionerUtil()
+            ClusterUpdateInfo clusterUpdateInfo = provisionerUtil.getClusterUpdateInfo(clusterName)
+            if (clusterUpdateInfo == null || clusterUpdateInfo.cluster == null || clusterUpdateInfo.region == null) {
+                throw new IllegalArgumentException("Cannot extract cluster info from cluster name " + clusterName)
+            }
+            Cluster targetCluster = Cluster.valueOfLabel(clusterUpdateInfo.cluster)
+            if (targetCluster == null) {
+                if (clusterName.contains("pac")) {
+                    targetCluster = Cluster.PAC
+                } else {
+                    throw new IllegalArgumentException("Unknown cluster" + clusterUpdateInfo.cluster)
                 }
-                Cluster targetCluster = Cluster.valueOfLabel(clusterUpdateInfo.cluster)
-                if (targetCluster == null) {
-                    if (clusterName.contains("pac")) {
-                        targetCluster = Cluster.PAC
-                    } else {
-                        throw new IllegalArgumentException("Unknown cluster" + clusterUpdateInfo.cluster)
-                    }
+            }
+            String targetRegion = clusterUpdateInfo.region
+            if (targetRegion == null) {
+                throw new IllegalArgumentException("Cannot determine region from cluster name: " + clusterName)
+            }
+            Environment targetEnv
+            for (Environment env in EnvsRegistry.envs) {
+                if (clusterName == env.getClusterSubDomain(targetCluster, targetRegion)) {
+                    targetEnv = env
+                    break
                 }
-                String targetRegion = clusterUpdateInfo.region
-                if (targetRegion == null) {
-                    throw new IllegalArgumentException("Cannot determine region from cluster name: " + clusterName)
-                }
-                Environment targetEnv
-                for (Environment env in EnvsRegistry.envs) {
-                    if (clusterName == env.getClusterSubDomain(targetCluster, targetRegion)) {
-                        targetEnv = env
-                        break
-                    }
-                }
-                if (targetEnv == null) {
-                    throw new IllegalArgumentException("Cannot determine target env from cluster name: " + clusterName)
-                }
-                def scmVars = checkoutDexConfig(app)
-                appVersion = scmVars.GIT_COMMIT.take(7)
-                String valuesFile = "values.yaml"
-                writeFile([file: valuesFile, text: buildHelmValues2(secrets, clusterName)])
+            }
+            if (targetEnv == null) {
+                throw new IllegalArgumentException("Cannot determine target env from cluster name: " + clusterName)
+            }
+            def scmVars = checkoutDexConfig(app)
+            appVersion = scmVars.GIT_COMMIT.take(7)
 
-                String helmDryRunOutput = "output.txt"
-                deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
-                    sh "helm upgrade --debug --dry-run ${app} ${chartFolderLocation} -i --timeout 1200 -f ${valuesFile} > ${helmDryRunOutput}"
-                })
+            String valuesFile = "values.yaml"
+            writeFile([file: valuesFile, text: buildHelmValues2(secrets, clusterName)])
 
-                String dexSecretFile = writeDexSecret(helmDryRunOutput)
+            String helmDryRunOutput = "output.txt"
+            deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
+                sh "helm upgrade --debug --dry-run ${app} ${chartFolderLocation} -i --timeout 1200 -f ${valuesFile} > ${helmDryRunOutput}"
+            })
 
-                encodeDexSecrets(dexSecretFile)
-                sh "rm ${chartFolderLocation}/templates/dex-config.yaml"
-                sh "mv ${dexSecretFile} ${chartFolderLocation}/templates/dex-config.yaml"
+            String dexSecretFile = writeDexSecret(helmDryRunOutput)
+            encodeDexSecrets(dexSecretFile)
+            sh "rm ${chartFolderLocation}/templates/dex-config.yaml"
+            sh "mv ${dexSecretFile} ${chartFolderLocation}/templates/dex-config.yaml"
 
-                deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
-                    sh """
+            deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
+                sh """
                         kubectl apply -f ${chartFolderLocation}/templates/dex-config.yaml --validate=false;
                         sleep 5; kubectl scale deployment content-auth-dex --replicas=0;
                         sleep 5; kubectl scale deployment content-auth-dex --replicas=2;
                         sleep 15; kubectl get pod --selector=app=content-auth-dex"""
-                })
-            }
+            })
         }
-
-        stage('cleanup') {
-            cleanWs()
-        }
-        if (selectedClusters.size() > 0) {
-            currentBuild.description = "$app:$appVersion in ${selectedClusters.join(",")}"
-        } else {
-            currentBuild.description = "No update was performed."
-        }
-
     }
+    if (selectedClusters.size() > 0) {
+        currentBuild.description = "$app:$appVersion in ${selectedClusters.join(",")}"
+    } else {
+        currentBuild.description = "No update was performed."
+    }
+}
+
+private Map<String, Map<String, String>> readConfig() {
+    def configMap = readJSON text: env."Dex config"
+    (Map<String, Map<String, String>>) configMap
 }
 
 private List<String> getSelectedUserInputs(List<String> clusters, String inputMessage,
