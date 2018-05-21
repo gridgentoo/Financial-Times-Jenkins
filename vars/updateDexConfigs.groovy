@@ -5,6 +5,8 @@ import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.provision.ClusterUpdateInfo
 import com.ft.jenkins.provision.ProvisionerUtil
 
+import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
+
 def call() {
     node("docker") {
         stage('initial cleanup') {
@@ -13,12 +15,23 @@ def call() {
 
         DeploymentUtils deploymentUtils = new DeploymentUtils()
         String app = "upp-dex-config"
-        String appVersion
         String chartFolderLocation = "helm/" + app
+        String appVersion
 
         def configMap = readJSON text: env."Dex config"
+        List<String> clusters = new ArrayList<>()
+        clusters.addAll((HashSet<String>) configMap.keySet())
+        List<String> selectedClusters = new ArrayList<>()
 
-        configMap.each { String clusterName, Map<String, String> secrets ->
+        stage('Select clusters to update') {
+            selectedClusters = getSelectedUserInputs(clusters,
+                    "Clusters to deploy dex-config to",
+                    "Update dex-config")
+            echo "The following charts were selected for adding: ${selectedClusters}"
+        }
+
+        selectedClusters.each { String clusterName ->
+            Map<String, String> secrets = configMap."$clusterName"
             stage(clusterName) {
                 ProvisionerUtil provisionerUtil = new ProvisionerUtil()
                 ClusterUpdateInfo clusterUpdateInfo = provisionerUtil.getClusterUpdateInfo(clusterName)
@@ -76,10 +89,55 @@ def call() {
         stage('cleanup') {
             cleanWs()
         }
-        currentBuild.description = "$app:$appVersion in ${configMap.keySet().join(",")}"
+        if (selectedClusters.size() > 0) {
+            currentBuild.description = "$app:$appVersion in ${selectedClusters.join(",")}"
+        } else {
+            currentBuild.description = "No update was performed."
+        }
+
+    }
+}
+
+private List<String> getSelectedUserInputs(List<String> clusters, String inputMessage,
+                                           String okButton) {
+    List checkboxes = []
+    clusters.sort()
+    for (int i = 0; i < clusters.size(); i++) {
+        String chartName = clusters.get(i)
+        checkboxes.add(booleanParam(defaultValue: true, name: chartName))
     }
 
+    if (checkboxes.isEmpty()) {
+        return []
+    }
+
+    /*  adding also the approver, although we're extracting it afterwards, as if only one input is given, the input method
+        will return a single object, and not a map, which would be inconvenient */
+    Map<String, Object> rawUserInputs = input(message: inputMessage,
+            parameters: checkboxes,
+            submitterParameter: APPROVER_INPUT,
+            ok: okButton) as Map<String, Object>
+    extractApprover(rawUserInputs)
+
+    return getSelectedValues(rawUserInputs)
 }
+
+private List<String> getSelectedValues(Map<String, Object> userInputs) {
+    List<String> selectedValues = []
+    userInputs.each { String value, Boolean isSelected ->
+        if (isSelected) {
+            selectedValues.add(value)
+        }
+    }
+    return selectedValues
+}
+
+String extractApprover(Map<String, Object> userInputs) {
+    String approver = userInputs.get(APPROVER_INPUT)
+    userInputs.remove(APPROVER_INPUT)
+    return approver
+}
+
 
 private void encodeDexSecrets(String dexSecretFile) {
     docker.image("ruby:2.5.1-slim-stretch").inside() {
