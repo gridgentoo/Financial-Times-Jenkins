@@ -13,6 +13,7 @@ def call() {
 
         DeploymentUtils deploymentUtils = new DeploymentUtils()
         String app = "upp-dex-config"
+        String appVersion
         String chartFolderLocation = "helm/" + app
 
         def configMap = readJSON text: env."Dex config"
@@ -46,8 +47,8 @@ def call() {
                 if (targetEnv == null) {
                     throw new IllegalArgumentException("Cannot determine target env from cluster name: " + clusterName)
                 }
-                checkoutDexConfig(app)
-
+                def scmVars = checkoutDexConfig(app)
+                appVersion = scmVars.GIT_COMMIT.take(7)
                 String valuesFile = "values.yaml"
                 writeFile([file: valuesFile, text: buildHelmValues2(secrets, clusterName)])
 
@@ -75,6 +76,7 @@ def call() {
         stage('cleanup') {
             cleanWs()
         }
+        currentBuild.description = "$app:$appVersion in ${configMap.keySet().join(",")}"
     }
 
 }
