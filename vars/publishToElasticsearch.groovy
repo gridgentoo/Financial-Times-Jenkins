@@ -159,7 +159,7 @@ private def executeSh(String command) {
 private def callEndpointHitter(String clusterUrl, String authUser, String authPassword) {
   return {
     sh "go get -u github.com/Financial-Times/endpoint-hitter && " +
-            "endpoint-hitter --target-url=${clusterUrl}/__post-publication-combiner/{uuid} --auth-user=${authUser} --auth-password=${authPassword}"
+            "endpoint-hitter --throttle=1 --target-url=${clusterUrl}/__post-publication-combiner/{uuid} --auth-user=${authUser} --auth-password=${authPassword}"
   }
 }
 
