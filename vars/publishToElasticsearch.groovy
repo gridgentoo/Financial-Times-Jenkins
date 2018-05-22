@@ -21,6 +21,8 @@ def call() {
 
   String STOP_CONTENT_RW_CMD = "kubectl scale --replicas=0 deployments/content-rw-elasticsearch"
   String START_CONTENT_RW_CMD = "kubectl scale --replicas=2 deployments/content-rw-elasticsearch"
+  String STOP_ENDPOINT_HITTER_CMD = "kubectl scale --replicas=0 deployments/endpoint-hitter"
+  String START_ENDPOINT_HITTER_CMD = "kubectl scale --replicas=2 deployments/endpoint-hitter"
   String STOP_CONTENT_RW_REINDEXER_CMD = "kubectl scale --replicas=0 deployments/content-rw-elasticsearch-reindexer"
   String START_CONTENT_RW_REINDEXER_CMD = "kubectl scale --replicas=5 deployments/content-rw-elasticsearch-reindexer"
   String GET_METHODE_UUIDS_CMD = "kubectl exec -it `${GET_MONGO_CONTAINER_CMD}` -- ${GET_METHODE_UUIDS_MONGO_QUERY}"
@@ -49,6 +51,7 @@ def call() {
       stage('Get UUIDs and publish content') {
         String[] cmsArray = cmsInput.split(",")
         deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, getVarnishAuth() as Closure)
+        deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(START_ENDPOINT_HITTER_CMD) as Closure)
         echo "Using varnish credentials for user ${Configuration.AUTH_USER}"
         for (int i = 0; i < cmsArray.length; i++) {
           echo "CMS: ${cmsArray[i]}"
@@ -68,13 +71,27 @@ def call() {
               break
             default: error("CMS parameter value is unknown!")
           }
-          runGo(callEndpointHitter(getDeliveryClusterUrl(environmentInput, regionInput), Configuration.AUTH_USER, Configuration.AUTH_PASSWORD) as Closure)
+          sh "curl -XPOST ${getDeliveryClusterUrl(environmentInput, regionInput)}/__endpoint-hitter/file -F \"file=$UUIDS_FILE_PATH\""
+          timeout(60000) {
+            waitUntil {
+              deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, getVarnishAuth() as Closure)
+              def exitCode = sh script: """
+          ssh ${RANCHER_SSH_REMOTE_USERNAME}@${RANCHER_MASTER_SERVICE_IP} 'docker logs --tail=10 ${
+                RANCHER_MASTER_CONTAINER_ID
+              } | grep "Dashboard generated"'
+          """, returnStatus: true
+              echo "Exit code: ${exitCode}"
+              return (exitCode == 0);
+            }
+          }
+          //runGo(callEndpointHitter(getDeliveryClusterUrl(environmentInput, regionInput), Configuration.AUTH_USER, Configuration.AUTH_PASSWORD) as Closure)
         }
       }
     }
 
     stage('Cleaning up and switch to normal flow') {
       sleep(120) // Wait for the last messages to be consumed
+      deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(STOP_ENDPOINT_HITTER_CMD) as Closure)
       deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(STOP_CONTENT_RW_REINDEXER_CMD) as Closure)
       if (zapIndexInput == "true") {
         deployUtil.runWithK8SCliTools(targetEnv, Cluster.DELIVERY, regionInput, executeSh(START_CONTENT_RW_CMD) as Closure)
@@ -83,6 +100,7 @@ def call() {
     }
   }
 }
+
 
 class Configuration {
   public static String AWS_ACCESS_KEY
@@ -119,6 +137,14 @@ private def getConfiguration() {
             script: "kubectl get configmap global-config -o yaml | grep aws.content.elasticsearch.endpoint | awk '{print \$2}'",
             returnStdout: true
     ).trim()
+  }
+}
+
+private def getEndpointHitterLogs() {
+  return {
+    sh '''
+    logs --tail=10 ${RANCHER_MASTER_CONTAINER_ID} | grep "Dashboard generated"
+    '''
   }
 }
 
