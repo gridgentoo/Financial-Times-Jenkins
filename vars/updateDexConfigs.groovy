@@ -178,8 +178,7 @@ private Object checkoutDexConfig(String app) {
 }
 
 private String buildHelmValues2(Map<String, String> secrets, String clusterName) {
-    String helmValues = "github:\n  client:\n    id: " + '"' + secrets."github.client.id" + '"' +
-            "\n    secret: " + '"' + secrets."github.client.secret" + '"' + "\nkubectl:\n  login:\n    secret: " +
+    String helmValues = "kubectl:\n  login:\n    secret: " +
             '"' + secrets."kubectl.login.secret" + '"' + "\ncluster:\n  name: " + '"' + clusterName + '"' +
             "\nldap:\n  host: " + '"' + secrets."ldap.host" + '"' + "\n  bindDN: " + '"' + secrets."ldap.bindDN" + '"' +
             "\n  bindPW: " + '"' + secrets."ldap.bindPW" + '"' + "\n"
