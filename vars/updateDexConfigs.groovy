@@ -30,7 +30,7 @@ private void updateDexConfig() {
         selectedClusters = getSelectedUserInputs(clusters,
                 "Clusters to deploy dex-config to",
                 "Update dex-config")
-        echo "The following charts were selected for adding: ${selectedClusters}"
+        echo "The following clusters were selected for adding: ${selectedClusters}"
     }
 
     selectedClusters.each { String clusterName ->
