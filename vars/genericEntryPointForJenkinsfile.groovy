@@ -28,8 +28,12 @@ def call(BuildConfig config) {
       upperEnvsBuildAndDeploy(releaseInfo, config)
     }
   } else if (gitUtils.isDeployOnPushForBranch(currentBranch)) {
-    String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
-    teamEnvsBuildAndDeploy(deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
+    if (currentBranch.contains(config.preprodEnvName) || currentBranch.contains(config.prodEnvName)) {
+      echo "Skipping branch ${currentBranch} as ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX} can't be used to push to upper environments."
+    } else {
+      String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
+      teamEnvsBuildAndDeploy(deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
+    }
   } else {
     echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
   }
