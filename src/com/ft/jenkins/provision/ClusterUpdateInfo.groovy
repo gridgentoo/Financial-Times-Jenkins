@@ -8,6 +8,7 @@ class ClusterUpdateInfo implements Serializable {
   String cluster
   EnvType envType
   String platform
+  String oidcIssuerUrl
 
   @Override
   String toString() {

@@ -7,7 +7,6 @@ import com.ft.jenkins.exceptions.InvalidAppConfigFileNameException
 import java.util.regex.Matcher
 
 import static DeploymentUtilsConstants.APPS_CONFIG_FOLDER
-import static DeploymentUtilsConstants.CREDENTIALS_DIR
 import static DeploymentUtilsConstants.DEFAULT_HELM_VALUES_FILE
 import static DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 import static DeploymentUtilsConstants.K8S_CLI_IMAGE
@@ -81,10 +80,12 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
 
       echo "Using app config file ${configurationFileName} to deploy with helm"
 
-      /*  expose the clusters URLs */
-      env.clusters
-
-      sh "helm upgrade ${app} ${chartFolderLocation} -i -f ${configurationFileName} --set region=${region} --set target_env=${env.name} ${getClusterUrlsAsHelmValues(env, region)}"
+      String additionalHelmValues =
+          "--set region=${region} " +
+          "--set target_env=${env.name} " +
+          "--set __ext.target_cluster.sub_domain=${env.getClusterSubDomain(targetCluster, region)} " +
+          "${getClusterUrlsAsHelmValues(env, region)}"
+      sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName} ${additionalHelmValues}"
     }
   })
 }
@@ -205,38 +206,25 @@ private String getHelmChartFolderName() {
   return chartFilePathComponents[chartFilePathComponents.size() - 2]
 }
 
-public void runWithK8SCliTools(Environment env, Cluster cluster, String region = null, Closure codeToRun) {
-  prepareK8SCliCredentials(env, cluster, region)
+public void runWithK8SCliTools(Environment targetEnv, Cluster cluster, String region = null, Closure codeToRun) {
   String currentDir = pwd()
 
-  String apiServer = env.getApiServerForCluster(cluster, region)
-  GString dockerRunArgs =
-      "-v ${currentDir}/${CREDENTIALS_DIR}:/${CREDENTIALS_DIR} " +
-      "-e 'K8S_API_SERVER=${apiServer}' " +
-      "-e 'KUBECONFIG=${currentDir}/kubeconfig'"
+  String apiServer = targetEnv.getApiServerForCluster(cluster, region)
+  String clusterSubDomain = targetEnv.getClusterSubDomain(cluster, region)
+  withCredentials([string(credentialsId: "ft.k8s-auth.${clusterSubDomain}.token", variable: 'TOKEN')]) {
+    GString dockerRunArgs =
+        "-e 'K8S_API_SERVER=${apiServer}' " +
+        "-e 'KUBECONFIG=${currentDir}/kubeconfig' " +
+        "-e 'K8S_TOKEN=${env.TOKEN}'"
 
-  docker.image(K8S_CLI_IMAGE).inside(dockerRunArgs) {
-    sh "/docker-entrypoint.sh"
+    docker.image(K8S_CLI_IMAGE).inside(dockerRunArgs) {
+      sh "/docker-entrypoint.sh"
 
-    codeToRun.call()
+      codeToRun.call()
+    }
   }
 }
 
-private void prepareK8SCliCredentials(Environment targetEnv, Cluster cluster, String region = null) {
-  String fullClusterName = targetEnv.getFullClusterName(cluster, region)
-  withCredentials([
-      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.client-certificate", variable: 'CLIENT_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.ca-cert", variable: 'CA_CERT'],
-      [$class: 'FileBinding', credentialsId: "ft.k8s-auth.${fullClusterName}.client-key", variable: 'CLIENT_KEY']]) {
-    sh """
-      mkdir -p ${CREDENTIALS_DIR}
-      rm -f ${CREDENTIALS_DIR}/*
-      cp ${env.CLIENT_CERT} ${CREDENTIALS_DIR}/
-      cp ${env.CLIENT_KEY} ${CREDENTIALS_DIR}/
-      cp ${env.CA_CERT} ${CREDENTIALS_DIR}/
-    """
-  }
-}
 
 String getTeamFromReleaseCandidateTag(String rcTag) {
   String[] tagComponents = rcTag.split("-")

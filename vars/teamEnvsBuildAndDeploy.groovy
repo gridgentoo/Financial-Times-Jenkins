@@ -39,6 +39,11 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
     }
   }
 
+  /*  continue with deploy if successful so far */
+  if (currentBuild.resultIsWorseOrEqualTo("FAILURE")) {
+    return
+  }
+
   /*  this is called outside of a node, so that the node is released, and so the executor is released during the deploy. */
   stage("deploy chart") {
     /*  trigger the generic job for deployment */
