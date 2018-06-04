@@ -32,6 +32,7 @@ public def buildImage(String dockerTag, String folder = ".") {
 
 public void buildAndPushImage(String dockerTag) {
   if (imageExists(dockerTag)) {
+    securityScan(dockerTag)
     /*  do not overwrite */
     echo "Docker image ${dockerTag} already exists. Skip building it ..."
     return
