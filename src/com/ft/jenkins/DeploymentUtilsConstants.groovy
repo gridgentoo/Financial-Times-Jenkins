@@ -5,7 +5,7 @@ package com.ft.jenkins
  */
 public class DeploymentUtilsConstants {
   public static final String CREDENTIALS_DIR = "credentials"
-  public static final String K8S_CLI_IMAGE = "coco/k8s-cli-utils:latest"
+  public static final String K8S_CLI_IMAGE = "coco/k8s-cli-utils:1.2.1"
   public static final String HELM_CONFIG_FOLDER = "helm"
   /*  todo [sb] After a jenkins plugins update, the following line no longer works. Please try again later, as we'd like to reuse the value of a constant in other constants */
 //  public static String HELM_CHART_LOCATION_REGEX = "${HELM_CONFIG_FOLDER}/**/Chart.yaml"
