@@ -61,10 +61,11 @@ public boolean imageExists(String tag) {
 }
 
 public void securityScan(String tag) {
-  sh "curl \"https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64\" > clair-scanner"
-  sh "chmod 750 clair-scanner"
-  sh "./clair-scanner --clair=\"http://10.172.43.22:6060\" ${tag}"
-  sh "rm clair-scanner"
+    echo "Running security scan with Clair..."
+    sh "curl \"https://github.com/arminc/clair-scanner/releases/download/v8/clair-scanner_linux_amd64\" > clair-scanner"
+    sh "chmod 750 clair-scanner"
+    sh "./clair-scanner --clair=\"http://10.172.43.22:6060\" ${tag}"
+    sh "rm clair-scanner"
 }
 
 return this // We're returning the script in order to allow it to be loaded in a variable and executed on demand (check DockerUtilsTest for an example)
