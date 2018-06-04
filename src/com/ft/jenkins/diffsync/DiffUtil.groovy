@@ -56,7 +56,7 @@ private Map<String, String> getChartVersionsFromEnv(Environment env, Cluster clu
   String chartsOutput
   deploymentUtils.runWithK8SCliTools(env, cluster, region, {
     /*  get the chart versions from the cluster */
-    chartsOutput = sh(returnStdout: true, script: "helm list --deployed | awk 'NR>1 {print \$9}'")
+    chartsOutput = sh(returnStdout: true, script: "helm list --deployed --col-width=180 | awk 'NR>1 {print \$9}'")
   })
 
   echo "Got charts raw output from helm: ${chartsOutput}. Parsing it ..."
