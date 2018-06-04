@@ -54,4 +54,22 @@ For each of the API servers in the environment Jenkins needs 1 key in order to a
 1. After merge, add the new environment to the Jenkins jobs:
     1. [Deploys a helm chart from the upp repo](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/deploy-upp-helm-chart/)
     1. [Update a Kubernetes cluster](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/update-cluster/)
-    
+
+# Developer documentation
+## Intellij Idea project setup
+Steps:
+
+1. Import the project from the maven POM
+1. Set `var` and `intellij-gdsl` as Source folders
+
+With this setup you will have completion in groovy files for out of the box functions injected by pipeline plugins in Jenkins.
+This might helm you at some times.
+
+## How do I know what functions are available OOTB
+You have 2 options:
+
+1. Checkout the pipeline syntax page. Go to any pipeline job & click the "Pipeline syntax". [Here is a link](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/diff-between-envs/pipeline-syntax/) to such page.
+    This page generates snipets that you can paste into your script.
+1. Use Intellij with GDSL (see setup above). This might not be useful sometimes, as the parameters are maps.
+
+
