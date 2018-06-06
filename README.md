@@ -59,11 +59,12 @@ For each of the API servers in the environment Jenkins needs 1 key in order to a
 ## Intellij Idea project setup
 Steps:
 
-1. Import the project from the maven POM
+1. Make sure you have Groovy language support plugin enabled in Intellij
+1. Import the project from the maven POM: File -> New -> Project from existing sources -> go to project folder & select -> choose External model -> Maven
 1. Set `var` and `intellij-gdsl` as Source folders
 
 With this setup you will have completion in groovy files for out of the box functions injected by pipeline plugins in Jenkins.
-This might helm you at some times.
+This might help you in some cases.
 
 ## How do I know what functions are available OOTB
 You have 2 options:
