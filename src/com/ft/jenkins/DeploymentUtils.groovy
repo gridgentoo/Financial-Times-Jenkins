@@ -84,7 +84,8 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
           "--set region=${region} " +
           "--set target_env=${env.name} " +
           "--set __ext.target_cluster.sub_domain=${env.getClusterSubDomain(targetCluster, region)} " +
-          "${getClusterUrlsAsHelmValues(env, region)}"
+          "${getClusterUrlsAsHelmValues(env, region)} " +
+          "${getGlbUrlsAsHelmValues(env)}"
       sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName} ${additionalHelmValues}"
     }
   })
@@ -95,6 +96,14 @@ public String getClusterUrlsAsHelmValues(Environment environment, String region)
   for (Cluster cluster : environment.clusters) {
     String clusterUrl = environment.getEntryPointUrl(cluster, region)
     result += " --set cluster.${cluster.label}.url=${clusterUrl}"
+  }
+  return result
+}
+
+public String getGlbUrlsAsHelmValues(Environment environment) {
+  String result = ""
+  environment.glbMap.each { entry ->
+    result += " --set glb.${entry.key.toLowerCase()}.url=${entry.value}"
   }
   return result
 }

@@ -67,4 +67,28 @@ public class EnvironmentUnitTest {
 
     assertNull(env.getClusterSubDomain(Cluster.DELIVERY));
   }
+
+  @Test
+  public void thatGlbNameIsReturned() {
+    Environment env = new Environment();
+    env.setName("k8s");
+    env.setClusters(Arrays.asList(Cluster.DELIVERY, Cluster.PUBLISHING));
+    env.setRegions(Arrays.asList("eu"));
+
+    HashMap<String, String> glbMap = new HashMap<>();
+    glbMap.put(Cluster.PUBLISHING.toString(), "https://upp-test-publish.ft.com");
+    env.setGlbMap(glbMap);
+
+    assertEquals("https://upp-test-publish.ft.com", env.getGlbUrl(Cluster.PUBLISHING));
+  }
+
+  @Test
+  public void thatMissingGlbNameIsHandled() {
+    Environment env = new Environment();
+    env.setName("k8s");
+    env.setClusters(Arrays.asList(Cluster.DELIVERY, Cluster.PUBLISHING));
+    env.setRegions(Arrays.asList("eu"));
+
+    assertNull(env.getGlbUrl(Cluster.PUBLISHING));
+  }
 }
