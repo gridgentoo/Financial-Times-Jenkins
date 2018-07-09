@@ -59,4 +59,30 @@ public class DeploymentUtilTest {
     );
 
   }
+
+  @Test
+  public void thatGlbUrlsAreReturnedAsHelmParams() {
+    Environment environment = new Environment();
+    environment.setClusters(Arrays.asList(Cluster.PAC));
+    HashMap<String, String> glbMap = new HashMap<>();
+    
+    glbMap.put(Cluster.PUBLISHING.toString(), "https://upp-test-publishing.ft.com");
+    environment.setGlbMap(glbMap);
+
+    String actual = deploymentUtils.getGlbUrlsAsHelmValues(environment);
+
+    assertEquals(
+        " --set glb.publishing.url=https://upp-test-publishing.ft.com",
+        actual);
+  }
+
+  @Test
+  public void thatMissingGlbUrlsAreIgnored() {
+    Environment environment = new Environment();
+    environment.setClusters(Arrays.asList(Cluster.PAC));
+
+    String actual = deploymentUtils.getGlbUrlsAsHelmValues(environment);
+
+    assertEquals("", actual);
+  }
 }

@@ -17,6 +17,9 @@ class Environment implements Serializable {
   /*  The application clusters that an environment has*/
   List<Cluster> clusters = []
 
+  /** The GLB addresses an environment may wish to know about. */
+  Map<String,String> glbMap = [:]
+  
   /*  Mapping between region+cluster and their respective Kubernetes api servers. */
   Map<String, String> clusterToApiServerMap
 
@@ -38,6 +41,10 @@ class Environment implements Serializable {
     return null
   }
 
+  public String getGlbUrl(Cluster cluster) {
+    return glbMap.get(cluster.toString())
+  }
+  
   public String getClusterSubDomain(Cluster cluster, String region = null) {
     String entryPointUrl = getEntryPointUrl(cluster, region)
     if (entryPointUrl == null) {
