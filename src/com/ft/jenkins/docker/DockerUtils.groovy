@@ -16,6 +16,7 @@ final class DockerUtilsConstants {
 public void pushImageToDockerReg(image, String dockerRegistryUrl, String credentials = null) {
   docker.withRegistry(dockerRegistryUrl, credentials) {
     image.push()
+    image.push("latest")
   }
 }
 
