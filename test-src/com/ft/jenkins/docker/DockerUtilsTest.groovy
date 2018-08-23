@@ -1,15 +1,15 @@
 package com.ft.jenkins.docker
 
-import com.lesfurets.jenkins.unit.BasePipelineTest
+import com.ft.jenkins.BaseIntegrationTest
+
 import org.jenkinsci.plugins.docker.workflow.DockerDSL
-import org.jenkinsci.plugins.workflow.cps.CpsScript
 import org.junit.Assert
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Answers
 import org.mockito.Mockito
 
-class DockerUtilsTest extends BasePipelineTest {
+class DockerUtilsTest extends BaseIntegrationTest {
   private static final String DOCKER_TEST_IMAGE_AND_TAG = "coco/test-image:test-tag"
 
   private Object script
@@ -18,32 +18,23 @@ class DockerUtilsTest extends BasePipelineTest {
   @Override
   @BeforeEach
   void setUp() throws Exception {
-    this.setBaseScriptRoot('k8s-pipeline-library')
-    this.setScriptRoots('src/com/ft/jenkins/docker')
-    this.setScriptExtension('groovy')
+    super.setUp()
+
     helper.with {
-      it.scriptRoots = this.scriptRoots
-      it.scriptExtension = this.scriptExtension
-      it.baseClassloader = this.baseClassLoader
-      it.scriptBaseClass = CpsScript.class // Fix 'No such property: docker'
       it.registerAllowedMethod('withCredentials', [Map.class, Closure.class], null)
       it.registerAllowedMethod('withCredentials', [List.class, Closure.class], null)
       it.registerAllowedMethod("usernamePassword", [Map.class], { creds -> "bcc19744" })
       it.registerAllowedMethod('docker', [String.class], null)
       it.registerAllowedMethod('docker.build', [String.class], null)
-      it.baseScriptRoot = this.baseScriptRoot
-      return it
-    }.init()
+    }
 
-    script = loadScript("DockerUtils.groovy")
+    script = loadScript("com/ft/jenkins/docker/DockerUtils.groovy")
     Object docker = new DockerDSL().getValue(script) // Fix 'No such property: docker'
     dockerMock = Mockito.mock(docker.class, Answers.RETURNS_DEEP_STUBS)
     binding.setVariable('docker', dockerMock) // Fix 'No such property: docker'
 
     addEnvVar('NEXUS_USERNAME', 'placeholder_username')
     addEnvVar('NEXUS_PASSWORD', 'placeholder_password')
-
-    super.setUp()
   }
 
   @Test
