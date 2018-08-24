@@ -213,9 +213,6 @@ void updateChartDeps(String chartFolder) {
   echo "Updating chart dependencies ..."
 
   Set<String> depsRepos = getChartDepsRepos(depsFile)
-  if (!depsRepos) {
-    return
-  }
 
   /*  adding the repos locally to helm. Using as the name the md5 hash of repo URL */
   for (String repo : depsRepos) {
@@ -235,10 +232,11 @@ Set<String> getChartDepsRepos(String depsFile) {
   Set<String> repos = new HashSet<>()
 
   for (def dep : deps.dependencies) {
-    repos.add(dep.repository)
+    if (dep.repository) {
+      repos.add(dep.repository)
+    }
   }
   return repos
-
 }
 
 /**
@@ -345,12 +343,6 @@ private String getAppConfigurationFileName(String chartFolderLocation, Environme
   }
 }
 
-private boolean fileExists(String path) {
-  echo "searching for: ${path}"
-  def foundConfigFiles = findFiles(glob: path)
-  return foundConfigFiles.length > 0
-}
-
 public List<String> getAppsInFirstCluster(Map<Cluster, List<String>> appsPerCluster) {
   Cluster firstCluster = appsPerCluster.keySet().iterator().next()
   return appsPerCluster.get(firstCluster)
@@ -367,3 +359,4 @@ public boolean areSameAppsInAllClusters(Map<Cluster, List<String>> appsPerCluste
   return sameAppsInAllClusters
 }
 
+return this // We're returning the script in order to allow it to be loaded in a variable and executed on demand (check DockerUtilsTest for an example)

@@ -1,6 +1,6 @@
 package com.ft.jenkins.docker
 
-import com.ft.jenkins.BaseIntegrationTest
+import com.ft.jenkins.BasePipelineUnitTest
 
 import org.jenkinsci.plugins.docker.workflow.DockerDSL
 import org.junit.Assert
@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Answers
 import org.mockito.Mockito
 
-class DockerUtilsTest extends BaseIntegrationTest {
+class DockerUtilsPipelineUnitTest extends BasePipelineUnitTest {
   private static final String DOCKER_TEST_IMAGE_AND_TAG = "coco/test-image:test-tag"
 
   private Object script
@@ -56,14 +56,4 @@ class DockerUtilsTest extends BaseIntegrationTest {
     }.any())
   }
 
-  /**
-   * Helper for adding a environment value in tests
-   */
-  void addEnvVar(String name, String val) {
-    if (!binding.hasVariable('env')) {
-      binding.setVariable('env', new Expando(getProperty: { p -> this[p] }, setProperty: { p, v -> this[p] = v }))
-    }
-    def env = binding.getVariable('env') as Expando
-    env[name] = val
-  }
 }
