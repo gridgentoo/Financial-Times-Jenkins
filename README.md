@@ -4,7 +4,7 @@
 Jenkins shared pipeline library to be used for deployment in Kubernetes clusters.
 
 ## Documentation
-[Deployment in k8s](https://docs.google.com/a/ft.com/document/d/15ecubJwkszH1B360Ah31uXy2UekpWlgfEmQeH9_wko8/edit?usp=sharing)
+[Deployment in k8s - spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk)
 
 ### Helm integration
 On every helm install/upgrade the following values are automatically inserted:
