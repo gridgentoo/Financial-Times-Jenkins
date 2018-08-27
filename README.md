@@ -36,14 +36,14 @@ Here are the steps needed in order for Jenkins to "see" it.
               ("eu-" + Cluster.NEO4J): "https://upp-prod-neo4j-eu-api.ft.com",
               ("us-" + Cluster.NEO4J): "https://upp-prod-neo4j-us-api.ft.com"
           ]
-    ```    
-    Here are the characteristics of an Environment:    
-      1. It has a name and a notifications slack channel. 
+    ```
+    Here are the characteristics of an Environment:
+      1. It has a name and a notifications slack channel.
       1. It might be spread across multiple AWS regions
       1. In each region, it might have multiple clusters (stacks).
       1. For each cluster(stack) we must define the URL of the K8S APi server.
 1. Don't forget to add the newly defined environment to the `envs` list in the EnvsRegistry class.
-1. Define in [Jenkins](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/) the credentials needed for accessing the K8S API servers. 
+1. Define in [Jenkins](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/) the credentials needed for accessing the K8S API servers.
 For each of the API servers in the environment Jenkins needs 1 key in order to access it, therefore you need to create 1 Jenkins credential / cluster that are of type `Secret Text` with the following ids
     1. `ft.k8s-auth.${full-cluster-name}.token` (example `ft.k8s-auth.upp-k8s-dev-delivery-eu.token`) -> this is the token of the Jenkins service account from the Kubernetes cluster.
 1. Define in [Jenkins](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/) the credentials with the TLS assets of the cluster.
@@ -66,11 +66,25 @@ Steps:
 With this setup you will have completion in groovy files for out of the box functions injected by pipeline plugins in Jenkins.
 This might help you in some cases.
 
-## How do I know what functions are available OOTB
+## Pipeline development tips & tricks
+### How do I know what functions are available OOTB ?
 You have 2 options:
 
 1. Checkout the pipeline syntax page. Go to any pipeline job & click the "Pipeline syntax". [Here is a link](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/diff-between-envs/pipeline-syntax/) to such page.
     This page generates snipets that you can paste into your script.
 1. Use Intellij with GDSL (see setup above). This might not be useful sometimes, as the parameters are maps.
+### Recommendations
 
+1. Prefer using docker images that you can control over Jenkins plugins. Depending on Jenkins plugins makes Jenkins hard to upgrade.
+   The pipeline steps support running logic inside docker containers, so they are recommended, especially if you need command line tools.
+   As an example, we're using the [k8s-cli-utils](https://github.com/Financial-Times/k8s-cli-utils) docker image for making *kubectl* or *helm calls* instead of relying on a plugin that installs these utilities on the Jenkins slaves.
+2.  Always declare types and avoid using “def”
+3. Use the *@NonCPS* annotation for methods that use objects that are not serializable. See the docs [here](https://github.com/jenkinsci/workflow-cps-plugin/blob/master/README.md) and a practical example in [this stackoverflow question](https://stackoverflow.com/questions/42295921/what-is-the-effect-on-noncps-in-a-jenkins-pipeline-script).
+5.  In order to test some code you can “*Replay*” a job run and place the code changes directly in the window.
 
+## Pipeline integration points
+The pipeline has several integration points to achieving its goals. For this it keeps the secret data (API keys, username & passwords) as [Jenkins credentials
+](https://jenkins.io/doc/book/using/using-credentials/). The whole list of credentials set in Jenkins can be accessed [here
+](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/)
+
+See [Pipeline Integration points](Pipeline_integration_points.md) for details.
