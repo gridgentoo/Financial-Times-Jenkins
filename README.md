@@ -82,6 +82,9 @@ You have 2 options:
 3. Use the *@NonCPS* annotation for methods that use objects that are not serializable. See the docs [here](https://github.com/jenkinsci/workflow-cps-plugin/blob/master/README.md) and a practical example in [this stackoverflow question](https://stackoverflow.com/questions/42295921/what-is-the-effect-on-noncps-in-a-jenkins-pipeline-script).
 5.  In order to test some code you can “*Replay*” a job run and place the code changes directly in the window.
 
+
+## How to test and roll out pipeline changes
+See [How to test and roll out pipeline changes](Test_pipeline_changes.md)
 ## Pipeline integration points
 The pipeline has several integration points to achieving its goals. For this it keeps the secret data (API keys, username & passwords) as [Jenkins credentials
 ](https://jenkins.io/doc/book/using/using-credentials/). The whole list of credentials set in Jenkins can be accessed [here
