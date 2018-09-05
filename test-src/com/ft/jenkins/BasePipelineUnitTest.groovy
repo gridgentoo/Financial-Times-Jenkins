@@ -8,7 +8,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsScript
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
- * Base integration test tailored to our repository structure.
+ * Base pipeline unit test tailored to our repository structure.
  * <p>
  * See <a href="https://github.com/jenkinsci/JenkinsPipelineUnit">JenkinsPipelineUnit</a> documentation for general usage.
  */
