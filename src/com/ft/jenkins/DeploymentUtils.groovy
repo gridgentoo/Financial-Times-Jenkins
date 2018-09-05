@@ -15,6 +15,7 @@ import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CHART_LOCATION_REGEX
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_LOCAL_REPO_NAME
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_REPO_URL
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_S3_BUCKET
+import static com.ft.jenkins.HashUtil.md5
 
 public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLocation, Environment env,
                                                             Cluster deployOnlyInCluster = null, String region = null) {
@@ -36,7 +37,7 @@ public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLo
 }
 
 public void removeAppsInChartWithHelm(String chartName, String chartVersion, Environment targetEnv,
-                                  Cluster onlyFromCluster = null, String region = null) {
+                                      Cluster onlyFromCluster = null, String region = null) {
   /*  fetch the chart locally */
   runHelmOperations {
     sh "helm fetch --untar ${HELM_LOCAL_REPO_NAME}/${chartName} --version ${chartVersion}"
@@ -67,7 +68,6 @@ public executeAppsRemoval(Cluster targetCluster, List<String> appsToRemove, Envi
   })
 }
 
-
 public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, String chartFolderLocation,
                              Environment env, String region = null) {
   runWithK8SCliTools(env, targetCluster, region, {
@@ -84,8 +84,10 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
           "--set region=${region} " +
           "--set target_env=${env.name} " +
           "--set __ext.target_cluster.sub_domain=${env.getClusterSubDomain(targetCluster, region)} " +
-          "${getClusterUrlsAsHelmValues(env, region)}"
-      sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName} ${additionalHelmValues}"
+          "${getClusterUrlsAsHelmValues(env, region)} " +
+          "${getGlbUrlsAsHelmValues(env)}"
+      sh
+      "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName} ${additionalHelmValues}"
     }
   })
 }
@@ -95,6 +97,14 @@ public String getClusterUrlsAsHelmValues(Environment environment, String region)
   for (Cluster cluster : environment.clusters) {
     String clusterUrl = environment.getEntryPointUrl(cluster, region)
     result += " --set cluster.${cluster.label}.url=${clusterUrl}"
+  }
+  return result
+}
+
+public String getGlbUrlsAsHelmValues(Environment environment) {
+  String result = ""
+  environment.glbMap.each { entry ->
+    result += " --set glb.${entry.key.toLowerCase()}.url=${entry.value}"
   }
   return result
 }
@@ -112,7 +122,6 @@ public String getDockerImageRepository() {
   return matcher[0][1]
 }
 
-
 public Map<Cluster, List<String>> getAppsInChart(String chartFolderLocation, Environment targetEnv,
                                                  Cluster includeOnlyCluster = null) {
   Map<Cluster, List<String>> result = [:]
@@ -128,7 +137,8 @@ public Map<Cluster, List<String>> getAppsInChart(String chartFolderLocation, Env
     if (fileNameParts.length > 1) {
       /*  add the app name to the corresponding cluster if it wasn't added yet */
       Cluster targetCluster = Cluster.valueOfLabel(fileNameParts[1])
-      if ((includeOnlyCluster && targetCluster != includeOnlyCluster) || (!targetEnv.clusters.contains(targetCluster))) {
+      if ((includeOnlyCluster && targetCluster != includeOnlyCluster) ||
+          (!targetEnv.clusters.contains(targetCluster))) {
         continue
       }
       String appName = fileNameParts[0]
@@ -178,11 +188,13 @@ public String publishHelmChart(String version) {
   // job starts download it for merging. If we don't do this we might end up with an incomplete index.
   lock("helm-repo") {
     runHelmOperations {
+      updateChartDeps("${HELM_CONFIG_FOLDER}/${chartFolderName}")
+
       /*  pack the chart  */
       sh "helm package --version ${version} ${HELM_CONFIG_FOLDER}/${chartFolderName}"
 
       /* update the repository index.yaml */
-      sh "helm repo index --merge \$HELM_HOME/repository/cache/${HELM_LOCAL_REPO_NAME}-index.yaml --url ${HELM_REPO_URL} ."
+      sh ("helm repo index --merge \$HELM_HOME/repository/cache/${HELM_LOCAL_REPO_NAME}-index.yaml --url ${HELM_REPO_URL} .")
     }
 
     /*  upload chart and updated index to S3  */
@@ -191,6 +203,40 @@ public String publishHelmChart(String version) {
                            (String) "${chartFolderName}-${version}.tgz", "index.yaml")
     return chartFolderName
   }
+}
+
+void updateChartDeps(String chartFolder) {
+  String depsFile = "${chartFolder}/requirements.yaml"
+  if (!fileExists(depsFile)) {
+    return
+  }
+  echo "Updating chart dependencies ..."
+
+  Set<String> depsRepos = getChartDepsRepos(depsFile)
+
+  /*  adding the repos locally to helm. Using as the name the md5 hash of repo URL */
+  for (String repo : depsRepos) {
+    sh "helm repo add ${md5(repo)} ${repo}"
+  }
+
+  sh "helm dep update ${chartFolder}"
+}
+
+
+Set<String> getChartDepsRepos(String depsFile) {
+  def deps = readYaml(file: depsFile)
+  if (!deps) {
+    return Collections.emptySet()
+  }
+
+  Set<String> repos = new HashSet<>()
+
+  for (def dep : deps.dependencies) {
+    if (dep.repository) {
+      repos.add(dep.repository)
+    }
+  }
+  return repos
 }
 
 /**
@@ -224,7 +270,6 @@ public void runWithK8SCliTools(Environment targetEnv, Cluster cluster, String re
     }
   }
 }
-
 
 String getTeamFromReleaseCandidateTag(String rcTag) {
   String[] tagComponents = rcTag.split("-")
@@ -268,7 +313,6 @@ String getReleaseCandidateName(String branchName) {
   return values[values.length - 1]
 }
 
-
 private String computeAppConfigFullPath(String appConfigFileName, String chartFolderLocation) {
   return "${chartFolderLocation}/${APPS_CONFIG_FOLDER}/${appConfigFileName}.yaml"
 }
@@ -286,7 +330,8 @@ private String getAppConfigurationFileName(String chartFolderLocation, Environme
   }
 
   //looking for configuration file for a specific env, e.g. publishing_pre-prod
-  appConfigPath = computeAppConfigFullPath("${app}_${targetCluster.getLabel()}_${targetEnv.getName()}", chartFolderLocation)
+  appConfigPath =
+      computeAppConfigFullPath("${app}_${targetCluster.getLabel()}_${targetEnv.getName()}", chartFolderLocation)
   if (fileExists(appConfigPath)) {
     return appConfigPath
   }
@@ -296,12 +341,6 @@ private String getAppConfigurationFileName(String chartFolderLocation, Environme
   if (fileExists(appConfigPath)) {
     return appConfigPath
   }
-}
-
-private boolean fileExists(String path) {
-  echo "searching for: ${path}"
-  def foundConfigFiles = findFiles(glob: path)
-  return foundConfigFiles.length > 0
 }
 
 public List<String> getAppsInFirstCluster(Map<Cluster, List<String>> appsPerCluster) {
@@ -320,3 +359,4 @@ public boolean areSameAppsInAllClusters(Map<Cluster, List<String>> appsPerCluste
   return sameAppsInAllClusters
 }
 
+return this // We're returning the script in order to allow it to be loaded in a variable and executed on demand (check DockerUtilsTest for an example)

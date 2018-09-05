@@ -99,43 +99,4 @@ class ProvisionerUtilUnitTest {
               () -> assertEquals("", updateInfo.getCluster())
     );
   }
-
-  @Test
-  public void testGetOidcForNeo4jDevCluster() {
-    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("upp-k8s-neo4j-eu");
-    assertAll("update info properties",
-              () -> assertEquals("upp", updateInfo.getPlatform()),
-              () -> assertEquals("eu", updateInfo.getRegion()),
-              () -> assertEquals(EnvType.DEVELOPMENT, updateInfo.getEnvType()),
-              () -> assertEquals("k8s", updateInfo.getEnvName()),
-              () -> assertEquals("https://upp-k8s-dev-delivery-eu-dex.ft.com", updateInfo.getOidcIssuerUrl()),
-              () -> assertEquals("neo4j", updateInfo.getCluster())
-    );
-  }
-
-  @Test
-  public void testGetOidcForNeo4jProdCluster() {
-    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("upp-prod-neo4j-eu");
-    assertAll("update info properties",
-              () -> assertEquals("upp", updateInfo.getPlatform()),
-              () -> assertEquals("eu", updateInfo.getRegion()),
-              () -> assertEquals(EnvType.PROD, updateInfo.getEnvType()),
-              () -> assertEquals("prod", updateInfo.getEnvName()),
-              () -> assertEquals("https://upp-prod-delivery-eu-dex.ft.com", updateInfo.getOidcIssuerUrl()),
-              () -> assertEquals("neo4j", updateInfo.getCluster())
-    );
-  }
-
-  @Test
-  public void testGetOidcForNeo4jStagingUsCluster() {
-    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("upp-staging-neo4j-us");
-    assertAll("update info properties",
-              () -> assertEquals("upp", updateInfo.getPlatform()),
-              () -> assertEquals("us", updateInfo.getRegion()),
-              () -> assertEquals(EnvType.TEST, updateInfo.getEnvType()),
-              () -> assertEquals("staging", updateInfo.getEnvName()),
-              () -> assertEquals("https://upp-staging-delivery-us-dex.ft.com", updateInfo.getOidcIssuerUrl()),
-              () -> assertEquals("neo4j", updateInfo.getCluster())
-    );
-  }
 }

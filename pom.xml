@@ -49,8 +49,9 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <groovy.version>2.4.8</groovy.version>
 
-    <junit.jupiter.version>5.0.2</junit.jupiter.version>
-    <junit.platform.version>1.0.2</junit.platform.version>
+    <maven.surefire-plugin.version>2.22.0</maven.surefire-plugin.version>
+    <junit.jupiter.version>5.2.0</junit.jupiter.version>
+    <junit.platform.version>1.2.0</junit.platform.version>
     <mockito.core.version>2.13.0</mockito.core.version>
     <jenkins.pipeline.unit.version>1.0</jenkins.pipeline.unit.version>
     <jenkins-test-harness.version>2.34</jenkins-test-harness.version>
@@ -106,7 +107,7 @@
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.20</version>
+        <version>${maven.surefire-plugin.version}</version>
         <dependencies>
           <dependency>
             <groupId>org.junit.platform</groupId>
