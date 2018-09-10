@@ -1,10 +1,23 @@
 # k8s-pipeline-library
 
 ## Description
-Jenkins shared pipeline library to be used for deployment in Kubernetes clusters.
+Jenkins [shared pipeline library](https://jenkins.io/doc/book/pipeline/shared-libraries/) to be used for deployment in Kubernetes clusters.
 
 ## Documentation
 [Deployment in k8s - spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk)
+
+### Main global steps
+1. [Generic entry point for Jenkinsfile](vars/genericEntryPointForJenkinsfile.groovy) - the generic entry point for the continuous delivery pipelines. See [spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit#heading=h.3dr93sgi36h)
+1. [UPP entry point for Jenkinsfile](/vars/uppEntryPointForJenkinsfile.groovy) main entry point for Continuous Delivery in UPP clusters. See [spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit#heading=h.rcnsi4cl7nnz)
+1. [PAC entry point for Jenkinsfile](/vars/uppEntryPointForJenkinsfile.groovy) main entry point for Continuous Delivery in UPP clusters. See [spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit#heading=h.rcnsi4cl7nnz)
+1. [Install Helm chart](vars/installHelmChart.groovy) - this is the step used by the generic job for installing a Helm chart. See [spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit#heading=h.j1fmzpz5wefh)
+1. [Build and deploy in team envs](vars/teamEnvsBuildAndDeploy.groovy) - this is the step that handles the building and deployment into the team envs. See [spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit#heading=h.3dr93sgi36h)
+1. [Build and deploy in upper envs](vars/upperEnvsBuildAndDeploy.groovy) - this is the step that handles the building and deployment into the upper envs (staging and prod). See [spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit#heading=h.3dr93sgi36h)
+
+### Utility global steps
+1. [Diff & sync 2 envs](vars/diffBetweenEnvs.groovy): - this is the main step used in the [Diff & Sync 2 k8s envs](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/diff-between-envs/). This job can be used to keep the team envs in sync with the prod ones, or when provisioning a new environment.
+1. [Update cluster using the provisioner](vars/updateCluster.groovy) - this is the main step used in the [Update a Kubernetes cluster using the Provisioner](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/update-cluster/). This job can be used for updating the CoreOS version in a cluster.
+1. [Update Dex configs](vars/updateDexConfigs.groovy) - this is the main step used in the job [Update Dex Config](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/update-dex-config/) that updates the Dex configurations in multiple clusters at once.
 
 ### Helm integration
 On every helm install/upgrade the following values are automatically inserted:
