@@ -105,3 +105,23 @@ By default the Groovy pipelines run in Jenkins in a Sandbox that limits the meth
 This is done by the [Script Security Plugin](https://wiki.jenkins.io/display/JENKINS/Script+Security+Plugin).
 Since this is annoying and devs might not know how to overcome this, we decided to disable this behavior by using the [Permissive Script Security Plugin](https://wiki.jenkins.io/display/JENKINS/Permissive+Script+Security+Plugin).
 
+## How to create a job for a new repo
+When a new app is created that needs Continuous Delivery on our Kubernetes clusters, you can enable this by creating a new multibranch job in Jenkins following these steps:
+
+1. Login into [Jenkins](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/) using the AD credentials
+1. Go to the appropriate folder for the platform. For UPP go to `UPP: Pipelines for application deployments` and for Pac go to `PAC: Pipelines for application deployments`
+1. Click the “New Item” link in the left side
+1. A template job is already defined in Jenkins, so in the new item dialog fill the following:
+    - Item name: `{replace_with_app_name}`-auto-deploy
+    - copy from: k8s-deployment/deploy-pipeline-template
+![1](https://user-images.githubusercontent.com/8848332/45297184-3993f400-b50d-11e8-8cef-6bb9721119cc.png)
+1. Configure the job: fill in the display name with “{replace-with-app-name} dev and release pipeline” and the 2 Git branch sources.
+![2](https://user-images.githubusercontent.com/8848332/45297461-1d448700-b50e-11e8-86db-5f1b067d1fb7.png)
+1. Click save
+
+## How to trigger the pipeline job
+If you've just created a new branch or a new tag or a new commit on a branch that should be picked up by Jenkins you have 2 options:
+1. wait for Jenkins to pick it up. It is set to scan all repos each 2 mins.
+2. Trigger the scanning of the multibranch manually. Go to the multibranch pipeline job like [aggregate-concept-transformer job](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/apps-deployment/job/aggregate-concept-transformer-auto-deploy/)
+and click `Scan Multibranch Pipeline Now` from the left hand side of the screen.
+
