@@ -91,3 +91,11 @@ The pipeline has several integration points to achieving its goals. For this it 
 ](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/)
 
 See [Pipeline Integration points](Pipeline_integration_points.md) for details.
+
+## Used Jenkins plugins
+The pipeline code tries to keep to a minimum the used plugins, and uses docker images for command line tools.
+The used plugins by the pipeline code are:
+
+1. [HTTP Request Plugin](http://wiki.jenkins-ci.org/display/JENKINS/HTTP+Request+Plugin) for making HTTP requests from variuos integrations, like Slack.
+1. [Lockable Resources Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Lockable+Resources+Plugin) for updating the `index.yaml` file of the Helm repository.
+1. [Mask Passwords Plugin](http://wiki.jenkins-ci.org/display/JENKINS/Mask+Passwords+Plugin) for masking sensitive input data in the logs.
