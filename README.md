@@ -100,3 +100,8 @@ The used plugins by the pipeline code are:
 1. [Lockable Resources Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Lockable+Resources+Plugin) for updating the `index.yaml` file of the Helm repository.
 1. [Mask Passwords Plugin](http://wiki.jenkins-ci.org/display/JENKINS/Mask+Passwords+Plugin) for masking sensitive input data in the logs.
 
+## Permissive script security
+By default the Groovy pipelines run in Jenkins in a Sandbox that limits the methods and objects you can use in the code.
+This is done by the [Script Security Plugin](https://wiki.jenkins.io/display/JENKINS/Script+Security+Plugin).
+Since this is annoying and devs might not know how to overcome this, we decided to disable this behavior by using the [Permissive Script Security Plugin](https://wiki.jenkins.io/display/JENKINS/Permissive+Script+Security+Plugin).
+
