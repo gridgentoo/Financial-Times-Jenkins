@@ -21,9 +21,9 @@ def call(BuildConfig config) {
   if (gitUtils.isTag(currentBranch)) {
     GithubReleaseInfo releaseInfo = getReleaseInfoForCurrentTag(currentBranch)
 
-    if (releaseInfo.isPreRelease) {
-      String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(releaseInfo.getTagName())
-      teamEnvsBuildAndDeploy(envToDeploy, releaseInfo.tagName, false)
+    if (releaseInfo == null || releaseInfo.isPreRelease) {
+      String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(currentBranch)
+      teamEnvsBuildAndDeploy(envToDeploy, currentBranch, false)
     } else {
       upperEnvsBuildAndDeploy(releaseInfo, config)
     }
