@@ -1,3 +1,21 @@
+### AWS Helm repo integration
+We're keeping all the UPP helm charts in an S3 bucket exposed as an HTTP static website restricted only for FT access.
+The CloudFormation template for the S3 bucket is [here](https://github.com/Financial-Times/content-k8s-provisioner/blob/master/helm-repo-stack/helm-s3-repo.yaml)
+For uploading Helm chats to this [upp-helm-repo](https://s3.console.aws.amazon.com/s3/buckets/upp-helm-repo/?region=eu-west-1&tab=overview) S3 bucket, the pipeline uses the AWS user [upp-helm-repo-access.prod](https://console.aws.amazon.com/iam/home?region=eu-west-1#/users/upp-helm-repo-access.prod)
+
+**Jenkins credential:** ***[ft.helm-repo.aws-credentials
+](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/ft.helm-repo.aws-credentials/)***
+
+#### Maintaining the index.yaml
+One sensible part of maintaining the Helm repo is to make sure the [index file](https://github.com/helm/helm/blob/master/docs/chart_repository.md#the-index-file) is maintained according to the repo.
+In order to do this, concurrent updates of this file are restricted by using the [Lockable Resources Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Lockable+Resources+Plugin) for locking down the file until the following operations are complete:
+
+- the new chart is uploaded to the repo
+- the index.yaml is updated with the new chart
+- the new version of index.yaml is uploaded to the repo.
+
+See DeploymentUtils#publishHelmChart.
+
 ### Slack integration
 The pipeline uses the newly created [jenkins-bot](https://financialtimes.slack.com/services/180766093394) in order to make API calls to Slack.
 
@@ -24,14 +42,6 @@ Some of java apps integrate with the FT's maven repository hosted in a Nexus ins
 
 **Jenkins credential:** ***[nexus.credentials
 ](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/nexus.credentials/)***
-
-### AWS Helm repo integration
-We're keeping all the UPP helm charts in an S3 bucket exposed as an HTTP static website restricted only for FT access.
-The CloudFormation template for the S3 bucket is [here](https://github.com/Financial-Times/content-k8s-provisioner/blob/master/helm-repo-stack/helm-s3-repo.yaml)
-For uploading Helm chats to this [upp-helm-repo](https://s3.console.aws.amazon.com/s3/buckets/upp-helm-repo/?region=eu-west-1&tab=overview) S3 bucket, the pipeline uses the AWS user [upp-helm-repo-access.prod](https://console.aws.amazon.com/iam/home?region=eu-west-1#/users/upp-helm-repo-access.prod)
-
-**Jenkins credential:** ***[ft.helm-repo.aws-credentials
-](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/ft.helm-repo.aws-credentials/)***
 
 ### Konstructor CR API integration
 For automatically managing Change Requests, the pipeline integrates with the Konstructor API.
