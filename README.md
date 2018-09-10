@@ -71,7 +71,7 @@ This might help you in some cases.
 You have 2 options:
 
 1. Checkout the pipeline syntax page. Go to any pipeline job & click the "Pipeline syntax". [Here is a link](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/job/utils/job/diff-between-envs/pipeline-syntax/) to such page.
-    This page generates snipets that you can paste into your script.
+    This page generates snippets that you can paste into your script.
 1. Use Intellij with GDSL (see setup above). This might not be useful sometimes, as the parameters are maps.
 ### Recommendations
 
@@ -99,3 +99,4 @@ The used plugins by the pipeline code are:
 1. [HTTP Request Plugin](http://wiki.jenkins-ci.org/display/JENKINS/HTTP+Request+Plugin) for making HTTP requests from variuos integrations, like Slack.
 1. [Lockable Resources Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Lockable+Resources+Plugin) for updating the `index.yaml` file of the Helm repository.
 1. [Mask Passwords Plugin](http://wiki.jenkins-ci.org/display/JENKINS/Mask+Passwords+Plugin) for masking sensitive input data in the logs.
+
