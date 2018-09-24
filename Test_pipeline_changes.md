@@ -24,6 +24,7 @@ There are some methods to do this depending on what was affected:
     1. Save the job configuration
 3. Test that both the team envs & upper envs deploy work by either creating new temporary releases or triggering the existing jobs for current releases.
 4. After testing is done and everything is fine, please remove the Pipeline library from the configuration of the job.
+5. See [After testing the pipeline changes](#after-testing-the-pipeline-changes)
 
 ### The common deployment of the Helm chart was affected
 As explained in the [spec](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit?pli=1#heading=h.j1fmzpz5wefh), we're using a single common job for doing all the deployments. Since this is a pipeline script job, the version is specified directly in the source code of the job config pipeline script as the following code line:
@@ -41,6 +42,7 @@ To test the changes to this part in isolation do the following:
     1. Click Save
 1. Manually trigger this new job for testing the introduced functionality
 2. After you're done with the testing and happy with the result, delete this job.
+3. See [After testing the pipeline changes](#after-testing-the-pipeline-changes)
 
 ### Both the pipeline flow and the common deployment were affected
 If this is the case and all the flow must be tested in isolation you can do the following:
