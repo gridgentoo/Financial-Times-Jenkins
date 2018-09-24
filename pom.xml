@@ -53,11 +53,12 @@
     <junit.jupiter.version>5.2.0</junit.jupiter.version>
     <junit.platform.version>1.2.0</junit.platform.version>
     <mockito.core.version>2.13.0</mockito.core.version>
-    <jenkins.pipeline.unit.version>1.0</jenkins.pipeline.unit.version>
+    <jenkins.pipeline.unit.version>1.1</jenkins.pipeline.unit.version>
     <jenkins-test-harness.version>2.34</jenkins-test-harness.version>
 
     <jenkins-core.version>2.60.2</jenkins-core.version>
     <docker.workflow.version>1.12</docker.workflow.version>
+    <git.workflow.version>3.3.2</git.workflow.version>
   </properties>
 
   <build>
@@ -172,6 +173,12 @@
       <artifactId>docker-workflow</artifactId>
       <version>${docker.workflow.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>git</artifactId>
+      <version>${git.workflow.version}</version>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>

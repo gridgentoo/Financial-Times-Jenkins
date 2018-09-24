@@ -20,7 +20,7 @@ public String getTagNameFromBranchName(String checkedOutBranchName) {
   return values[values.length - 1]
 }
 
-public String getCurrentRepoName() {
+public String getCurrentRepoName(Object scm) {
   String gitUrl = scm.getUserRemoteConfigs()[0].url
   Matcher matcher = (gitUrl =~ /.*\/(.*).git/)
   /*  get the value matching the group */
