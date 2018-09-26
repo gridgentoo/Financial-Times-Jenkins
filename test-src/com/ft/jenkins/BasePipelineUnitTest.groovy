@@ -17,7 +17,7 @@ public class BasePipelineUnitTest extends BasePipelineTest {
   @Override
   void setUp() throws Exception {
     this.setBaseScriptRoot('k8s-pipeline-library')
-    this.setScriptRoots('src', './.')
+    this.setScriptRoots('src', './.', "vars")
     this.setScriptExtension('groovy')
 
     super.setUp()

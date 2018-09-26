@@ -19,11 +19,12 @@ def call(BuildConfig config) {
   DeploymentUtils deployUtils = new DeploymentUtils()
 
   if (gitUtils.isTag(currentBranch)) {
-    GithubReleaseInfo releaseInfo = getReleaseInfoForCurrentTag(currentBranch)
+    String tagName = gitUtils.getTagNameFromBranchName(currentBranch)
+    GithubReleaseInfo releaseInfo = getReleaseInfoForCurrentTag(tagName)
 
-    if (releaseInfo.isPreRelease) {
-      String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(releaseInfo.getTagName())
-      teamEnvsBuildAndDeploy(envToDeploy, releaseInfo.tagName, false)
+    if (releaseInfo == null || releaseInfo.isPreRelease) {
+      String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(tagName)
+      teamEnvsBuildAndDeploy(envToDeploy, tagName, false)
     } else {
       upperEnvsBuildAndDeploy(releaseInfo, config)
     }
@@ -40,10 +41,9 @@ def call(BuildConfig config) {
 
 }
 
-public GithubReleaseInfo getReleaseInfoForCurrentTag(String currentBranch) {
+public GithubReleaseInfo getReleaseInfoForCurrentTag(String tagName) {
   GitUtils gitUtils = new GitUtils()
-  String tagName = gitUtils.getTagNameFromBranchName(currentBranch)
-  String currentRepoName = gitUtils.getCurrentRepoName()
+  String currentRepoName = gitUtils.getCurrentRepoName(scm)
 
   GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName, currentRepoName)
   return releaseInfo

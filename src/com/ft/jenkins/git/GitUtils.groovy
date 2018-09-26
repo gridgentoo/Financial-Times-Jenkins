@@ -20,7 +20,7 @@ public String getTagNameFromBranchName(String checkedOutBranchName) {
   return values[values.length - 1]
 }
 
-public String getCurrentRepoName() {
+public String getCurrentRepoName(Object scm) {
   String gitUrl = scm.getUserRemoteConfigs()[0].url
   Matcher matcher = (gitUrl =~ /.*\/(.*).git/)
   /*  get the value matching the group */
@@ -29,9 +29,16 @@ public String getCurrentRepoName() {
 
 public GithubReleaseInfo getGithubReleaseInfo(String tagName, String repoName) {
   /*  fetch the release info*/
-  def releaseResponse = httpRequest(acceptType: 'APPLICATION_JSON',
-                                    authentication: 'ft.github.credentials',
-                                    url: "https://api.github.com/repos/Financial-Times/${repoName}/releases/tags/${tagName}")
+  def releaseResponse
+  GString requestedUrl = "https://api.github.com/repos/Financial-Times/${repoName}/releases/tags/${tagName}"
+  try {
+    releaseResponse = httpRequest(acceptType: 'APPLICATION_JSON',
+                                  authentication: 'ft.github.credentials',
+                                  url: requestedUrl)
+  } catch (IllegalStateException e) {
+    echo"Release in GitHub could not be found at URL: ${requestedUrl}. Error: ${e.message}"
+    return null
+  }
 
   def releaseInfoJson = new JsonSlurper().parseText(releaseResponse.content)
   GithubReleaseInfo releaseInfo = new GithubReleaseInfo()

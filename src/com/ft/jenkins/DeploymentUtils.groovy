@@ -358,4 +358,3 @@ public boolean areSameAppsInAllClusters(Map<Cluster, List<String>> appsPerCluste
   return sameAppsInAllClusters
 }
 
-return this // We're returning the script in order to allow it to be loaded in a variable and executed on demand (check DockerUtilsTest for an example)
