@@ -24,7 +24,7 @@ def call(BuildConfig config) {
 
     if (releaseInfo == null || releaseInfo.isPreRelease) {
       String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(tagName)
-      teamEnvsBuildAndDeploy(envToDeploy, tagName, false)
+      teamEnvsBuildAndDeploy(config, envToDeploy, tagName, false)
     } else {
       upperEnvsBuildAndDeploy(releaseInfo, config)
     }
@@ -33,7 +33,7 @@ def call(BuildConfig config) {
       echo "Skipping branch ${currentBranch} as ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX} can't be used to push to upper environments."
     } else {
       String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
-      teamEnvsBuildAndDeploy(deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
+      teamEnvsBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
     }
   } else {
     echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"

@@ -1,9 +1,21 @@
+import com.ft.jenkins.BuildConfig
 import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.DeploymentUtilsConstants
+import com.ft.jenkins.Environment
+import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.git.GitUtils
 
-def call(String environmentName, String releaseName, boolean branchRelease) {
+def call(BuildConfig buildConfig, String targetEnvName, String releaseName, boolean branchRelease) {
+  /*  check if the build is allowed for the target environment */
+  Environment targetEnv = EnvsRegistry.getEnvironment(targetEnvName)
+  if (!targetEnv.clusters.containsAll(buildConfig.allowedClusters)) {
+    stage("Target env `${targetEnvName}`doesn't have ${buildConfig.allowedClusters} clusters => Not deployed"){
+      echo "This pipeline deploys only to ${buildConfig.allowedClusters} clusters. The release ${releaseName} is for env ${targetEnvName} that doesn't contain these clusters. ${targetEnvName} contains only the clusters ${targetEnv.clusters}"
+    }
+    return
+  }
+
   DeploymentUtils deployUtil = new DeploymentUtils()
   DockerUtils dockerUtils = new DockerUtils()
 
@@ -51,7 +63,7 @@ def call(String environmentName, String releaseName, boolean branchRelease) {
           parameters: [
               string(name: 'Chart', value: chartName),
               string(name: 'Version', value: appVersion),
-              string(name: 'Environment', value: environmentName),
+              string(name: 'Environment', value: targetEnvName),
               string(name: 'Cluster', value: 'all-in-chart'),
               string(name: 'Region', value: 'all'),
               booleanParam(name: 'Send success notifications', value: true)]
