@@ -170,8 +170,8 @@ public class DeploymentUtilPipelineUnitTest extends BasePipelineUnitTest {
     assertEquals(3, shCalls.size(), "There should be 3 sh calls for update")
 
     //  the calls to repo add may not be executed in the order of the repos, so we need to find the calls
-    assertCallIsMade(shCalls, "sh", "helm repo add ${md5(testRepo1)} ${testRepo1}")
-    assertCallIsMade(shCalls, "sh", "helm repo add ${md5(testRepo2)} ${testRepo2}")
+    assertMethodWasCalled(shCalls, "sh", "helm repo add ${md5(testRepo1)} ${testRepo1}")
+    assertMethodWasCalled(shCalls, "sh", "helm repo add ${md5(testRepo2)} ${testRepo2}")
     assertEquals("helm dep update ${chartLocation}", shCalls[2].args[0])
   }
 

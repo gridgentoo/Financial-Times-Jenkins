@@ -26,6 +26,7 @@ class DockerUtilsPipelineUnitTest extends BasePipelineUnitTest {
       it.registerAllowedMethod("usernamePassword", [Map.class], { creds -> "bcc19744" })
       it.registerAllowedMethod('docker', [String.class], null)
       it.registerAllowedMethod('docker.build', [String.class], null)
+      it.registerAllowedMethod('lock', [String.class,Closure.class], null)
     }
 
     script = loadScript("com/ft/jenkins/docker/DockerUtils.groovy")
@@ -41,8 +42,9 @@ class DockerUtilsPipelineUnitTest extends BasePipelineUnitTest {
   void isExecutingWithoutBuilding() throws Exception {
     script.buildAndPushImage(DOCKER_TEST_IMAGE_AND_TAG)
 
+    // Checking if the withCredentials method is called. If it is, then the image is built. Check DockerUtils for more.
     Assert.assertFalse(helper.callStack.findAll { call ->
-      call.methodName == 'withCredentials' // Checking if the withCredentials method is called. If it is, then the image is built. Check DockerUtils for more.
+      call.methodName == 'withCredentials'
     }.any())
   }
 
@@ -51,9 +53,15 @@ class DockerUtilsPipelineUnitTest extends BasePipelineUnitTest {
     Mockito.when(dockerMock.image(Mockito.any())).thenThrow(new RuntimeException())
 
     script.buildAndPushImage(DOCKER_TEST_IMAGE_AND_TAG)
-    Assert.assertTrue(helper.callStack.findAll { call ->
-      call.methodName == 'withCredentials' // Checking if the withCredentials method is called. If it is, then the image is built. Check DockerUtils for more.
-    }.any())
+    // Checking if the withCredentials method is called. If it is, then the image is built. Check DockerUtils for more.
+    assertMethodWasCalled(helper.callStack, 'withCredentials')
+  }
+
+  @Test
+  void isLockingTheTagWhenBuilding() throws Exception {
+    script.buildAndPushImage(DOCKER_TEST_IMAGE_AND_TAG)
+
+    assertMethodWasCalled(helper.callStack, "lock", DOCKER_TEST_IMAGE_AND_TAG,)
   }
 
 }
