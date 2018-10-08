@@ -5,8 +5,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import static com.ft.jenkins.git.GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DeploymentUtilTest {
 
@@ -65,7 +67,7 @@ public class DeploymentUtilTest {
     Environment environment = new Environment();
     environment.setClusters(Arrays.asList(Cluster.PAC));
     HashMap<String, String> glbMap = new HashMap<>();
-    
+
     glbMap.put(Cluster.PUBLISHING.toString(), "https://upp-test-publishing.ft.com");
     environment.setGlbMap(glbMap);
 
@@ -85,4 +87,28 @@ public class DeploymentUtilTest {
 
     assertEquals("", actual);
   }
+
+  @Test
+  public void getEnvironmentName_NoEnv() {
+    assertThrows(IllegalArgumentException.class, () -> {
+      deploymentUtils.getEnvironmentName(DEPLOY_ON_PUSH_BRANCHES_PREFIX + "myfeature");
+    });
+  }
+
+  @Test
+  public void getEnvironmentName_BranchNameWithSlash() {
+    String expectedEnv = "k8s";
+    String actualEnv = deploymentUtils.getEnvironmentName(
+        DEPLOY_ON_PUSH_BRANCHES_PREFIX + expectedEnv + "/mytopic/subtopic");
+    assertEquals(expectedEnv, actualEnv);
+  }
+
+  @Test
+  public void getEnvironmentName_NormalBranchName() {
+    String expectedEnv = "k8s";
+    String actualEnv = deploymentUtils.getEnvironmentName(
+        DEPLOY_ON_PUSH_BRANCHES_PREFIX + expectedEnv + "/my-feature");
+    assertEquals(expectedEnv, actualEnv);
+  }
+
 }
