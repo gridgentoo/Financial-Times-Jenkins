@@ -3,7 +3,6 @@ package com.ft.jenkins
 enum Cluster implements Serializable {
   DELIVERY("delivery"),
   PUBLISHING("publishing", "publish"),
-  NEO4J("neo4j"),
   PAC("pac")
 
   /*  The label for the cluster. Used for displaying. */

@@ -5,28 +5,14 @@ class EnvsRegistry implements Serializable {
   public static List<Environment> envs
 
   static {
-    Environment devCJ = new Environment()
-    devCJ.name = "devcj"
-    devCJ.slackChannel = "#k8s-pipeline-notif"
-    devCJ.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
-    devCJ.regions = ["eu"]
-    devCJ.clusterToApiServerMap = [
-            ("eu-" + Cluster.DELIVERY)  : "https://upp-dev-cj-delivery-eu-api.ft.com",
-            ("eu-" + Cluster.PUBLISHING): "https://upp-dev-cj-publish-eu-api.ft.com"
-    ]
-    devCJ.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-dev-cj-publish-eu.ft.com"
-    ]
-
     Environment k8s = new Environment()
     k8s.name = "k8s"
     k8s.slackChannel = "#k8s-pipeline-notif"
-    k8s.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING, Cluster.NEO4J]
+    k8s.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     k8s.regions = ['eu']
     k8s.clusterToApiServerMap = [
         ("eu-" + Cluster.DELIVERY.toString())  : "https://upp-k8s-dev-delivery-eu-api.ft.com",
-        ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu-api.ft.com",
-        ("eu-" + Cluster.NEO4J.toString()): "https://upp-k8s-neo4j-eu-api.ft.com"
+        ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu-api.ft.com"
     ]
     k8s.glbMap = [
         (Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu.ft.com"
@@ -71,14 +57,12 @@ class EnvsRegistry implements Serializable {
     staging.name = Environment.STAGING_NAME
     staging.slackChannel = "#k8s-pipeline-notif"
     staging.regions = ["eu", "us"]
-    staging.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING, Cluster.NEO4J]
+    staging.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     staging.clusterToApiServerMap = [
         ("eu-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-eu-api.ft.com",
         ("us-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-us-api.ft.com",
         ("eu-" + Cluster.PUBLISHING): "https://upp-staging-publish-eu-api.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://upp-staging-publish-us-api.ft.com",
-        ("eu-" + Cluster.NEO4J): "https://upp-staging-neo4j-eu-api.ft.com",
-        ("us-" + Cluster.NEO4J): "https://upp-staging-neo4j-us-api.ft.com"
+        ("us-" + Cluster.PUBLISHING): "https://upp-staging-publish-us-api.ft.com"
     ]
     staging.glbMap = [
         (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com"
@@ -88,20 +72,18 @@ class EnvsRegistry implements Serializable {
     prod.name = Environment.PROD_NAME
     prod.slackChannel = "#k8s-pipeline-notif"
     prod.regions = ["eu", "us"]
-    prod.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING, Cluster.NEO4J]
+    prod.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     prod.clusterToApiServerMap = [
         ("eu-" + Cluster.DELIVERY)  : "https://upp-prod-delivery-eu-api.ft.com",
         ("us-" + Cluster.DELIVERY)  : "https://upp-prod-delivery-us-api.ft.com",
         ("eu-" + Cluster.PUBLISHING): "https://upp-prod-publish-eu-api.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://upp-prod-publish-us-api.ft.com",
-        ("eu-" + Cluster.NEO4J): "https://upp-prod-neo4j-eu-api.ft.com",
-        ("us-" + Cluster.NEO4J): "https://upp-prod-neo4j-us-api.ft.com"
+        ("us-" + Cluster.PUBLISHING): "https://upp-prod-publish-us-api.ft.com"
     ]
     prod.glbMap = [
         (Cluster.PUBLISHING.toString()): "https://upp-prod-publish.ft.com"
     ]
 
-    envs = [devCJ, k8s, stagingPAC, staging, gcPAC, prodPAC, prod]
+    envs = [k8s, stagingPAC, staging, gcPAC, prodPAC, prod]
   }
 
 
