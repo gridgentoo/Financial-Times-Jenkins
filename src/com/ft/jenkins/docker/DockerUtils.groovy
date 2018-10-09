@@ -32,21 +32,23 @@ public def buildImage(String dockerTag, String folder = ".") {
 }
 
 public void buildAndPushImage(String dockerTag) {
-  if (imageExists(dockerTag)) {
-    /*  do not overwrite */
-    echo "Docker image ${dockerTag} already exists. Skip building it ..."
-    return
-  }
+  lock(dockerTag) {
+    if (imageExists(dockerTag)) {
+      /*  do not overwrite */
+      echo "Docker image ${dockerTag} already exists. Skip building it ..."
+      return
+    }
 
-  def image = buildImage(dockerTag)
-  boolean useInternalDockerReg = dockerTag.startsWith(FT_DOCKER_REGISTRY_NAME)
-  if (useInternalDockerReg) {
-    pushImageToDockerReg(image, "https://${FT_DOCKER_REGISTRY_NAME}", FT_DOCKER_REGISTRY_CREDENTIALS)
-  } else {
-    pushImageToDockerReg(image, DOCKERHUB_URL, DOCKERHUB_CREDENTIALS)
+    def image = buildImage(dockerTag)
+    boolean useInternalDockerReg = dockerTag.startsWith(FT_DOCKER_REGISTRY_NAME)
+    if (useInternalDockerReg) {
+      pushImageToDockerReg(image, "https://${FT_DOCKER_REGISTRY_NAME}", FT_DOCKER_REGISTRY_CREDENTIALS)
+    } else {
+      pushImageToDockerReg(image, DOCKERHUB_URL, DOCKERHUB_CREDENTIALS)
+    }
+    /*  remove the image after push */
+    sh "docker rmi ${image.id}"
   }
-  /*  remove the image after push */
-  sh "docker rmi ${image.id}"
 }
 
 public boolean imageExists(String tag) {

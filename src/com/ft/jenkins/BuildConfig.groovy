@@ -5,4 +5,6 @@ class BuildConfig implements Serializable {
   String preprodEnvName
 
   String prodEnvName
+
+  List<Cluster> allowedClusters
 }

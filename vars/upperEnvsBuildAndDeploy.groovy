@@ -270,8 +270,17 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
-    data.description = releaseInfo.description ? releaseInfo.description : releaseInfo.title
-    data.details = releaseInfo.title
+    if (releaseInfo.description) {
+      data.description = releaseInfo.description
+    } else if (releaseInfo.title) {
+      data.description = releaseInfo.title
+    }
+    else {
+      data.description = releaseInfo.tagName
+    }
+
+    data.details = releaseInfo.title ? releaseInfo.title : releaseInfo.tagName
+
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = environment.slackChannel

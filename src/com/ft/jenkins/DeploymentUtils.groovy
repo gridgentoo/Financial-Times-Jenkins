@@ -293,7 +293,7 @@ String getTeamFromReleaseCandidateTag(String rcTag) {
 String getEnvironmentName(String branchName) {
   String[] values = branchName.split('/')
   if (values.length > 2) {
-    return values[values.length - 2]
+    return values[1]
   }
 
   throw new IllegalArgumentException(

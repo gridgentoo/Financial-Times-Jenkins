@@ -51,13 +51,13 @@ class ProvisionerUtilUnitTest {
 
   @Test
   public void testClusterUpdateInfoForStagingEnv() {
-    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("pac-staging-neo4j-eu");
+    ClusterUpdateInfo updateInfo = provisionerUtil.getClusterUpdateInfo("upp-staging-delivery-eu");
     assertAll("update info properties",
-              () -> assertEquals("pac", updateInfo.getPlatform()),
+              () -> assertEquals("upp", updateInfo.getPlatform()),
               () -> assertEquals("eu", updateInfo.getRegion()),
               () -> assertEquals(EnvType.TEST, updateInfo.getEnvType()),
               () -> assertEquals("staging", updateInfo.getEnvName()),
-              () -> assertEquals("neo4j", updateInfo.getCluster())
+              () -> assertEquals("delivery", updateInfo.getCluster())
     );
   }
 

@@ -26,9 +26,9 @@ public class BasePipelineUnitTest extends BasePipelineTest {
     helper.init()
   }
 
-  public static void assertCallIsMade(List<MethodCall> methodCalls, String method, Object... expectedArgs) {
+  public static void assertMethodWasCalled(List<MethodCall> methodCalls, String method, Object... expectedArgs) {
     assertTrue(methodCalls.findAll { call ->
-      return call.methodName == method && call.args == expectedArgs
+      return call.methodName == method && Arrays.asList(call.args).containsAll(expectedArgs)
     }.any(), "Method call ${method}(${expectedArgs}) was not called")
   }
 
