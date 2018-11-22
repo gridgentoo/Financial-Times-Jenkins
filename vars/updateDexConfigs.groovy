@@ -13,6 +13,7 @@ def call() {
 
         DeploymentUtils deploymentUtils = new DeploymentUtils()
         String app = "upp-dex-config"
+        String gitBranch = env."Dex Config Git branch"
         String chartFolderLocation = "helm/" + app
 
         def configMap = readJSON text: env."Dex config"
@@ -46,7 +47,7 @@ def call() {
                 if (targetEnv == null) {
                     throw new IllegalArgumentException("Cannot determine target env from cluster name: " + clusterName)
                 }
-                checkoutDexConfig(app)
+                checkoutDexConfig(app, gitBranch)
 
                 String valuesFile = "values.yaml"
                 writeFile([file: valuesFile, text: buildHelmValues2(secrets, clusterName)])
@@ -107,9 +108,9 @@ private String writeDexSecret(String helmDryRunOutput) {
     dexSecretFile
 }
 
-private Object checkoutDexConfig(String app) {
+private Object checkoutDexConfig(String app, String gitBranch) {
     checkout([$class           : 'GitSCM',
-              branches         : [[name: "master"]],
+              branches         : [[name: gitBranch]],
               userRemoteConfigs: [[url: "git@github.com:Financial-Times/${app}.git", credentialsId: "ft-upp-team"]]
     ])
 }
