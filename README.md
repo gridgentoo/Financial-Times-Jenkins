@@ -55,6 +55,9 @@ Here are the steps needed in order for Jenkins to "see" it.
       1. It might be spread across multiple AWS regions
       1. In each region, it might have multiple clusters (stacks).
       1. For each cluster(stack) we must define the URL of the K8S APi server.
+
+    The name of the environment is very important as it is correlated with the envs name from [the Helm chart app-configs folder](https://docs.google.com/document/d/1eNOczq8tEG8Q2boqKqjFKis9qMIRdQi6vDLgrWy4Akk/edit#heading=h.u09xl9x334yk) and with the ones in the Github releases for team environments.
+    This is why this name must contain only `alphanumeric` characters. `-` and `_` are not allowed in the name.
 1. Don't forget to add the newly defined environment to the `envs` list in the EnvsRegistry class.
 1. Define in [Jenkins](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/) the credentials needed for accessing the K8S API servers.
 For each of the API servers in the environment Jenkins needs 1 key in order to access it, therefore you need to create 1 Jenkins credential / cluster that are of type `Secret Text` with the following ids
