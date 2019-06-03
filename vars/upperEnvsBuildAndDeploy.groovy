@@ -249,7 +249,6 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     data.ownerEmail = "${approver}@ft.com"
     data.systemCode = "${chartName}"
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
-    data.details = releaseInfo.title ? releaseInfo.title : releaseInfo.tagName
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = environment.slackChannel
