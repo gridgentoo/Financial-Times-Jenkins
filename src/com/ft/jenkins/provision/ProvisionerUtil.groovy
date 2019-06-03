@@ -5,7 +5,6 @@ import com.ft.jenkins.EnvType
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.ParamUtils
-import com.ft.jenkins.changerequests.ChangeRequestCloseData
 import com.ft.jenkins.changerequests.ChangeRequestEnvironment
 import com.ft.jenkins.changerequests.ChangeRequestOpenData
 import com.ft.jenkins.changerequests.ChangeRequestsUtils
@@ -36,7 +35,6 @@ public void updateCluster(String fullClusterName, String gitBranch, String updat
     sendFinishUpdateNotification(fullClusterName, updateReason)
   }
 
-  closeChangeRequest(crId, updatedEnv)
 }
 
 private void sendStartUpdateNotification(String fullClusterName, String updateReason) {
@@ -104,11 +102,10 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
     String buildAuthor = new ParamUtils().jenkinsBuildAuthor
     data.ownerEmail = buildAuthor ? "${buildAuthor}@ft.com" : "universal.publishing.platform@ft.com"
     data.summary = "Update Kubernetes cluster ${fullClusterName}"
-    data.description = updateReason
+    data.systemCode = "${fullClusterName}"
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = updatedEnv.slackChannel
-    data.notify = true
 
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
     return crUtils.open(data)
@@ -117,25 +114,6 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
     echo "Error while opening CR for cluster ${fullClusterName} update: ${e.message} "
   }
 }
-
-private void closeChangeRequest(String crId, Environment environment) {
-  if (crId == null) {
-    return
-  }
-
-  try {
-    ChangeRequestCloseData data = new ChangeRequestCloseData()
-    data.notifyChannel = environment.slackChannel
-    data.id = crId
-
-    ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
-    crUtils.close(data)
-  }
-  catch (e) { //  do not fail if the CR interaction fail
-    echo "Error while closing CR ${crId}: ${e.message} "
-  }
-}
-
 
 private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, String gitBranch) {
   GString vaultCredentialsId = "ft.k8s-provision.${updateInfo.platform}.env-type-${updateInfo.envType.shortName}.vault.pass"
