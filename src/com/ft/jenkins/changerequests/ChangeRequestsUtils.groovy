@@ -45,7 +45,7 @@ public String open(ChangeRequestOpenData crData, String credentialId = DEFAULT_C
                            requestBody: bodyJson)
   }
   def responseJson = new JsonSlurper().parseText(response.content)
-  return responseJson.changeRequests[0].name
+  return responseJson.changeRequests?.getAt(0)?.name
 }
 
 private String getUkFormattedDate(Date date) {
