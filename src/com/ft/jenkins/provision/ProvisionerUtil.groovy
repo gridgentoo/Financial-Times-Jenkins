@@ -92,11 +92,11 @@ private void sendFinishUpdateNotification(String fullClusterName, String updateR
 
 private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullClusterName, String updateReason,
                                  Environment updatedEnv) {
-  /*  do not open change requests for Development environments. 
+  /*  do not open change requests for Development environments. */
   if (updateInfo.envType == EnvType.DEVELOPMENT) {
     return null
   }
- */
+
   try {
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     String buildAuthor = new ParamUtils().jenkinsBuildAuthor
