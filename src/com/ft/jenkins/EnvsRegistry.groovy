@@ -15,7 +15,8 @@ class EnvsRegistry implements Serializable {
         ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu-api.ft.com"
     ]
     k8s.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-k8s-dev-delivery-eu.ft.com"
     ]
 
     Environment stagingPAC = new Environment()
@@ -28,7 +29,8 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PAC.toString()): "https://pac-staging-us-api.ft.com",
     ]
     stagingPAC.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-staging-delivery.ft.com"
     ]
 
     Environment prodPAC = new Environment()
@@ -41,7 +43,8 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PAC.toString()): "https://pac-prod-us-api.ft.com",
     ]
     prodPAC.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-prod-delivery.ft.com"
     ]
 
     Environment gcPAC = new Environment()
@@ -65,7 +68,8 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PUBLISHING): "https://upp-staging-publish-us-api.ft.com"
     ]
     staging.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-staging-delivery.ft.com"
     ]
 
     Environment prod = new Environment()
@@ -80,7 +84,8 @@ class EnvsRegistry implements Serializable {
         ("us-" + Cluster.PUBLISHING): "https://upp-prod-publish-us-api.ft.com"
     ]
     prod.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-prod-delivery.ft.com"
     ]
 
     envs = [k8s, stagingPAC, staging, gcPAC, prodPAC, prod]

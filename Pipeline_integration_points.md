@@ -43,8 +43,8 @@ Some of java apps integrate with the FT's maven repository hosted in a Nexus ins
 **Jenkins credential:** ***[nexus.credentials
 ](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/nexus.credentials/)***
 
-### Konstructor CR API integration
-For automatically managing Change Requests, the pipeline integrates with the Konstructor API.
+### Change API integration
+For automatically managing Change Requests, the pipeline integrates with the Change API.
 
-**Jenkins credential:** ***[ft.cr-api.key
-](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/ft.cr-api.key/)***
+**Jenkins credential:** ***[ft.change-api.key
+](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/ft.change-api.key/)***
