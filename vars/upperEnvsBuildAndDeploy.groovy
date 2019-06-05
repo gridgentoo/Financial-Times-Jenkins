@@ -4,7 +4,6 @@ import com.ft.jenkins.DeploymentUtils
 import com.ft.jenkins.DeploymentUtilsConstants
 import com.ft.jenkins.Environment
 import com.ft.jenkins.EnvsRegistry
-import com.ft.jenkins.changerequests.ChangeRequestCloseData
 import com.ft.jenkins.changerequests.ChangeRequestEnvironment
 import com.ft.jenkins.changerequests.ChangeRequestOpenData
 import com.ft.jenkins.changerequests.ChangeRequestsUtils
@@ -102,11 +101,6 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
         deployAppsToEnvironmentRegions(regionsToDeployTo, chartName, version, environment)
 
         remainingRegionsToDeployTo.removeAll(regionsToDeployTo)
-
-        // close the CR only after we deployed to all the regions of the environment
-        if (remainingRegionsToDeployTo.isEmpty()) {
-          closeCr(crId, environment)
-        }
 
         stage("validate apps in ${environment.getNamesWithRegions(regionsToDeployTo)}") {
           sendSlackMessageForValidation(releaseInfo, environment, appsPerCluster, regionsToDeployTo,
@@ -253,46 +247,17 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
   try {
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
+    data.systemCode = "${chartName}"
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
-    if (releaseInfo.description) {
-      data.description = releaseInfo.description
-    } else if (releaseInfo.title) {
-      data.description = releaseInfo.title
-    }
-    else {
-      data.description = releaseInfo.tagName
-    }
-
-    data.details = releaseInfo.title ? releaseInfo.title : releaseInfo.tagName
-
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = environment.slackChannel
-    data.notify = true
 
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
     return crUtils.open(data)
   }
   catch (e) { //  do not fail if the CR interaction fail
     echo "Error while opening CR for release ${releaseInfo.getTagName()}: ${e.message} "
-  }
-}
-
-private void closeCr(String crId, Environment environment) {
-  if (crId == null) {
-    return
-  }
-
-  try {
-    ChangeRequestCloseData data = new ChangeRequestCloseData()
-    data.notifyChannel = environment.slackChannel
-    data.id = crId
-
-    ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
-    crUtils.close(data)
-  }
-  catch (e) { //  do not fail if the CR interaction fail
-    echo "Error while closing CR ${crId}: ${e.message} "
   }
 }
 
