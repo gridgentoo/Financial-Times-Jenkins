@@ -111,7 +111,7 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = updatedEnv.slackChannel
-    data.clusterFullName = fullClusterName
+    data.clusterFullName = "${fullClusterName}"
 
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
     return crUtils.open(data)
