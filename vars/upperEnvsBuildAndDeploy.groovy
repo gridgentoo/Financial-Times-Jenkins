@@ -247,8 +247,9 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
   try {
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
-    data.clusterFullName = "${environment.name}"
-    if (environment.name.contains("PAC") || environment.name.contains("pac")) {
+    String clusterAndAppName = computeSimpleTextForAppsToDeploy(appsPerCluster)
+    data.clusterFullName = "${clusterAndAppName}"
+    if (clusterAndAppName.contains("PAC") || clusterAndAppName.contains("pac")) {
       data.systemCode = "pac"
     } else  {
       data.systemCode = "upp"
