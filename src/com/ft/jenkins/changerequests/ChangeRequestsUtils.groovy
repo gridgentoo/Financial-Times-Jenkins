@@ -8,14 +8,6 @@ final class CRConstants {
   public static final String DEFAULT_CREDENTIALS = "ft.change-api.key"
 }
 
-/*
-Mapping the ChangeAPI to Jenkins variables as follows:
-environment - environment
-systemCode - systemCode
-ownerEmailAddress - "user": {"email": "${user}@ft.com"}
-scheduledStartDate - timestamp
-summaryOfChange - extraProperties: "changeDescription": "releasing v7 which includes a security patch"
-*/
 public String open(ChangeRequestOpenData crData, String credentialId = DEFAULT_CREDENTIALS) {
   String bodyJson = """
 {
@@ -28,7 +20,8 @@ public String open(ChangeRequestOpenData crData, String credentialId = DEFAULT_C
 		"slackChannels": ["${crData.notifyChannel}"]
 	},
   "extraProperties": {
-		"changeDescription": ["${crData.summary}"]
+		"changeDescription": ["${crData.summary}"],
+    "clusterName": "${crData.clusterFullName}"
 	}
 }
 """

@@ -247,7 +247,13 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
   try {
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
-    data.systemCode = "${chartName}"
+    String clusterAndAppName = computeSimpleTextForAppsToDeploy(appsPerCluster)
+    data.clusterFullName = "${clusterAndAppName}"
+    if (clusterAndAppName.contains("PAC") || clusterAndAppName.contains("pac")) {
+      data.systemCode = "pac"
+    } else  {
+      data.systemCode = "upp"
+    }
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
