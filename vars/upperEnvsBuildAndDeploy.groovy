@@ -88,7 +88,7 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
         deployInitiator = deployInput.approver
 
         if (crId == null) {
-          crId = openCr(deployInitiator, releaseInfo, environment, appsPerCluster, chartName, targetEnvName)
+          crId = openCr(deployInitiator, releaseInfo, environment, appsPerCluster, chartName)
         }
 
         List<String> regionsToDeployTo = []
@@ -243,12 +243,12 @@ public String displayJenkinsInputForValidation(GithubReleaseInfo releaseInfo, En
 }
 
 private String openCr(String approver, GithubReleaseInfo releaseInfo, Environment environment,
-                      Map<Cluster, List<String>> appsPerCluster, String chartName, String clusterName) {
+                      Map<Cluster, List<String>> appsPerCluster, String chartName) {
   try {
     ChangeRequestOpenData data = new ChangeRequestOpenData()
     data.ownerEmail = "${approver}@ft.com"
-    data.clusterFullName = clusterName
-    if (clusterName.contains("PAC") || clusterName.contains("pac")) {
+    data.clusterFullName = "${environment.name}"
+    if (environment.name.contains("PAC") || environment.name.contains("pac")) {
       data.systemCode = "pac"
     } else  {
       data.systemCode = "upp"
