@@ -102,10 +102,16 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
     String buildAuthor = new ParamUtils().jenkinsBuildAuthor
     data.ownerEmail = buildAuthor ? "${buildAuthor}@ft.com" : "universal.publishing.platform@ft.com"
     data.summary = "Update Kubernetes cluster ${fullClusterName}"
-    data.systemCode = "${fullClusterName}"
+    if (fullClusterName.contains("PAC") || fullClusterName.contains("pac")) {
+      data.systemCode = "pac"
+    } else  {
+      data.systemCode = "upp"
+    }
+    //data.systemCode = "${fullClusterName}"
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = updatedEnv.slackChannel
+    data.clusterFullName = "${fullClusterName}"
 
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
     return crUtils.open(data)

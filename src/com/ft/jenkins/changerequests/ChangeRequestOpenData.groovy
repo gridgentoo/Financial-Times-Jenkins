@@ -6,4 +6,5 @@ class ChangeRequestOpenData implements Serializable {
   ChangeRequestEnvironment environment
   String notifyChannel
   String systemCode
+  String clusterFullName
 }
