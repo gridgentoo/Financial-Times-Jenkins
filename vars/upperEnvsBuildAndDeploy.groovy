@@ -255,7 +255,7 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     //Check if systemCode is in the list of different HelmChartName to systemCode mappings
     String evaluatedSystemCode = evaluateSystemCode.populateSystemCode(chartName)
     //Check if systemCode actually exists. If it does not, assign upp to it instead.
-    String existingEvaluatedSystemCode = evaluateSystemCode.checkSystemCode(populateSystemCode)
+    String existingEvaluatedSystemCode = evaluateSystemCode.checkSystemCode(evaluatedSystemCode)
     data.systemCode = existingEvaluatedSystemCode
 
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
