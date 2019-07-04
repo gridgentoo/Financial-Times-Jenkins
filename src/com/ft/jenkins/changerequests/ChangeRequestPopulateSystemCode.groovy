@@ -58,11 +58,14 @@ public String populateSystemCode(String systemCode) {
 public String checkSystemCode(String systemCode, String credentialId = DEFAULT_CREDENTIALS)   {
     echo "Checking systemCode in Biz-Ops"
     try {
-        String bizopsURL = 'https://api.ft.com/biz-ops/graphql?query={System(code:%22' + systemCode + '%22){code}}'
+        String bizOpsURL = 'https://api.ft.com/biz-ops/graphql?query='
+        String query = '{System(code:"' + systemCode + '"){code}}'
+        String encodedQuery = URLEncoder.encode(query)
+        String encodedURL = bizOpsURL + encodedQuery
         def response
         withCredentials([string(credentialsId: credentialId, variable: 'UPP_BIZOPS_API_KEY')]) {
             response = httpRequest(httpMode: 'GET',
-                            url: "${bizopsURL}",
+                            url: "${encodedURL}",
                             customHeaders: [[maskValue: true, name: 'x-api-key', value: env.UPP_BIZOPS_API_KEY],
                                             [maskValue: false, name: 'content-type', value: 'application/json'],
                                             [maskValue: false, name: 'client-id', value: 'upp-jenkins']],
