@@ -58,7 +58,7 @@ public String populateSystemCode(String systemCode) {
 public String checkSystemCode(String systemCode, String credentialId = DEFAULT_CREDENTIALS)   {
     echo "Checking systemCode in Biz-Ops"
     try {
-        String bizopsURL = 'https://api.ft.com/biz-ops/graphql?query={System(code:"' + systemCode + '"){code}}'
+        String bizopsURL = 'https://api.ft.com/biz-ops/graphql?query={System(code:%22' + systemCode + '%22){code}}'
         def response
         withCredentials([string(credentialsId: credentialId, variable: 'UPP_BIZOPS_API_KEY')]) {
             response = httpRequest(httpMode: 'GET',
