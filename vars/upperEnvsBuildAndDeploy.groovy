@@ -251,7 +251,7 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     String clusterAndAppName = computeSimpleTextForAppsToDeploy(appsPerCluster)
     data.clusterFullName = "${clusterAndAppName}"
 
-     ChangeRequestPopulateSystemCode evaluateSystemCode = new ChangeRequestPopulateSystemCode()
+    ChangeRequestPopulateSystemCode evaluateSystemCode = new ChangeRequestPopulateSystemCode()
     //Check if systemCode is in the list of different HelmChartName to systemCode mappings
     String evaluatedSystemCode = evaluateSystemCode.populateSystemCode(chartName)
     //Check if systemCode actually exists. If it does not, assign upp to it instead.
