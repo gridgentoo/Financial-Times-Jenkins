@@ -61,7 +61,7 @@ public String checkSystemCode(String systemCode, String credentialId = DEFAULT_C
         def response
         withCredentials([string(credentialsId: credentialId, variable: 'UPP_BIZOPS_API_KEY')]) {
             response = httpRequest(httpMode: 'GET',
-                            url: "https://api.ft.com/biz-ops/graphql?query={System(code:" + ${systemCode} + "){code}}",
+                            url: "https://api.ft.com/biz-ops/graphql?query={System(code:" + systemCode + "){code}}",
                             customHeaders: [[maskValue: true, name: 'x-api-key', value: env.UPP_BIZOPS_API_KEY],
                                             [maskValue: false, name: 'content-type', value: 'application/json'],
                                             [maskValue: false, name: 'client-id', value: 'upp-jenkins']],
