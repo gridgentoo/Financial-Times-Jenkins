@@ -7,6 +7,7 @@ import com.ft.jenkins.EnvsRegistry
 import com.ft.jenkins.changerequests.ChangeRequestEnvironment
 import com.ft.jenkins.changerequests.ChangeRequestOpenData
 import com.ft.jenkins.changerequests.ChangeRequestsUtils
+import com.ft.jenkins.changerequests.ChangeRequestPopulateSystemCode
 import com.ft.jenkins.docker.DockerUtils
 import com.ft.jenkins.git.GithubReleaseInfo
 import com.ft.jenkins.slack.SlackAttachment
@@ -249,11 +250,14 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     data.ownerEmail = "${approver}@ft.com"
     String clusterAndAppName = computeSimpleTextForAppsToDeploy(appsPerCluster)
     data.clusterFullName = "${clusterAndAppName}"
-    if (clusterAndAppName.contains("PAC") || clusterAndAppName.contains("pac")) {
-      data.systemCode = "pac"
-    } else  {
-      data.systemCode = "upp"
-    }
+
+    ChangeRequestPopulateSystemCode evaluateSystemCode = new ChangeRequestPopulateSystemCode()
+    //Check if systemCode is in the list of different HelmChartName to systemCode mappings
+    String evaluatedSystemCode = evaluateSystemCode.populateSystemCode(chartName)
+    //Check if systemCode actually exists. If it does not, assign upp to it instead.
+    String existingEvaluatedSystemCode = evaluateSystemCode.checkSystemCode(evaluatedSystemCode)
+    data.systemCode = existingEvaluatedSystemCode
+
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
     data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test

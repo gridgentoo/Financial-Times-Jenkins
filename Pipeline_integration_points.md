@@ -48,3 +48,9 @@ For automatically managing Change Requests, the pipeline integrates with the Cha
 
 **Jenkins credential:** ***[ft.change-api.key
 ](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/ft.change-api.key/)***
+
+### Biz-Ops API integration
+For checking if the helm chart name has a corresponding systemCode in Biz-Ops
+
+**Jenkins credential:** ***[ft.bizops-api.key
+](https://upp-k8s-jenkins.in.ft.com/job/k8s-deployment/credentials/store/folder/domain/_/credential/ft.bizops-api.key/)***
