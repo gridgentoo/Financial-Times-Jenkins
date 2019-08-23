@@ -326,9 +326,11 @@ private String getAppConfigurationFileName(String chartFolderLocation, Environme
     println "Checking if file exists: " + appConfigPath
 
     if (fileExists(appConfigPath)) {
+      println "Found " + appConfigPath
       return appConfigPath
     }
   }
+  println "Not found"
 
   //looking for configuration file for a specific env, e.g. publishing_pre-prod
   appConfigPath =
@@ -336,16 +338,20 @@ private String getAppConfigurationFileName(String chartFolderLocation, Environme
     println "Checking if file exists: " + appConfigPath
 
   if (fileExists(appConfigPath)) {
+    println "Found " + appConfigPath
     return appConfigPath
   }
+  println "Not found"
 
   //looking for configuration file for all envs, e.g publishing
   appConfigPath = computeAppConfigFullPath("${app}_${targetCluster.getLabel()}", chartFolderLocation)
     println "Checking if file exists: " + appConfigPath
 
   if (fileExists(appConfigPath)) {
+    println "Found " + appConfigPath
     return appConfigPath
   }
+  println "No configuration files found"
 }
 
 public List<String> getAppsInFirstCluster(Map<Cluster, List<String>> appsPerCluster) {
