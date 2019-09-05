@@ -7,7 +7,7 @@ class EnvsRegistry implements Serializable {
   static {
     Environment k8s = new Environment()
     k8s.name = "k8s"
-    k8s.slackChannel = "#k8s-pipeline-notif"
+    k8s.slackChannel = "#upp-changes"
     k8s.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     k8s.regions = ['eu']
     k8s.clusterToApiServerMap = [
@@ -21,7 +21,7 @@ class EnvsRegistry implements Serializable {
 
     Environment stagingPAC = new Environment()
     stagingPAC.name = "stagingpac"
-    stagingPAC.slackChannel = "#k8s-pipeline-notif"
+    stagingPAC.slackChannel = "#upp-changes"
     stagingPAC.regions = ["eu", "us"]
     stagingPAC.clusters = [Cluster.PAC]
     stagingPAC.clusterToApiServerMap = [
@@ -35,7 +35,7 @@ class EnvsRegistry implements Serializable {
 
     Environment prodPAC = new Environment()
     prodPAC.name = "prodpac"
-    prodPAC.slackChannel = "#k8s-pipeline-notif"
+    prodPAC.slackChannel = "#upp-changes"
     prodPAC.regions = ["eu", "us"]
     prodPAC.clusters = [Cluster.PAC]
     prodPAC.clusterToApiServerMap = [
@@ -49,7 +49,7 @@ class EnvsRegistry implements Serializable {
 
     Environment gcPAC = new Environment()
     gcPAC.name = "gcpac"
-    gcPAC.slackChannel = "#k8s-pipeline-notif"
+    gcPAC.slackChannel = "#upp-changes"
     gcPAC.regions = ["eu"]
     gcPAC.clusters = [Cluster.PAC]
     gcPAC.clusterToApiServerMap = [
@@ -58,7 +58,7 @@ class EnvsRegistry implements Serializable {
 
     Environment staging = new Environment()
     staging.name = Environment.STAGING_NAME
-    staging.slackChannel = "#k8s-pipeline-notif"
+    staging.slackChannel = "#upp-changes"
     staging.regions = ["eu", "us"]
     staging.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     staging.clusterToApiServerMap = [
@@ -74,7 +74,7 @@ class EnvsRegistry implements Serializable {
 
     Environment prod = new Environment()
     prod.name = Environment.PROD_NAME
-    prod.slackChannel = "#k8s-pipeline-notif"
+    prod.slackChannel = "#upp-changes"
     prod.regions = ["eu", "us"]
     prod.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     prod.clusterToApiServerMap = [
