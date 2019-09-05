@@ -38,7 +38,7 @@ Here are the steps needed in order for Jenkins to "see" it.
     ```
           Environment prod = new Environment()
           prod.name = Environment.PROD_NAME
-          prod.slackChannel = "#k8s-pipeline-notif"
+          prod.slackChannel = "#upp-changes"
           prod.regions = ["eu", "us"]
           prod.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING, Cluster.NEO4J]
           prod.clusterToApiServerMap = [
