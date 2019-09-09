@@ -36,7 +36,7 @@ def call(BuildConfig config) {
       println "================="
       println releaseCandidateName
       println "================="
-      teamEnvsBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, false)
+      teamEnvsBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
     }
   } else {
     echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
