@@ -33,6 +33,9 @@ def call(BuildConfig config) {
       echo "Skipping branch ${currentBranch} as ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX} can't be used to push to upper environments."
     } else {
       String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
+      println "================="
+      println releaseCandidateName
+      println "================="
       teamEnvsBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
     }
   } else {

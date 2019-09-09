@@ -88,7 +88,17 @@ class EnvsRegistry implements Serializable {
         (Cluster.DELIVERY.toString()): "https://upp-prod-delivery.ft.com"
     ]
 
-    envs = [k8s, stagingPAC, staging, gcPAC, prodPAC, prod]
+    Environment minikube = new Environment()
+    minikube.name = Environment.PROD_NAME
+    minikube.slackChannel = "#upp-bot-playground"
+    minikube.regions = ["eu", "us"]
+    minikube.clusters = [Cluster.DELIVERY]
+    minikube.clusterToApiServerMap = [
+        ("eu-" + Cluster.DELIVERY)  : "http://localhost",
+        ("us-" + Cluster.DELIVERY)  : "http://localhost",
+    ]
+
+    envs = [k8s, stagingPAC, staging, gcPAC, prodPAC, prod, minikube]
   }
 
 
