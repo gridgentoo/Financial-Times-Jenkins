@@ -259,8 +259,11 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     data.systemCode = existingEvaluatedSystemCode
 
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
-    data.environment = environment.name == Environment.PROD_NAME ? ChangeRequestEnvironment.Production :
-                       ChangeRequestEnvironment.Test
+    if (environment.name == Environment.PROD_NAME || environment.name == "prodpac"){
+      data.environment = ChangeRequestEnvironment.Production
+    } else {
+      data.environment = ChangeRequestEnvironment.Test
+    }
     data.notifyChannel = environment.slackChannel
 
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
