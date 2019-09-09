@@ -54,7 +54,10 @@ public GithubReleaseInfo getGithubReleaseInfo(String tagName, String repoName) {
 }
 
 public String getMostRecentGitTag() {
+  println "==========git tags start ==============="
+  sh "git tags"
   sh "git describe --abbrev=0 --tags >> git-version"
+  println "==========git tags end ==============="
   String mostRecentGitTag = readFile 'git-version'
 
   /* remove any additional text from git version */
