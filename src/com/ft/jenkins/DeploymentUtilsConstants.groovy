@@ -14,7 +14,8 @@ public class DeploymentUtilsConstants {
   public static final String APPS_CONFIG_FOLDER = "app-configs"
   public static final String DEFAULT_HELM_VALUES_FILE = "values.yaml"
 
-  public static final String HELM_S3_BUCKET = "s3://upp-helm-repo/"
+  //public static final String HELM_S3_BUCKET = "s3://upp-helm-repo/"
+  public static final String HELM_S3_BUCKET = "s3://k8s-pipeline-lib-helm-repo-test1/"
   public static final String HELM_AWS_CREDENTIALS = "ft.helm-repo.aws-credentials"
   //public static final String HELM_REPO_URL = "http://upp-helm-repo.s3-website-eu-west-1.amazonaws.com"
   public static final String HELM_REPO_URL = "http://k8s-pipeline-lib-helm-repo-test1.s3-website-eu-west-1.amazonaws.com"
