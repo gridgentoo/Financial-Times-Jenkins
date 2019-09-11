@@ -59,6 +59,21 @@ def call(BuildConfig buildConfig, String targetEnvName, String releaseName, bool
   /*  this is called outside of a node, so that the node is released, and so the executor is released during the deploy. */
   stage("deploy chart") {
     /*  trigger the generic job for deployment */
+
+    println " ============== Starting GENERIC_DEPLOY_JOB ================="
+    println "with parameters"
+
+    print "chartName"
+    println chartName
+
+    print "appVersion"
+    println appVersion
+
+    print "Environment"
+    println targetEnvName
+
+    println " ----------------- END ---------------------"
+
     build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
           parameters: [
               string(name: 'Chart', value: chartName),
