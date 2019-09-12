@@ -27,6 +27,7 @@ public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLo
 
   /*  deploy apps in all target clusters */
   appsPerCluster.each { Cluster targetCluster, List<String> appsToDeploy ->
+    printf("Deploying to cluster %s", targetCluster.toString())
     if (regionsToDeployTo) {
       for (String regionToDeployTo : regionsToDeployTo) {
         executeAppsDeployment(targetCluster, appsToDeploy, chartFolderLocation, env, regionToDeployTo)
@@ -73,8 +74,10 @@ public executeAppsRemoval(Cluster targetCluster, List<String> appsToRemove, Envi
 
 public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, String chartFolderLocation,
                              Environment env, String region = null) {
+  println "----------------executeAppsDeployment--------------"
   runWithK8SCliTools(env, targetCluster, region, {
     for (String app : appsToDeploy) {
+      printf("appName %s", app)
       String configurationFileName = getAppConfigurationFileName(chartFolderLocation, env, targetCluster, app, region)
       if (!configurationFileName) {
         throw new ConfigurationNotFoundException(
