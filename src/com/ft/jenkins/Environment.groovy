@@ -55,7 +55,11 @@ class Environment implements Serializable {
       return null
     }
     printf("entryPointUrl %s", entryPointUrl)
-    Matcher matcher = entryPointUrl =~ /https:\/\/(.*)\.ft\.com/
+    //Matcher matcher = entryPointUrl =~ /https:\/\/(.*)\.ft\.com/
+    Matcher matcher = entryPointUrl =~ /https:\/\/(.*)\.amazonaws\.com/
+    // https://upp-k8s-dev-delivery-eu-api.ft.com
+    // https://1638169b446e0546ff623c7721bc76fa.sk1.eu-west-1.eks.amazonaws.com/
+
     return matcher[0][1]
   }
 
