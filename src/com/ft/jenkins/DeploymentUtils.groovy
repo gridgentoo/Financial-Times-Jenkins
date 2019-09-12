@@ -267,6 +267,10 @@ public void runWithK8SCliTools(Environment targetEnv, Cluster cluster, String re
         "-e 'KUBECONFIG=${currentDir}/kubeconfig' " +
         "-e 'K8S_TOKEN=${env.TOKEN}'"
 
+    println "=========== DOCKER RUN ARGS ==================="
+    println dockerRunArgs
+    println "=========== DOCKER RUN ARGS ==================="
+
     docker.image(K8S_CLI_IMAGE).inside(dockerRunArgs) {
       sh "/docker-entrypoint.sh"
 
