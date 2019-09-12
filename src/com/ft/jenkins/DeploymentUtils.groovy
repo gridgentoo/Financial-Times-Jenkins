@@ -267,8 +267,12 @@ private String getHelmChartFolderName() {
 public void runWithK8SCliTools(Environment targetEnv, Cluster cluster, String region = null, Closure codeToRun) {
   String currentDir = pwd()
 
+  println "----------------runWithK8SCliTools-------------"
   String apiServer = targetEnv.getApiServerForCluster(cluster, region)
+  printf("apiServer %s", apiServer)
   String clusterSubDomain = targetEnv.getClusterSubDomain(cluster, region)
+  printf("clusterSubDomain %s", clusterSubDomain)
+
   withCredentials([string(credentialsId: "ft.k8s-auth.${clusterSubDomain}.token", variable: 'TOKEN')]) {
     GString dockerRunArgs =
         "-e 'K8S_API_SERVER=${apiServer}' " +

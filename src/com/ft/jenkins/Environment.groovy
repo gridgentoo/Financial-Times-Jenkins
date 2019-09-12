@@ -34,6 +34,8 @@ class Environment implements Serializable {
   }
 
   public String getEntryPointUrl(Cluster cluster, String region = null) {
+    println "---------------getEntryPointUrl------------"
+    printf("cluster %s /region %s", cluster.toString(), region)
     def apiServer = getApiServerForCluster(cluster, region)
     if (apiServer != null) {
       return apiServer.replace("-api", "")
@@ -46,15 +48,19 @@ class Environment implements Serializable {
   }
   
   public String getClusterSubDomain(Cluster cluster, String region = null) {
+    println "-----------getClusterSubDomain-----------"
+    printf("cluster %s", cluster.toString())
     String entryPointUrl = getEntryPointUrl(cluster, region)
     if (entryPointUrl == null) {
       return null
     }
+    printf("entryPointUrl %s", entryPointUrl)
     Matcher matcher = entryPointUrl =~ /https:\/\/(.*)\.ft\.com/
     return matcher[0][1]
   }
 
   public String getApiServerForCluster(Cluster cluster, String region = null) {
+    println "-----------getApiServerForCluster----------"
     String lookupKey
     if (region) {
       lookupKey = "${region}-${cluster}"
@@ -62,6 +68,8 @@ class Environment implements Serializable {
     else {
       lookupKey = cluster.toString()
     }
+
+    printf("Looking for ApiServer for cluster %s with lookupkey %s", cluster.toString(), lookupKey)
     return clusterToApiServerMap.get(lookupKey)
   }
 
