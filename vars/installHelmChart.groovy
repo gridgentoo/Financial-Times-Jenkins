@@ -38,7 +38,8 @@ def call() {
 
 
     catchError {
-      sendNotifications(targetEnv, chart, version, deployedAppsPerCluster, sendSuccessNotifications, deployOnlyInRegion)
+      println "ERR: Should send notification now, but I wont"
+      //sendNotifications(targetEnv, chart, version, deployedAppsPerCluster, sendSuccessNotifications, deployOnlyInRegion)
     }
 
     stage('cleanup') {
