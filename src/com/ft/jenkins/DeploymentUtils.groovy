@@ -180,6 +180,7 @@ public void runHelmOperations(Closure codeToRun) {
   docker.image(K8S_CLI_IMAGE).inside("-e 'HELM_HOME=/tmp/.helm'") {
     sh "helm init -c"
     sh "helm repo add ${HELM_LOCAL_REPO_NAME} ${HELM_REPO_URL}"
+    sh "helm repo update"
     codeToRun.call()
   }
 }
