@@ -89,7 +89,8 @@ public executeAppsDeployment(Cluster targetCluster, List<String> appsToDeploy, S
       print "=============="
       print additionalHelmValues
       print "=============="
-      sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName} ${additionalHelmValues}"
+      //sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName} ${additionalHelmValues}"
+      sh "helm upgrade ${app} ${chartFolderLocation} -i --timeout 1200 -f ${configurationFileName}"
     }
   })
 }
