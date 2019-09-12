@@ -22,6 +22,9 @@ public Map<Cluster, List<String>> deployAppsInChartWithHelm(String chartFolderLo
   Map<Cluster, List<String>> appsPerCluster = getAppsInChart(chartFolderLocation, env, deployOnlyInCluster)
   List<String> regionsToDeployTo = env.getRegionsToDeployTo(region)
 
+
+  println "------------deployAppsInChartWithHelm----------"
+
   /*  deploy apps in all target clusters */
   appsPerCluster.each { Cluster targetCluster, List<String> appsToDeploy ->
     if (regionsToDeployTo) {
@@ -146,6 +149,8 @@ public Map<Cluster, List<String>> getAppsInChart(String chartFolderLocation, Env
       }
       String appName = fileNameParts[0]
       addAppToCluster(result, targetCluster, appName)
+
+      printf("Adding app %s to cluster %s", appName, targetCluster.toString())
 
     } else {
       throw new InvalidAppConfigFileNameException(
