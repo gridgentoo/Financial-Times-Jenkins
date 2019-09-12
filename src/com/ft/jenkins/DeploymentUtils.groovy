@@ -269,7 +269,7 @@ public void runWithK8SCliTools(Environment targetEnv, Cluster cluster, String re
 
   println "----------------runWithK8SCliTools-------------"
   String apiServer = targetEnv.getApiServerForCluster(cluster, region)
-  printf("apiServer %s", apiServer)
+  printf("apiServer %s KOR", apiServer)
   printf("Trying to get clusterSubDomain for cluster %s in region %s", cluster.toString(), region)
   String clusterSubDomain = targetEnv.getClusterSubDomain(cluster, region)
   printf("clusterSubDomain %s", clusterSubDomain)
