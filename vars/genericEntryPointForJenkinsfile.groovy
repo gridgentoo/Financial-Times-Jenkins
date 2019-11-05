@@ -16,9 +16,10 @@ import com.ft.jenkins.git.GithubReleaseInfo
 def call(BuildConfig config) {
   GitUtils gitUtils = new GitUtils()
   String currentBranch = (String) env.BRANCH_NAME
+  String currentTag = (String) env.TAG_NAME
   DeploymentUtils deployUtils = new DeploymentUtils()
 
-  if (gitUtils.isTag(currentBranch)) {
+  if (gitUtils.isTag(currentTag)) {
     String tagName = gitUtils.getTagNameFromBranchName(currentBranch)
     GithubReleaseInfo releaseInfo = getReleaseInfoForCurrentTag(tagName)
 
