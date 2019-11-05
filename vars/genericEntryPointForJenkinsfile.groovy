@@ -20,7 +20,7 @@ def call(BuildConfig config) {
   DeploymentUtils deployUtils = new DeploymentUtils()
 
   if (gitUtils.isTag(currentTag)) {
-    String tagName = gitUtils.getTagNameFromBranchName(currentBranch)
+    String tagName = env.TAG_NAME
     GithubReleaseInfo releaseInfo = getReleaseInfoForCurrentTag(tagName)
 
     if (releaseInfo == null || releaseInfo.isPreRelease) {
