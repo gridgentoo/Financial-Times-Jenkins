@@ -50,8 +50,15 @@ class Environment implements Serializable {
     if (entryPointUrl == null) {
       return null
     }
+    if (entryPointUrl.contains("upp.ft.com")){
+        Matcher matcher = entryPointUrl =~ /https:\/\/(.*)\.upp\.ft\.com/
+        return matcher[0][1]
+    }
+    //if def one regext, else use the one bellow
+    else {
     Matcher matcher = entryPointUrl =~ /https:\/\/(.*)\.ft\.com/
     return matcher[0][1]
+    }
   }
 
   public String getApiServerForCluster(Cluster cluster, String region = null) {

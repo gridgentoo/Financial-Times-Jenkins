@@ -11,8 +11,8 @@ class EnvsRegistry implements Serializable {
     k8s.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     k8s.regions = ['eu']
     k8s.clusterToApiServerMap = [
-        ("eu-" + Cluster.DELIVERY.toString())  : "https://upp-k8s-dev-delivery-eu-api.ft.com",
-        ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu-api.ft.com"
+        ("eu-" + Cluster.DELIVERY.toString())  : "https://upp-k8s-dev-delivery-eu-api.upp.ft.com",
+        ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu-api.upp.ft.com"
     ]
     k8s.glbMap = [
         (Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu.ft.com",
@@ -108,7 +108,7 @@ class EnvsRegistry implements Serializable {
 
     for (Environment environment: envs) {
       for (String apiServer: environment.clusterToApiServerMap.values()) {
-        if (apiServer.contains("${clusterFullName}-api.ft.com")) {
+        if (apiServer.contains("${clusterFullName}-api.ft.com") || apiServer.contains("${clusterFullName}-api.upp.ft.com")) {
           return environment
         }
       }
