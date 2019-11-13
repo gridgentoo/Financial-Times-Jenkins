@@ -108,7 +108,7 @@ class EnvsRegistry implements Serializable {
 
     for (Environment environment: envs) {
       for (String apiServer: environment.clusterToApiServerMap.values()) {
-        if (apiServer.contains("${clusterFullName}-api.ft.com")) {
+        if (apiServer.contains("${clusterFullName}-api.ft.com") || apiServer.contains("${clusterFullName}-api.upp.ft.com")) {
           return environment
         }
       }
