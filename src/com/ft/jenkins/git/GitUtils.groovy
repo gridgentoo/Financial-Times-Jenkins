@@ -8,7 +8,8 @@ import static com.ft.jenkins.git.GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFI
 import static com.ft.jenkins.git.GitUtilsConstants.TAG_BRANCHES_PREFIX
 
 public boolean isTag(String checkedOutBranchName) {
-  return checkedOutBranchName.startsWith(TAG_BRANCHES_PREFIX)
+  boolean tagIsNotNull = checkedOutBranchName?.trim()
+  return tagIsNotNull
 }
 
 public boolean isDeployOnPushForBranch(String branchName) {
