@@ -15,8 +15,8 @@ class EnvsRegistry implements Serializable {
         ("eu-" + Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu-api.upp.ft.com"
     ]
     k8s.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu.ft.com",
-        (Cluster.DELIVERY.toString()): "https://upp-k8s-dev-delivery-eu.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-k8s-dev-publish-eu.upp.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-k8s-dev-delivery-eu.upp.ft.com"
     ]
 
     Environment stagingPAC = new Environment()
