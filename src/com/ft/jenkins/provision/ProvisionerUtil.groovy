@@ -108,6 +108,11 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
       data.systemCode = "upp"
     }
     //data.systemCode = "${fullClusterName}"
+
+    data.gitTagOrCommit = "commit"
+    data.gitReleaseTagOrCommit = "de23bbaf2dca6b30cbfe4bd760ce5590fe079307"
+    data.gitRepositoryName = "https://github.com/Financial-Times/content-k8s-provisioner"
+
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = updatedEnv.slackChannel

@@ -7,4 +7,7 @@ class ChangeRequestOpenData implements Serializable {
   String notifyChannel
   String systemCode
   String clusterFullName
+  String gitTagOrCommit
+  String gitReleaseTagOrCommit
+  String gitRepositoryName
 }
