@@ -21,7 +21,7 @@ public void updateCluster(String fullClusterName, String gitBranch, String updat
   echo "For cluster ${fullClusterName} determined update info: ${updateInfo.toString()}"
 
   Environment updatedEnv = EnvsRegistry.getEnvironmentByFullName(fullClusterName)
-  String crId = openChangeRequest(updateInfo, fullClusterName, updateReason, updatedEnv)
+  String crId = openChangeRequest(gitBranch, updateInfo, fullClusterName, updateReason, updatedEnv)
 
   catchError { // don't propagate error, so that we can close the CR
     echo "Starting update for cluster ${fullClusterName} ... "
@@ -90,7 +90,7 @@ private void sendFinishUpdateNotification(String fullClusterName, String updateR
   }
 }
 
-private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullClusterName, String updateReason,
+private String openChangeRequest(String gitBranch, ClusterUpdateInfo updateInfo, String fullClusterName, String updateReason,
                                  Environment updatedEnv) {
   /*  do not open change requests for Development environments. */
   if (updateInfo.envType == EnvType.DEVELOPMENT) {
@@ -110,7 +110,8 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
     //data.systemCode = "${fullClusterName}"
 
     data.gitTagOrCommit = "commit"
-    data.gitReleaseTagOrCommit = "de23bbaf2dca6b30cbfe4bd760ce5590fe079307"
+    
+    data.gitReleaseTagOrCommit = checkCommitID(gitBranch)
     data.gitRepositoryName = "https://github.com/Financial-Times/content-k8s-provisioner"
 
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
@@ -126,6 +127,12 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
   }
 }
 
+private String checkCommitID(String branch) {
+  git url: "https://github.com/Financial-Times/content-k8s-provisioner", credentialsId: "ft-upp-team"
+  def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/${gitBranch} | cut -f 1")
+  print "Latest commit hash of content-k8s-provisioner branch ${branch} is ${output}"
+  return output
+}
 private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, String gitBranch) {
   GString vaultCredentialsId = "ft.k8s-provision.${updateInfo.platform}.env-type-${updateInfo.envType.shortName}.vault.pass"
 

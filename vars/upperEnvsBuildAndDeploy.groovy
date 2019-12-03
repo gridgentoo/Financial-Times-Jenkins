@@ -268,7 +268,11 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
       data.environment = ChangeRequestEnvironment.Test
     }
     data.notifyChannel = environment.slackChannel
-
+    //this will be removed
+    git url: "https://github.com/Financial-Times/content-k8s-provisioner", credentialsId: "ft-upp-team"
+    def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/${gitBranch} | cut -f 1")
+    print "Latest commit hash of content-k8s-provisioner branch ${branch} is ${output}"
+    //this will be removed
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
     return crUtils.open(data)
   }
