@@ -270,8 +270,8 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     data.notifyChannel = environment.slackChannel
     //this will be removed
     git url: "https://github.com/Financial-Times/content-k8s-provisioner", credentialsId: "ft-upp-team"
-    def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/master | cut -f 1")
-    print "Latest commit hash of content-k8s-provisioner branch master is ${output}"
+    //def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/master | cut -f 1")
+    print "Latest commit hash of content-k8s-provisioner branch master is output"
     //this will be removed
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
     return crUtils.open(data)
