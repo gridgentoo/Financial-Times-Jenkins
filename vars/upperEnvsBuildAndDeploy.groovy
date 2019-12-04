@@ -305,8 +305,7 @@ private String getGithubLatestCommit(String branch, String repoName) {
     return null
   }
   def releaseInfoJson = new JsonSlurper().parseText(releaseResponse.content)
-  echo "${releaseInfoJson}"
-  String latestCommit = releaseInfoJson.name
+  String latestCommit = releaseInfoJson.sha
 }
 
 void sendSlackMessageForIntermediaryDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv,
