@@ -271,7 +271,9 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     //this will be removed
     //git url: "https://github.com/Financial-Times/content-k8s-provisioner", credentialsId: "ft-upp-team"
     withCredentials([sshUserPrivateKey(credentialsId: "ft-upp-team", keyFileVariable: 'keyfile')]) {
-      def output = sh(returnStdout: true, script: "ssh-agent bash -c ${keyfile}; git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/master | cut -f 1")
+      stage {
+        def output = sh(returnStdout: true, script: "ssh-agent bash -c ${keyfile}; git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/master | cut -f 1")
+      }
     }
     //def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/master | cut -f 1")
     print "Latest commit hash of content-k8s-provisioner branch master is ${output}"
