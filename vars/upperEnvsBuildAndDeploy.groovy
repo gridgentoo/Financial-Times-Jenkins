@@ -15,6 +15,8 @@ import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 
+import groovy.json.JsonSlurper
+
 def call(GithubReleaseInfo releaseInfo, BuildConfig buildConfig) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
