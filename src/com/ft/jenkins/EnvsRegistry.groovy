@@ -25,12 +25,12 @@ class EnvsRegistry implements Serializable {
     stagingPAC.regions = ["eu", "us"]
     stagingPAC.clusters = [Cluster.PAC]
     stagingPAC.clusterToApiServerMap = [
-        ("eu-" + Cluster.PAC.toString()): "https://pac-staging-eu-api.upp.ft.com",
-        ("us-" + Cluster.PAC.toString()): "https://pac-staging-us-api.upp.ft.com",
+        ("eu-" + Cluster.PAC.toString()): "https://pac-staging-eu-api.ft.com",
+        ("us-" + Cluster.PAC.toString()): "https://pac-staging-us-api.ft.com",
     ]
     stagingPAC.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.upp.ft.com",
-        (Cluster.DELIVERY.toString()): "https://upp-staging-delivery.upp.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-staging-delivery.ft.com"
     ]
 
     Environment prodPAC = new Environment()
@@ -62,14 +62,14 @@ class EnvsRegistry implements Serializable {
     staging.regions = ["eu", "us"]
     staging.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     staging.clusterToApiServerMap = [
-        ("eu-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-eu-api.upp.ft.com",
-        ("us-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-us-api.upp.ft.com",
-        ("eu-" + Cluster.PUBLISHING): "https://upp-staging-publish-eu-api.upp.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://upp-staging-publish-us-api.upp.ft.com"
+        ("eu-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-eu-api.ft.com",
+        ("us-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-us-api.ft.com",
+        ("eu-" + Cluster.PUBLISHING): "https://upp-staging-publish-eu-api.ft.com",
+        ("us-" + Cluster.PUBLISHING): "https://upp-staging-publish-us-api.ft.com"
     ]
     staging.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.upp.ft.com",
-        (Cluster.DELIVERY.toString()): "https://upp-staging-delivery.upp.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-staging-delivery.ft.com"
     ]
 
     Environment prod = new Environment()
