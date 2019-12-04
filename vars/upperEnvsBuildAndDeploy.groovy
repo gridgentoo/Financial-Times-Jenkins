@@ -15,8 +15,6 @@ import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.HELM_CONFIG_FOLDER
 
-import hudson.Launcher
-
 def call(GithubReleaseInfo releaseInfo, BuildConfig buildConfig) {
 
   DeploymentUtils deployUtil = new DeploymentUtils()
@@ -271,11 +269,7 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     }
     data.notifyChannel = environment.slackChannel
     //this will be removed
-    //git url: "https://github.com/Financial-Times/content-k8s-provisioner", credentialsId: "ft-upp-team"
-    sshagent (credentials: ['ft-upp-team']) {
-      def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/master | cut -f 1")
-    }
-    //def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/master | cut -f 1")
+    def output = getGithubLatestCommit("master", "content-k8s-provisioner")
     print "Latest commit hash of content-k8s-provisioner branch master is ${output}"
     //this will be removed
     ChangeRequestsUtils crUtils = new ChangeRequestsUtils()
@@ -295,6 +289,22 @@ final class JenkinsDeployInput implements Serializable {
     this.approver = approver
     this.selectedRegion = selectedRegion
   }
+}
+
+private String getGithubLatestCommit(String branch, String repoName) {
+  /*  fetch the release info*/
+  GString requestedUrl = "https://api.github.com/repos/Financial-Times/${repoName}/commits/${branch}"
+  try {
+    releaseResponse = httpRequest(acceptType: 'APPLICATION_JSON',
+                                  authentication: 'ft.github.credentials',
+                                  url: requestedUrl)
+  } catch (IllegalStateException e) {
+    echo"Release in GitHub could not be found at URL: ${requestedUrl}. Error: ${e.message}"
+    return null
+  }
+  def releaseInfoJson = new JsonSlurper().parseText(releaseResponse.content)
+  echo "${releaseInfoJson}"
+  String latestCommit = releaseInfoJson.name
 }
 
 void sendSlackMessageForIntermediaryDeploy(GithubReleaseInfo releaseInfo, Environment targetEnv,
