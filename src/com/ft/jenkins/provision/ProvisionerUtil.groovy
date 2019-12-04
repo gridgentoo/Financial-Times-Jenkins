@@ -13,6 +13,8 @@ import com.ft.jenkins.slack.SlackUtils
 
 import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
 
+import groovy.json.JsonSlurper
+
 public void updateCluster(String fullClusterName, String gitBranch, String updateReason) {
   String credentialsDir = unzipTlsCredentialsForCluster(fullClusterName)
   echo "Unzipped the TLS credentials used when the cluster ${fullClusterName} was created in folder ${credentialsDir}"
@@ -111,7 +113,7 @@ private String openChangeRequest(String gitBranch, ClusterUpdateInfo updateInfo,
 
     data.gitTagOrCommit = "commit"
     
-    data.gitReleaseTagOrCommit = checkCommitID(gitBranch)
+    data.gitReleaseTagOrCommit = getGithubLatestCommit(gitBranch, "content-k8s-provisioner")
     data.gitRepositoryName = "https://github.com/Financial-Times/content-k8s-provisioner"
 
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
@@ -127,12 +129,22 @@ private String openChangeRequest(String gitBranch, ClusterUpdateInfo updateInfo,
   }
 }
 
-private String checkCommitID(String branch) {
-  git url: "https://github.com/Financial-Times/content-k8s-provisioner", credentialsId: "ft-upp-team"
-  def output = sh(returnStdout: true, script: "git ls-remote git@github.com:Financial-Times/content-k8s-provisioner.git | grep refs/heads/${gitBranch} | cut -f 1")
-  print "Latest commit hash of content-k8s-provisioner branch ${branch} is ${output}"
-  return output
+private String getGithubLatestCommit(String branch, String repoName) {
+  /*  fetch the release info*/
+  GString requestedUrl = "https://api.github.com/repos/Financial-Times/${repoName}/commits/${branch}"
+  try {
+    releaseResponse = httpRequest(acceptType: 'APPLICATION_JSON',
+                                  authentication: 'ft.github.credentials',
+                                  url: requestedUrl)
+  } catch (IllegalStateException e) {
+    echo"Release in GitHub could not be found at URL: ${requestedUrl}. Error: ${e.message}"
+    return null
+  }
+  def releaseInfoJson = new JsonSlurper().parseText(releaseResponse.content)
+  String latestCommit = releaseInfoJson.sha
+  return latestCommit
 }
+
 private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, String gitBranch) {
   GString vaultCredentialsId = "ft.k8s-provision.${updateInfo.platform}.env-type-${updateInfo.envType.shortName}.vault.pass"
 
