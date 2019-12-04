@@ -26,7 +26,7 @@ class EnvsRegistry implements Serializable {
     stagingPAC.clusters = [Cluster.PAC]
     stagingPAC.clusterToApiServerMap = [
         ("eu-" + Cluster.PAC.toString()): "https://pac-staging-eu-api.ft.com",
-        ("us-" + Cluster.PAC.toString()): "https://pac-staging-us-api.ft.com",
+        ("us-" + Cluster.PAC.toString()): "https://pac-staging-us-api.upp.ft.com",
     ]
     stagingPAC.glbMap = [
         (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com",
@@ -63,9 +63,9 @@ class EnvsRegistry implements Serializable {
     staging.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     staging.clusterToApiServerMap = [
         ("eu-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-eu-api.ft.com",
-        ("us-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-us-api.ft.com",
+        ("us-" + Cluster.DELIVERY)  : "https://upp-staging-delivery-us-api.upp.ft.com",
         ("eu-" + Cluster.PUBLISHING): "https://upp-staging-publish-eu-api.ft.com",
-        ("us-" + Cluster.PUBLISHING): "https://upp-staging-publish-us-api.ft.com"
+        ("us-" + Cluster.PUBLISHING): "https://upp-staging-publish-us-api.upp.ft.com"
     ]
     staging.glbMap = [
         (Cluster.PUBLISHING.toString()): "https://upp-staging-publish.ft.com",
