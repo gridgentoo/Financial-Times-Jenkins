@@ -19,7 +19,7 @@ public String open(ChangeRequestOpenData crData, String credentialId = DEFAULT_C
 	"notifications": {
 		"slackChannels": ["${crData.notifyChannel}"]
 	},
-  "${crData.gitTagOrCommit}": "${crData.gitReleaseTagOrCommit}",
+  "${crData.gitTagOrCommitType}": "${crData.gitReleaseTagOrCommit}",
   "gitRepositoryName": "${crData.gitRepositoryName}",
   "extraProperties": {
 		"changeDescription": ["${crData.summary}"],

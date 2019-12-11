@@ -257,7 +257,7 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     //Check if systemCode actually exists. If it does not, assign upp to it instead.
     String existingEvaluatedSystemCode = evaluateSystemCode.checkSystemCode(evaluatedSystemCode)
     data.systemCode = existingEvaluatedSystemCode
-    data.gitTagOrCommit = "gitReleaseTag"
+    data.gitTagOrCommitType = "gitReleaseTag"
     data.gitReleaseTagOrCommit = releaseInfo.tagName
     data.gitRepositoryName = releaseInfo.url
 

@@ -109,9 +109,8 @@ private String openChangeRequest(String gitBranch, ClusterUpdateInfo updateInfo,
     } else  {
       data.systemCode = "upp"
     }
-    //data.systemCode = "${fullClusterName}"
 
-    data.gitTagOrCommit = "commit"
+    data.gitTagOrCommitType = "commit"
     
     data.gitReleaseTagOrCommit = getGithubLatestCommit(gitBranch, "content-k8s-provisioner")
     data.gitRepositoryName = "https://github.com/Financial-Times/content-k8s-provisioner"
