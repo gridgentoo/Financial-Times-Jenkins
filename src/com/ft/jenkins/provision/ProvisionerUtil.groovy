@@ -10,6 +10,7 @@ import com.ft.jenkins.changerequests.ChangeRequestOpenData
 import com.ft.jenkins.changerequests.ChangeRequestsUtils
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
+import com.ft.jenkins.provision.ProvisionConstants
 
 import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
 
@@ -113,7 +114,7 @@ private String openChangeRequest(String gitBranch, ClusterUpdateInfo updateInfo,
     data.gitTagOrCommitType = "commit"
     
     data.gitReleaseTagOrCommit = getGithubLatestCommit(gitBranch, "content-k8s-provisioner")
-    data.gitRepositoryName = "https://github.com/Financial-Times/content-k8s-provisioner"
+    data.gitRepositoryName = ProvisionConstants.REPO_URL
 
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
