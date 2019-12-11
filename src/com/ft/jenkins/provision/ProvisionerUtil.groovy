@@ -32,8 +32,7 @@ public void updateCluster(String fullClusterName, String gitBranch, String updat
     sendStartUpdateNotification(fullClusterName, updateReason)
 
     catchError {
-      //performUpdateCluster(updateInfo, credentialsDir, gitBranch)
-      echo "Testing Jenkins pipelines, no actual update"
+      performUpdateCluster(updateInfo, credentialsDir, gitBranch)
     }
     echo "Ended update for cluster ${fullClusterName}"
     sendFinishUpdateNotification(fullClusterName, updateReason)
