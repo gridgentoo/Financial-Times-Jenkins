@@ -10,8 +10,11 @@ import com.ft.jenkins.changerequests.ChangeRequestOpenData
 import com.ft.jenkins.changerequests.ChangeRequestsUtils
 import com.ft.jenkins.slack.SlackAttachment
 import com.ft.jenkins.slack.SlackUtils
+import com.ft.jenkins.provision.ProvisionConstants
 
 import static com.ft.jenkins.DeploymentUtilsConstants.CREDENTIALS_DIR
+
+import groovy.json.JsonSlurper
 
 public void updateCluster(String fullClusterName, String gitBranch, String updateReason) {
   String credentialsDir = unzipTlsCredentialsForCluster(fullClusterName)
@@ -21,7 +24,7 @@ public void updateCluster(String fullClusterName, String gitBranch, String updat
   echo "For cluster ${fullClusterName} determined update info: ${updateInfo.toString()}"
 
   Environment updatedEnv = EnvsRegistry.getEnvironmentByFullName(fullClusterName)
-  String crId = openChangeRequest(updateInfo, fullClusterName, updateReason, updatedEnv)
+  String crId = openChangeRequest(gitBranch, updateInfo, fullClusterName, updateReason, updatedEnv)
 
   catchError { // don't propagate error, so that we can close the CR
     echo "Starting update for cluster ${fullClusterName} ... "
@@ -90,7 +93,7 @@ private void sendFinishUpdateNotification(String fullClusterName, String updateR
   }
 }
 
-private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullClusterName, String updateReason,
+private String openChangeRequest(String gitBranch, ClusterUpdateInfo updateInfo, String fullClusterName, String updateReason,
                                  Environment updatedEnv) {
   /*  do not open change requests for Development environments. */
   if (updateInfo.envType == EnvType.DEVELOPMENT) {
@@ -107,7 +110,12 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
     } else  {
       data.systemCode = "upp"
     }
-    //data.systemCode = "${fullClusterName}"
+
+    data.gitTagOrCommitType = "commit"
+    
+    data.gitReleaseTagOrCommit = getGithubLatestCommit(gitBranch, "content-k8s-provisioner")
+    data.gitRepositoryName = ProvisionConstants.REPO_URL
+
     data.environment = updateInfo.envType == EnvType.PROD ? ChangeRequestEnvironment.Production :
                        ChangeRequestEnvironment.Test
     data.notifyChannel = updatedEnv.slackChannel
@@ -119,6 +127,22 @@ private String openChangeRequest(ClusterUpdateInfo updateInfo, String fullCluste
   catch (e) { //  do not fail if the CR interaction fail
     echo "Error while opening CR for cluster ${fullClusterName} update: ${e.message} "
   }
+}
+
+private String getGithubLatestCommit(String branch, String repoName) {
+  /*  fetch the release info*/
+  GString requestedUrl = "https://api.github.com/repos/Financial-Times/${repoName}/commits/${branch}"
+  try {
+    releaseResponse = httpRequest(acceptType: 'APPLICATION_JSON',
+                                  authentication: 'ft.github.credentials',
+                                  url: requestedUrl)
+  } catch (IllegalStateException e) {
+    echo"Release in GitHub could not be found at URL: ${requestedUrl}. Error: ${e.message}"
+    return null
+  }
+  def releaseInfoJson = new JsonSlurper().parseText(releaseResponse.content)
+  String latestCommit = releaseInfoJson.sha
+  return latestCommit
 }
 
 private void performUpdateCluster(ClusterUpdateInfo updateInfo, credentialsDir, String gitBranch) {

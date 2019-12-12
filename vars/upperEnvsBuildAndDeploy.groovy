@@ -273,6 +273,9 @@ private String openCr(String approver, GithubReleaseInfo releaseInfo, Environmen
     //Check if systemCode actually exists. If it does not, assign upp to it instead.
     String existingEvaluatedSystemCode = evaluateSystemCode.checkSystemCode(evaluatedSystemCode)
     data.systemCode = existingEvaluatedSystemCode
+    data.gitTagOrCommitType = "gitReleaseTag"
+    data.gitReleaseTagOrCommit = releaseInfo.tagName
+    data.gitRepositoryName = releaseInfo.url
 
     data.summary = "Deploying chart ${chartName}:${releaseInfo.tagName} with apps ${computeSimpleTextForAppsToDeploy(appsPerCluster)} in ${environment.name}"
     if (environment.name == Environment.PROD_NAME || environment.name == "prodpac"){
