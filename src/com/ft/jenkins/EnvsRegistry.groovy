@@ -39,12 +39,12 @@ class EnvsRegistry implements Serializable {
     prodPAC.regions = ["eu", "us"]
     prodPAC.clusters = [Cluster.PAC]
     prodPAC.clusterToApiServerMap = [
-        ("eu-" + Cluster.PAC.toString()): "https://pac-prod-eu-api.ft.com",
+        ("eu-" + Cluster.PAC.toString()): "https://pac-prod-eu-api.upp.ft.com",
         ("us-" + Cluster.PAC.toString()): "https://pac-prod-us-api.upp.ft.com",
     ]
     prodPAC.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish.ft.com",
-        (Cluster.DELIVERY.toString()): "https://upp-prod-delivery.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish-glb.upp.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-prod-delivery-glb.upp.ft.com"
     ]
 
     Environment gcPAC = new Environment()
@@ -78,14 +78,14 @@ class EnvsRegistry implements Serializable {
     prod.regions = ["eu", "us"]
     prod.clusters = [Cluster.DELIVERY, Cluster.PUBLISHING]
     prod.clusterToApiServerMap = [
-        ("eu-" + Cluster.DELIVERY)  : "https://upp-prod-delivery-eu-api.ft.com",
+        ("eu-" + Cluster.DELIVERY)  : "https://upp-prod-delivery-eu-api.upp.ft.com",
         ("us-" + Cluster.DELIVERY)  : "https://upp-prod-delivery-us-api.upp.ft.com",
-        ("eu-" + Cluster.PUBLISHING): "https://upp-prod-publish-eu-api.ft.com",
+        ("eu-" + Cluster.PUBLISHING): "https://upp-prod-publish-eu-api.upp.ft.com",
         ("us-" + Cluster.PUBLISHING): "https://upp-prod-publish-us-api.upp.ft.com"
     ]
     prod.glbMap = [
-        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish.ft.com",
-        (Cluster.DELIVERY.toString()): "https://upp-prod-delivery.ft.com"
+        (Cluster.PUBLISHING.toString()): "https://upp-prod-publish-glb.upp.ft.com",
+        (Cluster.DELIVERY.toString()): "https://upp-prod-delivery-glb.upp.ft.com"
     ]
 
     envs = [k8s, stagingPAC, staging, gcPAC, prodPAC, prod]
