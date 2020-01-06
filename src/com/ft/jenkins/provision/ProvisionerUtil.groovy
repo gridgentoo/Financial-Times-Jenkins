@@ -199,7 +199,7 @@ public ClusterUpdateInfo getClusterUpdateInfo(String clusterFullName) {
   info.region = components[componentsNum - 1]
 
   info.envType = Environment.getEnvTypeForName(info.envName)
-  info.oidcIssuerUrl = "https://${clusterFullName}-dex.ft.com"
+  info.oidcIssuerUrl = "https://${clusterFullName}-dex.upp.ft.com"
 
   return info
 }
