@@ -24,9 +24,9 @@ public def buildImage(String dockerTag, String folder = ".") {
   def image
   /*  adding the internal nexus credentials to support the maven apps connecting to Nexus */
   withCredentials([usernamePassword(credentialsId: "nexus.credentials", passwordVariable: 'NEXUS_PASSWORD',
-                                    usernameVariable: 'NEXUS_USERNAME')]) {
+                                    usernameVariable: 'NEXUS_USERNAME'), usernamePassword(credentials: "github.token.credentials", usernameVariable: "GITHUB_USERNAME", passwordVariable: "GITHUB_TOKEN")]) {
     image = docker.build(dockerTag,
-                         "--build-arg SONATYPE_USER=${env.NEXUS_USERNAME} --build-arg SONATYPE_PASSWORD=${env.NEXUS_PASSWORD} ${folder}")
+                         "--build-arg SONATYPE_USER=${env.NEXUS_USERNAME} --build-arg SONATYPE_PASSWORD=${env.NEXUS_PASSWORD} --build-arg GITHUB_USERNAME=${env.GITHUB_USERNAME} --build-arg GITHUB_TOKEN=${env.GITHUB_TOKEN} ${folder}")
   }
   return image
 }
