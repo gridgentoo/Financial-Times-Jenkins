@@ -43,11 +43,15 @@ def call(GithubReleaseInfo releaseInfo, BuildConfig buildConfig) {
           chartName = deployUtil.publishHelmChart(appVersion)
         }
       }
-      appsInRepo = deployUtil.getAppsInChart("${HELM_CONFIG_FOLDER}/${chartName}", EnvsRegistry.getEnvironment(buildConfig.preprodEnvName))
+      appsInRepo = deployUtil.getAppsInChart("${HELM_CONFIG_FOLDER}/${chartName}", EnvsRegistry.getEnvironment(buildConfig.prodEnvName))
     }
 
+
+    /* deploying automatically to the only k8s team env */
+    autoDeployToEnvironment("k8s", chartName, appVersion, 1)
+
     initiateDeploymentToEnvironment(buildConfig.preprodEnvName, chartName, appVersion, releaseInfo, appsInRepo
-                                    , 1)
+                                    , 5)
 
     initiateDeploymentToEnvironment(buildConfig.prodEnvName, chartName, appVersion, releaseInfo, appsInRepo
                                     , 7)
@@ -114,6 +118,18 @@ public void initiateDeploymentToEnvironment(String targetEnvName, String chartNa
 
 }
 
+public void autoDeployToEnvironment(String targetEnvName, String chartName,
+                                            String version,
+                                            int daysForTheDeployment) {
+  Environment environment = EnvsRegistry.getEnvironment(targetEnvName)
+  stage("autodeploy to ${environment.name}") {
+    timeout(time: daysForTheDeployment, unit: 'DAYS') {
+      deployAppsToEnvironmentRegions(environment.getRegions(), chartName, version, environment)
+    }
+  }
+
+}
+
 public void deployAppsToEnvironmentRegions(List<String> regionsToDeployTo, String chartName, String imageVersion,
                                            Environment environment) {
 
@@ -127,7 +143,7 @@ public void deployAppsToEnvironmentRegions(List<String> regionsToDeployTo, Strin
               string(name: 'Environment', value: environment.getName()),
               string(name: 'Cluster', value: 'all-in-chart'),
               string(name: 'Region', value: region),
-              booleanParam(name: 'Send success notifications', value: false)]
+              booleanParam(name: 'Send success notifications', value: true)]
 
   }
 }
