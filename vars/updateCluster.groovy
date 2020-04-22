@@ -1,6 +1,6 @@
-import com.ft.jenkins.docker.DockerUtils
-import com.ft.jenkins.provision.ProvisionConstants
-import com.ft.jenkins.provision.ProvisionerUtil
+import com.ft.jenkins.docker.Docker
+import com.ft.jenkins.provision.ProvisionersConstants
+import com.ft.jenkins.provision.Provisioners
 
 def call() {
   String fullClusterName = env."Cluster name"
@@ -9,14 +9,14 @@ def call() {
 
   setCurrentBuildInfo(fullClusterName, gitBranch, updateReason)
 
-  ProvisionerUtil provisionerUtil = new ProvisionerUtil()
+  Provisioners provisioners = new Provisioners()
 
   catchError {
     node('docker') {
       buildProvisionerImage(gitBranch)
 
       stage('update cluster') {
-        provisionerUtil.updateCluster(fullClusterName, gitBranch, updateReason)
+        provisioners.updateCluster(fullClusterName, gitBranch, updateReason)
       }
     }
   }
@@ -41,14 +41,14 @@ private void buildProvisionerImage(String gitBranch) {
       checkout([$class           : 'GitSCM',
                 branches         : [[name: gitBranch]],
                 extensions       : [[$class: 'RelativeTargetDirectory', relativeTargetDir: relativeTargetDir]],
-                userRemoteConfigs: [[url: ProvisionConstants.REPO_URL]]
+                userRemoteConfigs: [[url: ProvisionersConstants.REPO_URL]]
       ])
     }
     /*  create a dummy credentials folder so that the image build will work */
     sh "mkdir -p ${relativeTargetDir}/credentials"
     stage('build provisioner image') {
-      DockerUtils dockerUtils = new DockerUtils()
-      dockerUtils.buildImage("${ProvisionConstants.DOCKER_IMAGE}:${gitBranch}", relativeTargetDir)
+      Docker dockerUtils = new Docker()
+      dockerUtils.buildImage("${ProvisionersConstants.DOCKER_IMAGE}:${gitBranch}", relativeTargetDir)
     }
 
   }

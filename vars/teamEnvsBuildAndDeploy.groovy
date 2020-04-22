@@ -1,23 +1,26 @@
-import com.ft.jenkins.BuildConfig
-import com.ft.jenkins.DeploymentUtils
-import com.ft.jenkins.DeploymentUtilsConstants
-import com.ft.jenkins.Environment
-import com.ft.jenkins.EnvsRegistry
-import com.ft.jenkins.docker.DockerUtils
-import com.ft.jenkins.git.GitUtils
+import com.ft.jenkins.cluster.BuildConfig
+import com.ft.jenkins.cluster.ClusterType
+import com.ft.jenkins.cluster.Environment
+import com.ft.jenkins.cluster.EnvsRegistry
+import com.ft.jenkins.cluster.Region
+import com.ft.jenkins.deployment.Deployments
+import com.ft.jenkins.deployment.DeploymentsConstants
+import com.ft.jenkins.docker.Docker
+import com.ft.jenkins.git.GitHelper
 
 def call(BuildConfig buildConfig, String targetEnvName, String releaseName, boolean branchRelease) {
   /*  check if the build is allowed for the target environment */
-  Environment targetEnv = EnvsRegistry.getEnvironment(targetEnvName)
-  if (!targetEnv.clusters.containsAll(buildConfig.allowedClusters)) {
-    stage("Target env `${targetEnvName}`doesn't have ${buildConfig.allowedClusters} clusters => Not deployed"){
-      echo "This pipeline deploys only to ${buildConfig.allowedClusters} clusters. The release ${releaseName} is for env ${targetEnvName} that doesn't contain these clusters. ${targetEnvName} contains only the clusters ${targetEnv.clusters}"
+  def allowedClusterTypes = buildConfig.allowedClusterTypes
+  boolean hasAllowedClusterType = EnvsRegistry.hasAllowedClusterType(allowedClusterTypes, targetEnvName)
+  if (!hasAllowedClusterType) {
+    stage("Target env `${targetEnvName}` does not belong to any of the allowed clusters types: ${allowedClusterTypes} => Not deployed") {
+      echo "This pipeline deploys only to ${allowedClusterTypes} clusters. The release ${releaseName} is for env ${targetEnvName} that doesn't contain these clusters."
     }
     return
   }
 
-  DeploymentUtils deployUtil = new DeploymentUtils()
-  DockerUtils dockerUtils = new DockerUtils()
+  Deployments deployments = new Deployments()
+  Docker docker = new Docker()
 
   String appVersion
   String chartName
@@ -34,15 +37,14 @@ def call(BuildConfig buildConfig, String targetEnvName, String releaseName, bool
 
         if (fileExists("Dockerfile")) { //  build Docker image only if we have a Dockerfile
           stage('build image') {
-            String dockerRepository = deployUtil.getDockerImageRepository()
-            dockerUtils.buildAndPushImage("${dockerRepository}:${appVersion}")
+            String dockerRepository = deployments.getDockerImageRepository()
+            docker.buildAndPushImage("${dockerRepository}:${appVersion}")
           }
         }
 
         stage('publish chart') {
-          chartName = deployUtil.publishHelmChart(appVersion)
+          chartName = deployments.publishHelmChart(appVersion)
         }
-
       }
     }
 
@@ -55,37 +57,36 @@ def call(BuildConfig buildConfig, String targetEnvName, String releaseName, bool
   if (currentBuild.resultIsWorseOrEqualTo("FAILURE")) {
     return
   }
-
   /*  this is called outside of a node, so that the node is released, and so the executor is released during the deploy. */
   stage("deploy chart") {
     /*  trigger the generic job for deployment */
-    build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
-          parameters: [
-              string(name: 'Chart', value: chartName),
-              string(name: 'Version', value: appVersion),
-              string(name: 'Environment', value: targetEnvName),
-              string(name: 'Cluster', value: 'all-in-chart'),
-              string(name: 'Region', value: 'all'),
-              booleanParam(name: 'Send success notifications', value: true)]
+    build job: DeploymentsConstants.GENERIC_DEPLOY_JOB,
+            parameters: [
+                    string(name: 'Chart', value: chartName),
+                    string(name: 'Version', value: appVersion),
+                    string(name: 'Environment', value: targetEnvName),
+                    string(name: 'Cluster', value: ClusterType.ALL_IN_CHART.label),
+                    string(name: 'Region', value: Region.ALL.name),
+                    string(name: 'Namespace', value: Environment.DEFAULT_KUBE_NAMESPACE),
+                    booleanParam(name: 'Send success notifications', value: true)]
   }
 }
 
-private String getImageVersion(String releaseName, boolean branchRelease) {
+private static String getImageVersion(String releaseName, boolean branchRelease) {
   if (branchRelease) {
+    GitHelper gitHelper = new GitHelper()
     /*  if we're releasing from a branch we need a valid semver, thus we'll be using the most recent git tag in the branch */
-    GitUtils gitUtils = new GitUtils()
-    String latestGitTag = gitUtils.getMostRecentGitTag()
+    String latestGitTag = gitHelper.getMostRecentGitTag()
 
     /* using the latest commit so that we generate unique image names for different commits on the same branch */
-    String latestCommit = gitUtils.getShortLatestCommit()
-    return "${latestGitTag}-${latestCommit}-${releaseName}"
+    String latestCommit = gitHelper.getShortLatestCommit()
+    String imageVersion = "${latestGitTag}-${latestCommit}-${releaseName}"
+    imageVersion
   }
-
-  return releaseName
+  releaseName
 }
 
 void setCurrentBuildProps(String appVersion) {
-  GitUtils gitUtils = new GitUtils()
-  currentBuild.displayName="${env.BUILD_NUMBER} - ${gitUtils.getShortLatestCommit()}"
-  currentBuild.description="version: ${appVersion}"
+  currentBuild.displayName = "${env.BUILD_NUMBER} - ${new GitHelper().getShortLatestCommit()}"
+  currentBuild.description = "version: ${appVersion}"
 }

@@ -6,8 +6,8 @@ package com.ft.jenkins.exceptions
  * Examples:
  *  - publish-availability-monitor_publishing_k8s.yaml
  */
-public class InvalidAppConfigFileNameException extends Exception {
-  public InvalidAppConfigFileNameException(String message) {
+class InvalidAppConfigFileNameException extends Exception {
+  InvalidAppConfigFileNameException(String message) {
     super(message)
   }
 }

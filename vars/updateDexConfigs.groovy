@@ -1,9 +1,10 @@
-import com.ft.jenkins.Cluster
-import com.ft.jenkins.DeploymentUtils
-import com.ft.jenkins.Environment
-import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.cluster.ClusterType
+import com.ft.jenkins.cluster.Region
+import com.ft.jenkins.deployment.Deployments
+import com.ft.jenkins.cluster.Environment
+import com.ft.jenkins.cluster.EnvsRegistry
 import com.ft.jenkins.provision.ClusterUpdateInfo
-import com.ft.jenkins.provision.ProvisionerUtil
+import com.ft.jenkins.provision.Provisioners
 
 def call() {
     node("docker") {
@@ -11,7 +12,7 @@ def call() {
             cleanWs()
         }
 
-        DeploymentUtils deploymentUtils = new DeploymentUtils()
+        Deployments deployments = new Deployments()
         String app = "upp-dex-config"
         String gitBranch = env."Dex Config Git branch"
         String chartFolderLocation = "helm/" + app
@@ -20,20 +21,19 @@ def call() {
 
         configMap.each { String clusterName, Map<String, String> secrets ->
             stage(clusterName) {
-                ProvisionerUtil provisionerUtil = new ProvisionerUtil()
-                ClusterUpdateInfo clusterUpdateInfo = provisionerUtil.getClusterUpdateInfo(clusterName)
-                if (clusterUpdateInfo == null || clusterUpdateInfo.cluster == null || clusterUpdateInfo.region == null) {
+                ClusterUpdateInfo clusterUpdateInfo = Provisioners.getClusterUpdateInfo(clusterName)
+                if (clusterUpdateInfo == null || clusterUpdateInfo.clusterType == null || clusterUpdateInfo.region == null) {
                     throw new IllegalArgumentException("Cannot extract cluster info from cluster name " + clusterName)
                 }
-                Cluster targetCluster = Cluster.valueOfLabel(clusterUpdateInfo.cluster)
+                ClusterType targetCluster = ClusterType.toClusterType(clusterUpdateInfo.clusterType)
                 if (targetCluster == null) {
                     if (clusterName.contains("pac")) {
-                        targetCluster = Cluster.PAC
+                        targetCluster = ClusterType.PAC
                     } else {
-                        throw new IllegalArgumentException("Unknown cluster" + clusterUpdateInfo.cluster)
+                        throw new IllegalArgumentException("Unknown cluster" + clusterUpdateInfo.clusterType)
                     }
                 }
-                String targetRegion = clusterUpdateInfo.region
+                Region targetRegion = clusterUpdateInfo.region
                 if (targetRegion == null) {
                     throw new IllegalArgumentException("Cannot determine region from cluster name: " + clusterName)
                 }
@@ -53,7 +53,7 @@ def call() {
                 writeFile([file: valuesFile, text: buildHelmValues2(secrets, clusterName)])
 
                 String helmDryRunOutput = "output.txt"
-                deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
+                deployments.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
                     sh "helm upgrade --debug --dry-run ${app} ${chartFolderLocation} -i --timeout 1200 -f ${valuesFile} > ${helmDryRunOutput}"
                 })
 
@@ -63,7 +63,7 @@ def call() {
                 sh "rm ${chartFolderLocation}/templates/dex-config.yaml"
                 sh "mv ${dexSecretFile} ${chartFolderLocation}/templates/dex-config.yaml"
 
-                deploymentUtils.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
+                deployments.runWithK8SCliTools(targetEnv, targetCluster, targetRegion, {
                     sh """
                         kubectl apply -f ${chartFolderLocation}/templates/dex-config.yaml --validate=false;
                         sleep 5; kubectl scale deployment content-auth-dex --replicas=0;
@@ -115,10 +115,10 @@ private Object checkoutDexConfig(String app, String gitBranch) {
     ])
 }
 
-private String buildHelmValues2(Map<String, String> secrets, String clusterName) {
+private static String buildHelmValues2(Map<String, String> secrets, String clusterName) {
     String helmValues = "kubectl:\n  login:\n    secret: " +
             '"' + secrets."kubectl.login.secret" + '"' + "\ncluster:\n  name: " + '"' + clusterName + '"' +
             "\nldap:\n  host: " + '"' + secrets."ldap.host" + '"' + "\n  bindDN: " + '"' + secrets."ldap.bindDN" + '"' +
             "\n  bindPW: " + '"' + secrets."ldap.bindPW" + '"' + "\n"
-    return helmValues
+    helmValues
 }

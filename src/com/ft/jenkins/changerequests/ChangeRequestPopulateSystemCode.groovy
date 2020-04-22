@@ -8,7 +8,7 @@ final class BizOpsConstants {
   public static final String DEFAULT_CREDENTIALS = "ft.bizops-api.key"
 }
 
-public String populateSystemCode(String systemCode) {
+String populateSystemCode(String systemCode) {
 	switch(systemCode)	{
 		case "binary-writer" : return "up-ibw"
 		case "body-validation-service" : return "body-validation"
@@ -55,7 +55,7 @@ public String populateSystemCode(String systemCode) {
 	}
 }
 
-public String checkSystemCode(String systemCode, String credentialId = DEFAULT_CREDENTIALS)   {
+String checkSystemCode(String systemCode, String credentialId = DEFAULT_CREDENTIALS)   {
     echo "Checking systemCode in Biz-Ops"
     try {
         String bizOpsURL = 'https://api.ft.com/biz-ops/graphql?query='

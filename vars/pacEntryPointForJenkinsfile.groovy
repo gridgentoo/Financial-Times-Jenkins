@@ -1,5 +1,6 @@
-import com.ft.jenkins.BuildConfig
-import com.ft.jenkins.Cluster
+import com.ft.jenkins.cluster.BuildConfig
+import com.ft.jenkins.cluster.ClusterType
+import com.ft.jenkins.cluster.Environment
 
 /**
  * Entry point to be used in PAC repositories.
@@ -9,9 +10,9 @@ import com.ft.jenkins.Cluster
 
 def call() {
   BuildConfig config = new BuildConfig()
-  config.setPreprodEnvName("stagingpac")
-  config.setProdEnvName("prodpac")
-  config.allowedClusters = [Cluster.PAC]
+  config.setPreprodEnvName(Environment.STAGING_NAME)
+  config.setProdEnvName(Environment.PROD_NAME)
+  config.allowedClusterTypes = [ClusterType.PAC]
 
   genericEntryPointForJenkinsfile(config)
 }
