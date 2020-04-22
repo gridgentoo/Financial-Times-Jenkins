@@ -4,15 +4,15 @@ class SyncInfo implements Serializable {
   List<String> selectedChartsForAdding = [], selectedChartsForUpdating = [], selectedChartsForRemoving = []
   DiffInfo diffInfo
 
-  public String addedChartsVersions() {
-    return DiffUtil.getChartsWithVersion(selectedChartsForAdding, diffInfo.sourceChartsVersions)
+  String addedChartsVersions() {
+    return Diffs.getChartsWithVersion(selectedChartsForAdding, diffInfo.sourceChartsVersions)
   }
 
-  public String modifiedChartsVersions() {
-    return DiffUtil.getChartsDiffVersion(selectedChartsForUpdating, diffInfo.targetChartsVersions, diffInfo.sourceChartsVersions)
+  String modifiedChartsVersions() {
+    return Diffs.getChartsDiffVersion(selectedChartsForUpdating, diffInfo.targetChartsVersions, diffInfo.sourceChartsVersions)
   }
 
-  public String removedChartsVersions() {
-    DiffUtil.getChartsWithVersion(selectedChartsForRemoving, diffInfo.targetChartsVersions)
+  String removedChartsVersions() {
+    Diffs.getChartsWithVersion(selectedChartsForRemoving, diffInfo.targetChartsVersions)
   }
 }

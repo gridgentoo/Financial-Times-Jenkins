@@ -9,7 +9,7 @@ package com.ft.jenkins.exceptions
  *  - publish-availability-monitor_publishing_k8s.yaml
  */
 class ConfigurationNotFoundException extends Exception {
-  ConfigurationNotFoundException(String var1) {
-    super(var1)
+  ConfigurationNotFoundException(String message) {
+    super(message)
   }
 }

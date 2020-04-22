@@ -1,7 +1,7 @@
-import com.ft.jenkins.BuildConfig
-import com.ft.jenkins.DeploymentUtils
-import com.ft.jenkins.git.GitUtils
-import com.ft.jenkins.git.GitUtilsConstants
+import com.ft.jenkins.cluster.BuildConfig
+import com.ft.jenkins.deployment.Deployments
+import com.ft.jenkins.git.GitHelper
+import com.ft.jenkins.git.GitHelperConstants
 import com.ft.jenkins.git.GithubReleaseInfo
 
 /**
@@ -14,38 +14,29 @@ import com.ft.jenkins.git.GithubReleaseInfo
  */
 
 def call(BuildConfig config) {
-  GitUtils gitUtils = new GitUtils()
   String currentBranch = (String) env.BRANCH_NAME
   String currentTag = (String) env.TAG_NAME
-  DeploymentUtils deployUtils = new DeploymentUtils()
 
-  if (gitUtils.isTag(currentTag)) {
+  GitHelper gitHelper = new GitHelper()
+
+  if (GitHelper.isTag(currentTag)) {
     String tagName = env.TAG_NAME
-    GithubReleaseInfo releaseInfo = getReleaseInfoForCurrentTag(tagName)
+    GithubReleaseInfo releaseInfo = gitHelper.getReleaseInfoForCurrentTag(tagName)
 
     if (releaseInfo == null || releaseInfo.isPreRelease) {
-      String envToDeploy = deployUtils.getTeamFromReleaseCandidateTag(tagName)
+      String envToDeploy = Deployments.getTeamFromReleaseCandidateTag(tagName)
       teamEnvsBuildAndDeploy(config, envToDeploy, tagName, false)
     } else {
       upperEnvsBuildAndDeploy(releaseInfo, config)
     }
-  } else if (gitUtils.isDeployOnPushForBranch(currentBranch)) {
+  } else if (GitHelper.isDeployOnPushForBranch(currentBranch)) {
     if (currentBranch.contains(config.preprodEnvName) || currentBranch.contains(config.prodEnvName)) {
-      echo "Skipping branch ${currentBranch} as ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX} can't be used to push to upper environments."
+      echo "Skipping branch ${currentBranch} as ${GitHelperConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX} can't be used to push to upper environments."
     } else {
-      String releaseCandidateName = deployUtils.getReleaseCandidateName(currentBranch)
-      teamEnvsBuildAndDeploy(config, deployUtils.getEnvironmentName(currentBranch), releaseCandidateName, true)
+      String releaseCandidateName = Deployments.getReleaseCandidateName(currentBranch)
+      teamEnvsBuildAndDeploy(config, Deployments.getEnvironmentName(currentBranch), releaseCandidateName, true)
     }
   } else {
-    echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitUtilsConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
+    echo "Skipping branch ${currentBranch} as it is not a tag and it doesn't start with ${GitHelperConstants.DEPLOY_ON_PUSH_BRANCHES_PREFIX}"
   }
-
-}
-
-public GithubReleaseInfo getReleaseInfoForCurrentTag(String tagName) {
-  GitUtils gitUtils = new GitUtils()
-  String currentRepoName = gitUtils.getCurrentRepoName(scm)
-
-  GithubReleaseInfo releaseInfo = gitUtils.getGithubReleaseInfo(tagName, currentRepoName)
-  return releaseInfo
 }

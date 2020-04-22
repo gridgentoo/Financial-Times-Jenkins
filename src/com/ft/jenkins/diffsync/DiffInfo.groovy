@@ -1,39 +1,38 @@
 package com.ft.jenkins.diffsync
 
-import com.ft.jenkins.Cluster
-import com.ft.jenkins.Environment
+import com.ft.jenkins.cluster.ClusterType
+import com.ft.jenkins.cluster.Environment
+import com.ft.jenkins.cluster.Region
 
 class DiffInfo implements Serializable {
   Environment sourceEnv, targetEnv
-  String sourceRegion, targetRegion
+  Region sourceRegion, targetRegion
 
   Map<String, String> sourceChartsVersions, targetChartsVersions
   List<String> addedCharts, modifiedCharts, removedCharts
-  Cluster cluster
+  ClusterType cluster
 
-  public boolean areEnvsInSync() {
-    return addedCharts.isEmpty() && modifiedCharts.isEmpty() && removedCharts.isEmpty()
+  boolean areEnvsInSync() {
+    addedCharts.isEmpty() && modifiedCharts.isEmpty() && removedCharts.isEmpty()
   }
 
-  public String addedChartsVersions() {
-    return DiffUtil.getChartsWithVersion(addedCharts, sourceChartsVersions)
+  String addedChartsVersions() {
+    Diffs.getChartsWithVersion(addedCharts, sourceChartsVersions)
   }
 
-  public String modifiedChartsVersions() {
-    return DiffUtil.getChartsDiffVersion(modifiedCharts, targetChartsVersions, sourceChartsVersions)
+  String modifiedChartsVersions() {
+    Diffs.getChartsDiffVersion(modifiedCharts, targetChartsVersions, sourceChartsVersions)
   }
 
-  public String removedChartsVersions() {
-    DiffUtil.getChartsWithVersion(removedCharts, targetChartsVersions)
+  String removedChartsVersions() {
+    Diffs.getChartsWithVersion(removedCharts, targetChartsVersions)
   }
 
-  public String targetFullName() {
+  String targetFullName() {
     targetEnv.getFullClusterName(cluster, targetRegion)
   }
 
-  public String sourceFullName() {
+  String sourceFullName() {
     sourceEnv.getFullClusterName(cluster, sourceRegion)
   }
-
-
 }

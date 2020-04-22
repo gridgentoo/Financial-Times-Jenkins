@@ -1,28 +1,28 @@
-import com.ft.jenkins.Cluster
-import com.ft.jenkins.DeploymentUtils
-import com.ft.jenkins.DeploymentUtilsConstants
-import com.ft.jenkins.Environment
-import com.ft.jenkins.EnvsRegistry
+import com.ft.jenkins.cluster.ClusterType
+import com.ft.jenkins.cluster.Environment
+import com.ft.jenkins.cluster.EnvsRegistry
+import com.ft.jenkins.cluster.Region
+import com.ft.jenkins.deployment.Deployments
+import com.ft.jenkins.deployment.DeploymentsConstants
 import com.ft.jenkins.diffsync.DiffInfo
-import com.ft.jenkins.diffsync.DiffUtil
+import com.ft.jenkins.diffsync.Diffs
 import com.ft.jenkins.diffsync.SyncInfo
+import com.ft.jenkins.slack.Slack
 import com.ft.jenkins.slack.SlackAttachment
-import com.ft.jenkins.slack.SlackUtils
 
-import static com.ft.jenkins.DeploymentUtilsConstants.APPROVER_INPUT
+import static com.ft.jenkins.deployment.DeploymentsConstants.APPROVER_INPUT
 
 def call() {
-
-  String sourceEnvName= env."Source env"
-  String sourceRegion=env."Source region"
+  String sourceEnvName = env."Source env"
+  Region sourceRegion = Region.toRegion(env."Source region")
   String targetEnvName = env."Target env"
-  String targetRegion = env."Target region"
+  Region targetRegion = Region.toRegion(env."Target region")
   String clusterName = env."Cluster"
   boolean selectInputsByDefault = Boolean.valueOf(env."Select all by default")
 
-  echo "Diff between envs with params: [sourceEnv: ${sourceEnvName}, sourceRegion: ${sourceRegion}, targetEnv: ${targetEnvName}, targetRegion: ${targetRegion}, cluster: ${clusterName}]"
-  Environment sourceEnv = EnvsRegistry.getEnvironment(sourceEnvName)
-  Environment targetEnv = EnvsRegistry.getEnvironment(targetEnvName)
+  echo "Diff between envs with params: [sourceEnv: ${sourceEnvName}, sourceRegion: ${sourceRegion.name}, targetEnv: ${targetEnvName}, targetRegion: ${targetRegion.name}, cluster: ${clusterName}]"
+  Environment sourceEnv = EnvsRegistry.getEnvironment(clusterName, sourceEnvName)
+  Environment targetEnv = EnvsRegistry.getEnvironment(clusterName, targetEnvName)
   if (!sourceRegion) {
     sourceRegion = null
   }
@@ -31,13 +31,13 @@ def call() {
     targetRegion = null
   }
 
-  Cluster cluster = Cluster.valueOfLabel(clusterName)
+  ClusterType cluster = ClusterType.toClusterType(clusterName)
 
   currentBuild.displayName = "${sourceEnv.getFullClusterName(cluster, sourceRegion)} -> ${targetEnv.getFullClusterName(cluster, targetRegion)}"
 
   DiffInfo diffInfo
   SyncInfo syncInfo = new SyncInfo()
-  DiffUtil diffUtil = new DiffUtil()
+  Diffs diffUtil = new Diffs()
 
   node('docker') {
     catchError {
@@ -61,8 +61,8 @@ def call() {
           }
 
           syncInfo.selectedChartsForAdding = getSelectedUserInputs(diffInfo.addedCharts, diffInfo,
-                                                                   "Services to be added in ${diffInfo.targetFullName()}",
-                                                                   "Add services to ${diffInfo.targetFullName()}", selectInputsByDefault)
+                  "Services to be added in ${diffInfo.targetFullName()}",
+                  "Add services to ${diffInfo.targetFullName()}", selectInputsByDefault)
           echo "The following charts were selected for adding: ${syncInfo.selectedChartsForAdding}"
         }
 
@@ -72,8 +72,8 @@ def call() {
           }
 
           syncInfo.selectedChartsForUpdating = getSelectedUserInputs(diffInfo.modifiedCharts, diffInfo,
-                                                                     "Services to be updated in ${diffInfo.targetFullName()}",
-                                                                     "Update services in ${diffInfo.targetFullName()}", selectInputsByDefault)
+                  "Services to be updated in ${diffInfo.targetFullName()}",
+                  "Update services in ${diffInfo.targetFullName()}", selectInputsByDefault)
           echo "The following charts were selected for updating: ${syncInfo.selectedChartsForUpdating}"
         }
 
@@ -83,8 +83,8 @@ def call() {
           }
 
           syncInfo.selectedChartsForRemoving = getSelectedUserInputs(diffInfo.removedCharts, diffInfo,
-                                                                     "Services to be removed from ${diffInfo.targetFullName()}",
-                                                                     "Remove the services from ${diffInfo.targetFullName()}", selectInputsByDefault)
+                  "Services to be removed from ${diffInfo.targetFullName()}",
+                  "Remove the services from ${diffInfo.targetFullName()}", selectInputsByDefault)
           echo "The following charts were selected for removing: ${syncInfo.selectedChartsForRemoving}"
         }
 
@@ -129,10 +129,10 @@ private List<String> getSelectedUserInputs(List<String> charts, DiffInfo diffInf
   for (int i = 0; i < charts.size(); i++) {
     String chartName = charts.get(i)
     String checkboxDescription = getCheckboxDescription(diffInfo.targetChartsVersions.get(chartName),
-                                                        diffInfo.sourceChartsVersions.get(chartName))
+            diffInfo.sourceChartsVersions.get(chartName))
     checkboxes.add(booleanParam(defaultValue: selectInputsByDefault,
-                                description: checkboxDescription,
-                                name: chartName))
+            description: checkboxDescription,
+            name: chartName))
   }
 
   if (checkboxes.isEmpty()) {
@@ -142,9 +142,9 @@ private List<String> getSelectedUserInputs(List<String> charts, DiffInfo diffInf
   /*  adding also the approver, although we're extracting it afterwards, as if only one input is given, the input method
       will return a single object, and not a map, which would be inconvenient */
   Map<String, Object> rawUserInputs = input(message: inputMessage,
-                                            parameters: checkboxes,
-                                            submitterParameter: APPROVER_INPUT,
-                                            ok: okButton) as Map<String, Object>
+          parameters: checkboxes,
+          submitterParameter: APPROVER_INPUT,
+          ok: okButton) as Map<String, Object>
   extractApprover(rawUserInputs)
 
   return getSelectedValues(rawUserInputs)
@@ -157,10 +157,10 @@ private List<String> getSelectedValues(Map<String, Object> userInputs) {
       selectedValues.add(value)
     }
   }
-  return selectedValues
+  selectedValues
 }
 
-private String getCheckboxDescription(String oldChartVersion, String newChartVersion) {
+private static String getCheckboxDescription(String oldChartVersion, String newChartVersion) {
   if (newChartVersion == null) {
     return ""
   }
@@ -172,10 +172,10 @@ private String getCheckboxDescription(String oldChartVersion, String newChartVer
   return "Old version: ${oldChartVersion}, new version: ${newChartVersion}"
 }
 
-String extractApprover(Map<String, Object> userInputs) {
+static String extractApprover(Map<String, Object> userInputs) {
   String approver = userInputs.get(APPROVER_INPUT)
   userInputs.remove(APPROVER_INPUT)
-  return approver
+  approver
 }
 
 void installSelectedCharts(List<String> selectedCharts, DiffInfo diffInfo) {
@@ -184,23 +184,23 @@ void installSelectedCharts(List<String> selectedCharts, DiffInfo diffInfo) {
     String version = diffInfo.sourceChartsVersions.get(selectedChart)
     echo "Installing chart ${selectedChart}:${version} in ${diffInfo.targetFullName()} "
 
-    build job: DeploymentUtilsConstants.GENERIC_DEPLOY_JOB,
-          parameters: [
-              string(name: 'Chart', value: selectedChart),
-              string(name: 'Version', value: version),
-              string(name: 'Environment', value: diffInfo.targetEnv.name),
-              string(name: 'Cluster', value: diffInfo.cluster.label),
-              string(name: 'Region', value: diffInfo.targetRegion ? diffInfo.targetRegion : "all"),
-              booleanParam(name: 'Send success notifications', value: false)]
+    build job: DeploymentsConstants.GENERIC_DEPLOY_JOB,
+            parameters: [
+                    string(name: 'Chart', value: selectedChart),
+                    string(name: 'Version', value: version),
+                    string(name: 'Environment', value: diffInfo.targetEnv.name),
+                    string(name: 'Cluster', value: diffInfo.cluster.label),
+                    string(name: 'Region', value: diffInfo.targetRegion ? diffInfo.targetRegion : "all"),
+                    booleanParam(name: 'Send success notifications', value: false)]
   }
 
 }
 
 void removeSelectedCharts(List<String> selectedCharts, DiffInfo diffInfo) {
-  DeploymentUtils deploymentUtils = new DeploymentUtils()
+  Deployments deployments = new Deployments()
   for (String selectedChart : selectedCharts) {
     String chartVersion = diffInfo.targetChartsVersions.get(selectedChart)
-    deploymentUtils.removeAppsInChartWithHelm(selectedChart, chartVersion, diffInfo.targetEnv, diffInfo.cluster)
+    deployments.removeAppsInChartWithHelm(selectedChart, chartVersion, diffInfo.targetEnv, diffInfo.cluster)
   }
 }
 
@@ -222,7 +222,7 @@ Modifications were applied on target `${diffInfo.targetFullName()}`
 """
   attachment.color = "good"
 
-  SlackUtils slackUtils = new SlackUtils()
+  Slack slackUtils = new Slack()
   slackUtils.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
 }
 
@@ -233,8 +233,8 @@ void sendSyncFailureNotification(Environment sourceEnv, Environment targetEnv) {
 
   attachment.color = "danger"
 
-  SlackUtils slackUtils = new SlackUtils()
-  slackUtils.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
+  Slack slack = new Slack()
+  slack.sendEnhancedSlackNotification(targetEnv.slackChannel, attachment)
 }
 
 void sendSlackNotificationOnDiff(DiffInfo diffInfo) {
@@ -258,7 +258,7 @@ Modifications will be applied on target `${diffInfo.targetFullName()}`
 """
   attachment.color = "warning"
 
-  SlackUtils slackUtils = new SlackUtils()
+  Slack slackUtils = new Slack()
   slackUtils.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
 }
 
@@ -271,6 +271,6 @@ Nothing to sync.
 """
   attachment.color = "good"
 
-  SlackUtils slackUtils = new SlackUtils()
-  slackUtils.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
+  Slack slack = new Slack()
+  slack.sendEnhancedSlackNotification(diffInfo.targetEnv.slackChannel, attachment)
 }

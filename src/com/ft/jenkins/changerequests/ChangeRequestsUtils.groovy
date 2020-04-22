@@ -8,7 +8,7 @@ final class CRConstants {
   public static final String DEFAULT_CREDENTIALS = "ft.change-api.key"
 }
 
-public String open(ChangeRequestOpenData crData, String credentialId = DEFAULT_CREDENTIALS) {
+String open(ChangeRequestOpenData crData, String credentialId = DEFAULT_CREDENTIALS) {
   String bodyJson = """
 {
   "user": {

@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue
  * <p>
  * See <a href="https://github.com/jenkinsci/JenkinsPipelineUnit">JenkinsPipelineUnit</a> documentation for general usage.
  */
-public class BasePipelineUnitTest extends BasePipelineTest {
+class BasePipelineUnitTest extends BasePipelineTest {
 
   @Override
   void setUp() throws Exception {
@@ -26,7 +26,7 @@ public class BasePipelineUnitTest extends BasePipelineTest {
     helper.init()
   }
 
-  public static void assertMethodWasCalled(List<MethodCall> methodCalls, String method, Object... expectedArgs) {
+  static void assertMethodWasCalled(List<MethodCall> methodCalls, String method, Object... expectedArgs) {
     assertTrue(methodCalls.findAll { call ->
       return call.methodName == method && Arrays.asList(call.args).containsAll(expectedArgs)
     }.any(), "Method call ${method}(${expectedArgs}) was not called")
