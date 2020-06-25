@@ -64,11 +64,13 @@ void autoDeployToEnvironment(String targetEnvName, String chartName,
                              int daysForTheDeployment) {
   Set<ClusterType> availableClusterTypes = appsPerCluster.keySet().findAll { it != ClusterType.UNKNOWN }
   List<Environment> availableEnvironments = availableClusterTypes.collect { EnvsRegistry.getEnvironment(it, targetEnvName) }
-  // get first non null environment
-  Environment environment = availableEnvironments.find { it }
-  stage("autodeploy to ${environment.name}") {
-    timeout(time: daysForTheDeployment, unit: 'DAYS') {
-      deployAppsToEnvironmentRegions(environment.regions, chartName, version, environment)
+  if (availableEnvironments) {
+    // get first non null environment
+    Environment environment = availableEnvironments.find { it }
+    stage("autodeploy to ${environment.name}") {
+      timeout(time: daysForTheDeployment, unit: 'DAYS') {
+        deployAppsToEnvironmentRegions(environment.regions, chartName, version, environment)
+      }
     }
   }
 }
