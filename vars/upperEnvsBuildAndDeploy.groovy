@@ -64,7 +64,7 @@ void autoDeployToEnvironment(String targetEnvName, String chartName,
                              int daysForTheDeployment) {
   Set<ClusterType> availableClusterTypes = appsPerCluster.keySet().findAll { it != ClusterType.UNKNOWN }
   List<Environment> availableEnvironments = availableClusterTypes.collect { EnvsRegistry.getEnvironment(it, targetEnvName) }
-  if (availableEnvironments) {
+  if (!availableEnvironments.isEmpty()) {
     // get first non null environment
     Environment environment = availableEnvironments.find { it }
     stage("autodeploy to ${environment.name}") {
