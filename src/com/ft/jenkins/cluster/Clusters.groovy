@@ -102,8 +102,9 @@ class Clusters implements Serializable {
       regions = [Region.EU]
       associatedClusterTypes = [ClusterType.PUBLISHING, ClusterType.DELIVERY]
       clusterToApiServerMap = [
-              ("${Region.EU}-${ClusterType.PUBLISHING}".toString()): newEntry(
-                      apiServer: "https://upp-k8s-dev-publish-eu-api.upp.ft.com",
+              ("${Region.EU}-${ClusterType.PUBLISHING}".toString()): newEksEntry(
+                      eksClusterName: "eks-publish-dev-eu",
+                      apiServer: "https://AB728E3942288F827ACE2853A581F4CD.sk1.eu-west-1.eks.amazonaws.com/",
                       publicEndpoint: "https://upp-k8s-dev-publish-eu.upp.ft.com"
               )
       ]
@@ -119,8 +120,9 @@ class Clusters implements Serializable {
       regions = [Region.EU]
       associatedClusterTypes = [ClusterType.PUBLISHING, ClusterType.DELIVERY]
       clusterToApiServerMap = [
-              ("${Region.EU}-${ClusterType.PUBLISHING}".toString()): newEntry(
-                      apiServer: "https://upp-k8s-dev-publish-eu-api.upp.ft.com",
+              ("${Region.EU}-${ClusterType.PUBLISHING}".toString()): newEksEntry(
+                      eksClusterName: "eks-publish-dev-eu",
+                      apiServer: "https://AB728E3942288F827ACE2853A581F4CD.sk1.eu-west-1.eks.amazonaws.com/",
                       publicEndpoint: "https://upp-k8s-dev-publish-eu.upp.ft.com"
               )
       ]
@@ -220,73 +222,6 @@ class Clusters implements Serializable {
               (ClusterType.DELIVERY.toString())  : "https://upp-prod-delivery-glb.upp.ft.com"
       ]
     }
-
-//    Environment stagingPacEnv = new Environment("stagingpac", pacCluster)
-//    stagingPacEnv.with {
-//      slackChannel = SLACK_CHANNEL
-//
-//      regions = [Region.EU, Region.US]
-//      associatedClusterTypes = [ClusterType.PAC]
-//      clusterToApiServerMap = [
-//              ("${Region.EU}-${ClusterType.PAC}".toString()): newEntry(
-//                      apiServer: "https://pac-staging-eu-api.upp.ft.com",
-//                      publicEndpoint: "https://pac-staging-eu.upp.ft.com"
-//              ),
-//              ("${Region.US}-${ClusterType.PAC}".toString()): newEntry(
-//                      apiServer: "https://pac-staging-us-api.upp.ft.com",
-//                      publicEndpoint: "https://pac-staging-us.upp.ft.com"
-//              )
-//      ]
-//      glbMap = [
-//              (ClusterType.PUBLISHING.toString()): "https://upp-staging-publish-glb.upp.ft.com",
-//              (ClusterType.DELIVERY.toString())  : "https://upp-staging-delivery-glb.upp.ft.com"
-//      ]
-//    }
-//
-//    Environment testEnv = new Environment("test", pacCluster)
-//    testEnv.with {
-//      slackChannel = SLACK_CHANNEL
-//      regions = [Region.EU, Region.US]
-//      associatedClusterTypes = [ClusterType.PAC]
-//      clusterToApiServerMap = [
-//              ("${Region.EU}-${ClusterType.PAC}".toString()): newEntry(
-//                      apiServer: "https://pac-staging-eu-api.upp.ft.com",
-//                      publicEndpoint: "https://pac-staging-eu.upp.ft.com"
-//              ),
-//              ("${Region.US}-${ClusterType.PAC}".toString()): newEksEntry(
-//                      eksClusterName: "eks-pac-test-us",
-//                      apiServer: "https://b92b41b515c2e58f6acd0505693a7898.gr7.us-east-1.eks.amazonaws.com",
-//                      publicEndpoint: "https://pac-staging-us.upp.ft.com"
-//              )
-//      ]
-//      glbMap = [
-//              (ClusterType.PUBLISHING.toString()): "https://upp-staging-publish-glb.upp.ft.com",
-//              (ClusterType.DELIVERY.toString())  : "https://upp-staging-delivery-glb.upp.ft.com"
-//      ]
-//    }
-//
-//    Environment prodPacEnv = new Environment("prodpac", pacCluster)
-//    prodPacEnv.with {
-//      slackChannel = SLACK_CHANNEL
-//      regions = [Region.EU, Region.US]
-//      associatedClusterTypes = [ClusterType.PAC]
-//      clusterToApiServerMap = [
-//              ("${Region.EU}-${ClusterType.PAC}".toString()): newEntry(
-//                      apiServer: "https://pac-prod-eu-api.upp.ft.com",
-//                      publicEndpoint: "https://pac-prod-eu.upp.ft.com"
-//              ),
-//              ("${Region.US}-${ClusterType.PAC}".toString()): newEntry(
-//                      apiServer: "https://pac-prod-us-api.upp.ft.com",
-//                      publicEndpoint: "https://pac-prod-us.upp.ft.com"
-//              )
-//      ]
-//      glbMap = [
-//              (ClusterType.PUBLISHING.toString()): "https://upp-prod-publish-glb.upp.ft.com",
-//              (ClusterType.DELIVERY.toString())  : "https://upp-prod-delivery-glb.upp.ft.com"
-//      ]
-//    }
-
-//    pacCluster.environments = [stagingEnv, prodEnv, stagingPacEnv, prodPacEnv, testEnv]
     pacCluster.environments = [stagingEnv, prodEnv]
     pacCluster
   }
