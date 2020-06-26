@@ -33,9 +33,10 @@ def call() {
       stage("deploy apps") {
         def reportBuildMetadata = { Multimap<ClusterType, AppConfig> apps, Environment env, String buildDesc ->
           currentBuild.description = buildDesc
-          stage("notifications") {
-            sendNotifications(env, chartName, chartVersion, apps, sendSuccessNotifications, deployOnlyInRegion)
-          }
+          // TODO: Has to be reworked in order to uncomment
+//          stage("notifications") {
+//            sendNotifications(env, chartName, chartVersion, apps, sendSuccessNotifications, deployOnlyInRegion)
+//          }
         }
         deployments.deployApps(chartName, chartVersion, targetEnv, deployOnlyInCluster, deployOnlyInRegion, reportBuildMetadata)
       }
