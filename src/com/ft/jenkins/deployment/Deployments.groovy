@@ -15,7 +15,6 @@ import org.apache.commons.lang3.SerializationUtils
 import java.util.regex.Matcher
 
 import static DeploymentsConstants.K8S_CLI_IMAGE
-import static com.ft.jenkins.Hash.md5
 import static com.ft.jenkins.deployment.DeploymentsConstants.EKS_PROVISIONER_IMAGE
 import static com.ft.jenkins.deployment.HelmConstants.*
 
@@ -336,38 +335,8 @@ String publishHelmChart(String version) {
 }
 
 void updateChartDeps(String chartFolder) {
-  String depsFile = "${chartFolder}/requirements.yaml"
-  if (!fileExists(depsFile)) {
-    return
-  }
-  echo "Updating chart dependencies ..."
-
-  Set<String> depsRepos = getChartDepsRepos(depsFile)
-
-  /*  adding the repos locally to helm. Using as the name the md5 hash of repo URL */
-  for (String repo : depsRepos) {
-    def params = [(LOCAL_REPO_NAME_PARAM): md5(repo), (REPO_URL_PARAM): repo]
-    sh Helm.generateCommand(HelmCommand.ADD_REPO, params, HelmVersion.V3)
-  }
   def depParams = [(CHART_NAME_COMMAND_PARAM): chartFolder]
   sh Helm.generateCommand(HelmCommand.UPDATE_DEPENDENCY, depParams, HelmVersion.V3)
-}
-
-
-Set<String> getChartDepsRepos(String depsFile) {
-  def deps = readYaml(file: depsFile)
-  if (!deps) {
-    return Collections.emptySet()
-  }
-
-  Set<String> repos = new HashSet<>()
-
-  for (def dep : deps.dependencies) {
-    if (dep.repository) {
-      repos.add(dep.repository)
-    }
-  }
-  return repos
 }
 
 /**

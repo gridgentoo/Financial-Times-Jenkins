@@ -268,6 +268,21 @@ class AppConfigsSpec extends Specification {
     "resilient-splunk-forwarder_deliveroo_pprod_sa" | "resilient-splunk-forwarder_${ClusterType.UNKNOWN.label}_${UNKNOWN_ENV}_${Region.UNKNOWN.name}"
   }
 
+  def "should parse publish and publishing cluster type correctly"(String appConfigFileName, String expectedInvalidAppConfigResponse) {
+    when:
+    AppConfig appConfig = toAppConfig(appConfigFileName)
+    then:
+    appConfig.toConfigFileName() == expectedInvalidAppConfigResponse
+    where:
+    appConfigFileName                            | expectedInvalidAppConfigResponse
+    "k8s-pub-auth-varnish_eks_publish_dev"       | "k8s-pub-auth-varnish_eks_publish_dev"
+    "k8s-pub-auth-varnish_eks_publishing_dev"    | "k8s-pub-auth-varnish_eks_publishing_dev"
+    "k8s-pub-auth-varnish_eks_publishing"        | "k8s-pub-auth-varnish_eks_publishing"
+    "k8s-pub-auth-varnish_eks_publish"           | "k8s-pub-auth-varnish_eks_publish"
+    "k8s-pub-auth-varnish_eks_publish_dev_eu"    | "k8s-pub-auth-varnish_eks_publish_dev_eu"
+    "k8s-pub-auth-varnish_eks_publishing_dev_eu" | "k8s-pub-auth-varnish_eks_publishing_dev_eu"
+  }
+
   private static List<AppConfig> parseAppConfigFileNames(List<String> fileNames) {
     List<AppConfig> actualAppConfigs = []
     fileNames.each { String name ->
