@@ -35,7 +35,7 @@ void deployApps(String chartName, String chartVersion, Environment targetEnv, Cl
     List<AppConfig> currentAppConfigs = AppConfigs.filterAppConfigsBasedOnEnvAndClusterType(targetEnv, appConfigsPerClusterType, deployOnlyInCluster)
     filteredAppConfigs.addAll(currentAppConfigs)
   }
-  filteredAppConfigs = AppConfigs.filterAppConfigsBasedOnMostSpecificDeployments(filteredAppConfigs)
+  filteredAppConfigs = AppConfigs.filterAppConfigsBasedOnMostSpecificDeployments(filteredAppConfigs, deployOnlyInRegion)
 
   logInvalidAppConfigs(invalidAppConfigs)
   logDeploymentCandidateAppConfigs(filteredAppConfigs)

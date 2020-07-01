@@ -283,6 +283,34 @@ class AppConfigsSpec extends Specification {
     "k8s-pub-auth-varnish_eks_publishing_dev_eu" | "k8s-pub-auth-varnish_eks_publishing_dev_eu"
   }
 
+  def "should detect correct deployment candidates when a deploy only region in specified"() {
+    given:
+    Cluster deliveryCluster = new Cluster(ClusterType.DELIVERY)
+    Environment stagingEnv = new Environment(STAGING_NAME, deliveryCluster)
+    stagingEnv.with {
+      regions = [Region.EU, Region.US]
+    }
+    def expectedAppConfigFileNames = [
+            "concept-events-notifications-reader_delivery",
+            "concept-events-notifications_delivery",
+            "concept-events-notifications_delivery_staging_us"
+    ]
+    when:
+    List<AppConfig> apps = parseAppConfigFileNames([
+            "concept-events-notifications-reader_delivery.yaml",
+            "concept-events-notifications_delivery.yaml",
+            "concept-events-notifications_delivery_prod_us.yaml",
+            "concept-events-notifications_delivery_staging_us.yaml"
+    ])
+    List<AppConfig> filteredAppConfigs = AppConfigs
+            .filterAppConfigsBasedOnEnvAndClusterType(stagingEnv, apps, deliveryCluster.clusterType)
+    List<String> filteredAppConfigFileNames = AppConfigs
+            .filterAppConfigsBasedOnMostSpecificDeployments(filteredAppConfigs, Region.EU)
+            .collect({ it.toConfigFileName() })
+    then:
+    expectedAppConfigFileNames.sort() == filteredAppConfigFileNames.sort()
+  }
+
   private static List<AppConfig> parseAppConfigFileNames(List<String> fileNames) {
     List<AppConfig> actualAppConfigs = []
     fileNames.each { String name ->

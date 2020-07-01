@@ -152,9 +152,9 @@ static List<AppConfig> filterAppConfigsBasedOnEnvAndClusterType(Environment targ
 }
 
 
-static List<AppConfig> filterAppConfigsBasedOnMostSpecificDeployments(List<AppConfig> apps) {
+static List<AppConfig> filterAppConfigsBasedOnMostSpecificDeployments(List<AppConfig> apps, Region deployOnlyInRegion = null) {
   apps = sortAppConfigs(apps)
-  apps = linkAppConfigHierarchy(apps)
+  apps = linkAppConfigHierarchy(apps, deployOnlyInRegion)
   // Extract all app configs that are leaf nodes (do not have a direct child)
   apps = apps.findAll { !it.child }
   apps
@@ -165,16 +165,20 @@ private static List<AppConfig> sortAppConfigs(List<AppConfig> apps) {
   apps.toSorted({ a, b -> (a.toConfigFileName() <=> b.toConfigFileName()) })
 }
 
-private static List<AppConfig> linkAppConfigHierarchy(List<AppConfig> apps) {
+private static List<AppConfig> linkAppConfigHierarchy(List<AppConfig> apps, Region deployOnlyInRegion = null) {
   AppConfig prevApp = apps.first()
   for (AppConfig currentApp : apps) {
     boolean potentialChildHasEnv = currentApp?.environment && !prevApp?.environment
     boolean potentialChildHasRegion = currentApp?.region && !prevApp?.region
+    boolean potentialChildRegionIsNotSpecifiedRegion = deployOnlyInRegion && currentApp?.region != deployOnlyInRegion
     boolean sameClusterType = currentApp?.clusterType == prevApp?.clusterType
     boolean sameEksStatus = currentApp?.isEks == prevApp?.isEks
 
     if ((sameClusterType && sameEksStatus) && (potentialChildHasEnv || potentialChildHasRegion)) {
       prevApp.child = currentApp
+      if (potentialChildHasRegion && potentialChildRegionIsNotSpecifiedRegion) {
+        prevApp.child = null
+      }
     }
     prevApp = currentApp
   }
