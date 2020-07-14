@@ -215,8 +215,9 @@ class Clusters implements Serializable {
                       apiServer: "https://pac-prod-eu-api.upp.ft.com",
                       publicEndpoint: "https://pac-prod-eu.upp.ft.com"
               ),
-              ("${Region.US}-${ClusterType.PAC}".toString()): newEntry(
-                      apiServer: "https://pac-prod-us-api.upp.ft.com",
+              ("${Region.US}-${ClusterType.PAC}".toString()): newEksEntry(
+                      eksClusterName: "eks-pac-prod-us",
+                      apiServer: "https://A14E3BE07969021A35D2885CEA15A90D.yl4.us-east-1.eks.amazonaws.com",
                       publicEndpoint: "https://pac-prod-us.upp.ft.com"
               ),
       ]
