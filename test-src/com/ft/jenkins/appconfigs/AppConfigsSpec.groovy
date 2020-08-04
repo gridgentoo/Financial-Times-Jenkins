@@ -310,6 +310,71 @@ class AppConfigsSpec extends Specification {
     expectedAppConfigFileNames.sort() == filteredAppConfigFileNames.sort()
   }
 
+  def "should match generic configs when a region that is not existent in the names of the app configs is specified"() {
+    given:
+    Cluster deliveryCluster = new Cluster(ClusterType.DELIVERY)
+    Environment devEnv = new Environment(DEV_NAME, deliveryCluster)
+    devEnv.with {
+      regions = [Region.EU]
+    }
+    def expectedAppConfigFileNames = [
+            "upp-article-validator_delivery",
+            "upp-article-validator_eks_delivery",
+            "upp-audio-validator_delivery",
+            "upp-audio-validator_eks_delivery",
+            "upp-content-collection-validator_delivery",
+            "upp-content-collection-validator_eks_delivery",
+            "upp-content-placeholder-validator_delivery",
+            "upp-content-placeholder-validator_eks_delivery",
+            "upp-image-validator_delivery",
+            "upp-image-validator_eks_delivery",
+            "upp-internal-article-validator_delivery",
+            "upp-internal-article-validator_eks_delivery",
+            "upp-internal-content-placeholder-validator_delivery",
+            "upp-internal-content-placeholder-validator_eks_delivery",
+            "upp-internal-live-blog-validator_delivery",
+            "upp-internal-live-blog-validator_eks_delivery",
+            "upp-list-validator_delivery",
+            "upp-list-validator_eks_delivery",
+            "upp-live-blog-validator_delivery",
+            "upp-live-blog-validator_eks_delivery"
+    ]
+    when:
+    List<AppConfig> apps = parseAppConfigFileNames([
+            "upp-article-validator_delivery.yaml",
+            "upp-article-validator_eks_delivery.yaml",
+            "upp-audio-validator_delivery.yaml",
+            "upp-audio-validator_eks_delivery.yaml",
+            "upp-content-collection-validator_delivery.yaml",
+            "upp-content-collection-validator_eks_delivery.yaml",
+            "upp-content-placeholder-validator_delivery.yaml",
+            "upp-content-placeholder-validator_eks_delivery.yaml",
+            "upp-content-placeholder-validator_eks_pac.yaml",
+            "upp-content-placeholder-validator_pac.yaml",
+            "upp-content-validator_eks_pac.yaml",
+            "upp-content-validator_pac.yaml",
+            "upp-image-validator_delivery.yaml",
+            "upp-image-validator_eks_delivery.yaml",
+            "upp-internal-article-validator_delivery.yaml",
+            "upp-internal-article-validator_eks_delivery.yaml",
+            "upp-internal-content-placeholder-validator_delivery.yaml",
+            "upp-internal-content-placeholder-validator_eks_delivery.yaml",
+            "upp-internal-live-blog-validator_delivery.yaml",
+            "upp-internal-live-blog-validator_eks_delivery.yaml",
+            "upp-list-validator_delivery.yaml",
+            "upp-list-validator_eks_delivery.yaml",
+            "upp-live-blog-validator_delivery.yaml",
+            "upp-live-blog-validator_eks_delivery.yaml",
+    ])
+    List<AppConfig> filteredAppConfigs = AppConfigs
+            .filterAppConfigsBasedOnEnvAndClusterTypeAndRegion(devEnv, apps, deliveryCluster.clusterType, Region.EU)
+    List<String> filteredAppConfigFileNames = AppConfigs
+            .filterAppConfigsBasedOnMostSpecificDeployments(filteredAppConfigs, Region.EU)
+            .collect({ it.toConfigFileName() })
+    then:
+    expectedAppConfigFileNames.sort() == filteredAppConfigFileNames.sort()
+  }
+
   def "should detect correct deployment candidates when a deploy only region is specified"(List<String> expectedAppConfigFileNames, Region region) {
     given:
     Cluster deliveryCluster = new Cluster(ClusterType.DELIVERY)

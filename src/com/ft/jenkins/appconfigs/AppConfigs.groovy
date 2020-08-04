@@ -147,9 +147,16 @@ static List<AppConfig> filterAppConfigsBasedOnEnvAndClusterTypeAndRegion(Environ
     currentAppConfigs = appConfigsPerClusterType.findAll { matchingTargetEnvNameOrMissingIt(it, targetEnv) }
   } else if (deployOnlyInCluster) {
     if (deployOnlyRegion && deployOnlyRegion != Region.ALL) {
-      currentAppConfigs = appConfigsPerClusterType.findAll { matchingTargetEnvNameOrMissingIt(it, targetEnv) && it.clusterType == deployOnlyInCluster && it.region == deployOnlyRegion }
+      currentAppConfigs = appConfigsPerClusterType.findAll {
+        it.clusterType == deployOnlyInCluster &&
+                matchingTargetEnvNameOrMissingIt(it, targetEnv) &&
+                matchingTargetRegionOrMissingIt(it, deployOnlyRegion)
+      }
     } else {
-      currentAppConfigs = appConfigsPerClusterType.findAll { matchingTargetEnvNameOrMissingIt(it, targetEnv) && it.clusterType == deployOnlyInCluster }
+      currentAppConfigs = appConfigsPerClusterType.findAll {
+        it.clusterType == deployOnlyInCluster &&
+                matchingTargetEnvNameOrMissingIt(it, targetEnv)
+      }
     }
   }
   currentAppConfigs
@@ -170,7 +177,7 @@ private static List<AppConfig> sortAppConfigs(List<AppConfig> apps) {
 }
 
 private static List<AppConfig> linkAppConfigHierarchy(List<AppConfig> apps, Region deployOnlyInRegion = null) {
-  AppConfig prevApp = apps.first()
+  AppConfig prevApp = apps ? apps.first() : null
   for (AppConfig currentApp : apps) {
     boolean potentialChildHasEnv = currentApp?.environment && !prevApp?.environment
     boolean potentialChildHasRegion = currentApp?.region && !prevApp?.region
@@ -194,6 +201,10 @@ private static List<AppConfig> linkAppConfigHierarchy(List<AppConfig> apps, Regi
 
 private static boolean matchingTargetEnvNameOrMissingIt(AppConfig app, Environment targetEnv) {
   app.environment?.name == targetEnv.name || !app.environment
+}
+
+private static boolean matchingTargetRegionOrMissingIt(AppConfig app, Region targetRegion) {
+  app.region?.name == targetRegion.name || !app.region
 }
 
 private void addAppToCluster(Multimap<ClusterType, AppConfig> result, ClusterType targetCluster, List<AppConfig> appConfigs) {
