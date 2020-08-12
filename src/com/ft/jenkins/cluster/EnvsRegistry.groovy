@@ -44,7 +44,7 @@ class EnvsRegistry implements Serializable {
   static boolean hasAllowedClusterType(List<ClusterType> allowedClusterTypes, String name) {
     for (Cluster cluster : clusters) {
       Environment env = cluster.environments.find { it.name == name }
-      ClusterType allowedClusterType = allowedClusterTypes.find { it == env.cluster?.clusterType }
+      ClusterType allowedClusterType = allowedClusterTypes.find { it == env?.cluster?.clusterType }
       if (allowedClusterType) {
         return true
       }

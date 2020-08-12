@@ -53,4 +53,22 @@ class EnvRegistrySpec extends Specification {
     then:
     environment.name == Environment.DEV_NAME
   }
+
+  def "should validate correct allowed types"() {
+    given:
+    def allowedClusterTypes = [ClusterType.DELIVERY, ClusterType.PUBLISHING]
+    when:
+    def actualStatus = EnvsRegistry.hasAllowedClusterType(allowedClusterTypes, Environment.STAGING_NAME)
+    then:
+    actualStatus
+  }
+
+  def "should validate when no env name is provided"() {
+    given:
+    def allowedClusterTypes = [ClusterType.DELIVERY, ClusterType.PUBLISHING]
+    when:
+    def actualStatus = EnvsRegistry.hasAllowedClusterType(allowedClusterTypes, "")
+    then:
+    !actualStatus
+  }
 }
