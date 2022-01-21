@@ -51,7 +51,7 @@
         <jenkins.pipeline.unit.version>1.1</jenkins.pipeline.unit.version>
         <jenkins-test-harness.version>2.62</jenkins-test-harness.version>
 
-        <jenkins-core.version>2.230</jenkins-core.version>
+        <jenkins-core.version>2.319.2</jenkins-core.version>
         <docker.workflow.version>1.12</docker.workflow.version>
         <git.workflow.version>4.0.0</git.workflow.version>
 
